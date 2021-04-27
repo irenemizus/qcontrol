@@ -344,13 +344,12 @@ def residum(psi, v, akx2, xp, np, emax):
     return phi
 
 # ----------------------------------------------------------
-def prop(psi, phi, t, nch, np, v, akx2):
+def prop(psi, t, nch, np, v, akx2):
     """ Propagation subroutine using Newton interpolation
         P(O) psi = dv(1) psi + dv2 (O - x1 I) psi + dv3 (O - x2)(O - x1 I) psi + ...
         INPUT
         psi  complex vector of length np describing wavefunction
              at the beginning of interval
-        phi  auxiliary vector used for recurrence
         t    time interval
         nch  order of interpolation polynomial (must be a power of 2 if
              reorder is necessary)
@@ -369,6 +368,8 @@ def prop(psi, phi, t, nch, np, v, akx2):
 
     # interpolation points and divided difference coefficients
     xp, dv = points(nch, t_sc)
+    # auxiliary vector used for recurrence
+    phi = []
     phi[:] = psi[:]
 
     # accumulating first term
