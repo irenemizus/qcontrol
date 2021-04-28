@@ -1,3 +1,6 @@
 numpy==1.20.2
+setuptools==46.4.0
 jupyterlab==3.0.14
-scipy
+pandas==1.2.4
+plotly==4.14.3
+

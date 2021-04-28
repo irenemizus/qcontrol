@@ -9,7 +9,15 @@ Change dir to `newcheb`.
 
 ```python3 -m venv venv```
 
-Now let's install the required Python packages into the Virtual Envronment
+```pip install --upgrade pip setuptools```
+
+The Virtual Environment is created in a folder `venv`
+
+Then the newly created environment should be activated by
+
+```source venv/bin/activate```
+
+Then as we are inside the env, let's install the required Python packages into it.
 
 ```pip install -r requirements.txt```
 

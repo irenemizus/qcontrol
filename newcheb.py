@@ -51,6 +51,8 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
+OUT_PATH="output"
+
 # ----------------------------------------------------------
 import os
 import os.path
@@ -481,6 +483,9 @@ should be written to a file, is negative and will be changed to zero", sys.stder
 must be positive. Exiting", sys.stderr)
         sys.exit(1)
 
+    # creating a directory for output files
+    os.makedirs(OUT_PATH, exist_ok=True)
+
     # setting the coordinate grid
     x = coord_grid(dx, np)
 #    print(x)
@@ -532,49 +537,50 @@ must be positive. Exiting", sys.stderr)
     psi[:] = psi0[:]
 
     # main propagation loop
-    with open(file_abs, 'w') as f_abs:
-        with open(file_real, 'w') as f_real:
-            with open(file_mom, 'w') as f_mom:
-                for l in range(1, nt + 1):
-                    psi = prop(psi, dt, nch, np, v, akx2)
+    with open(os.path.join(OUT_PATH, file_abs), 'w') as f_abs, \
+         open(os.path.join(OUT_PATH, file_real), 'w') as f_real, \
+         open(os.path.join(OUT_PATH, file_mom), 'w') as f_mom:
 
-                    cnorm = cprod(psi, psi, dx, np)
-                    overlp = cprod(psi0, psi, dx, np)
+        for l in range(1, nt + 1):
+            psi = prop(psi, dt, nch, np, v, akx2)
 
-                    t = dt * l
-                    print("t = ", t)
-                    print("normalization = ", cnorm)
-                    print("overlap = ", overlp)
+            cnorm = cprod(psi, psi, dx, np)
+            overlp = cprod(psi0, psi, dx, np)
 
-	                # renormalization
-                    psi = [el / math.sqrt(abs(cnorm)) for el in psi]
+            t = dt * l
+            print("t = ", t)
+            print("normalization = ", cnorm)
+            print("overlap = ", overlp)
 
-	                # calculating of a current energy
-                    phi = hamil(psi, v, akx2, np)
-                    cener = cprod(psi, phi, dx, np)
-                    print("energy = ", cener.real)
+            # renormalization
+            psi = [el / math.sqrt(abs(cnorm)) for el in psi]
 
-                    # calculating of expectation values
-	                # for x
-                    momx = cprod2(psi, x, dx, np)
-                    # for x^2
-                    x2 = [el * el for el in x]
-                    momx2 = cprod2(psi, x2, dx, np)
-	                # for p^2
-                    phi_kin = diff(psi, akx2, np)
-                    phi_p2 = [el / (-coef_kin) for el in phi_kin]
-                    momp2 = cprod(psi, phi_p2, dx, np)
-	                # for p
-                    akx = initak(np, dx, 1)
-                    akx = [el / (-1j) for el in akx]
-                    phip = diff(psi, akx, np)
-                    momp = cprod(psi, phip, dx, np)
+            # calculating of a current energy
+            phi = hamil(psi, v, akx2, np)
+            cener = cprod(psi, phi, dx, np)
+            print("energy = ", cener.real)
 
-	                # plotting the result
-                    if (l >= lmin):
-                        plot(psi, t, x, np, f_abs, f_real)
-                    if (l >= lmin):
-                        plot_mom(t, momx, momx2, momp, momp2, f_mom)
+            # calculating of expectation values
+            # for x
+            momx = cprod2(psi, x, dx, np)
+            # for x^2
+            x2 = [el * el for el in x]
+            momx2 = cprod2(psi, x2, dx, np)
+            # for p^2
+            phi_kin = diff(psi, akx2, np)
+            phi_p2 = [el / (-coef_kin) for el in phi_kin]
+            momp2 = cprod(psi, phi_p2, dx, np)
+            # for p
+            akx = initak(np, dx, 1)
+            akx = [el / (-1j) for el in akx]
+            phip = diff(psi, akx, np)
+            momp = cprod(psi, phip, dx, np)
+
+            # plotting the result
+            if (l >= lmin):
+                plot(psi, t, x, np, f_abs, f_real)
+            if (l >= lmin):
+                plot_mom(t, momx, momx2, momp, momp2, f_mom)
 
 # ----------------------------------------------------------
 if __name__ == "__main__":
