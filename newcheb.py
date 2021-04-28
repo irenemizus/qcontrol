@@ -37,6 +37,9 @@ Options:
     --file_real
         output file name, to which real parts of wavefunctions should be written
         by default, is equal to "fort.22"
+    --file_mom
+        output file name, to which expectation values of x, x*x, p, p*p should be written
+        by default, is equal to "fort.23"
 
 Examples:
     python newcheb.py  --file_abs "res_abs" --dx 0.12
@@ -339,7 +342,7 @@ def residum(psi, v, akx2, xp, np, emax):
     phi = []
     for i in range(np):
         hpsi[i] = 2.0 * (2.0 * hpsi[i] / emax - psi[i])
-        phi[i].append(hpsi[i] - xp * psi[i])
+        phi.append(hpsi[i] - xp * psi[i])
 
     return phi
 
@@ -362,9 +365,10 @@ def prop(psi, t, nch, np, v, akx2):
              phi(t) = exp(-iHt) psi(0) """
 
     # calculating the energy range of the Hamiltonian operator H
-    emax = v[0] + abs(akx2(int(np / 2))) + 2.0
+    emax = v[0] + abs(akx2[int(np / 2 - 1)]) + 2.0
+
     t_sc = t * emax / 4.0
-    print("emax = %f", emax, "scaled time interval = %f", t_sc)
+    print("emax = ", emax, "\nscaled time interval = ", t_sc)
 
     # interpolation points and divided difference coefficients
     xp, dv = points(nch, t_sc)
@@ -376,15 +380,37 @@ def prop(psi, t, nch, np, v, akx2):
     psi = [el * dv[0] for el in psi]
 
     # recurrence loop
-    for i in range(nch - 1):
+    for j in range(nch - 1):
         # mapping by scaled operator of phi
-        phi = residum(phi, v, akx2, xp[i], np, emax)
+        phi = residum(phi, v, akx2, xp[j], np, emax)
+
         # accumulation of Newtonian's interpolation
-        for j in range(np):
-            psi[j] += dv[i + 1] * phi[j]
-        psi = [el * cmath.exp(1j * 2.0 * t_sc) for el in psi]
+        for i in range(np):
+            psi[i] += dv[j + 1] * phi[i]
+#            if (i == 63):
+#                print(j + 1, dv[j + 1] * phi[i], psi[i])
+#        if (j == 9):
+#            print(xp[j])
+#            print(dv[j + 1])
+#            print(phi[int(np / 2 - 1)])
+#            for l in range(np):
+#                print(psi[l])
+
+    psi = [el * cmath.exp(-1j * 2.0 * t_sc) for el in psi]
 
     return psi
+
+# ----------------------------------------------------------
+def plot(psi, t, x, np, file_abs, file_real):
+    """ Plots absolute and real values of the current wavefunction """
+    for i in range(np):
+        file_abs.write("{:.6f} {:.6f} {:.6e}\n".format(t, x[i], abs(psi[i])))
+        file_real.write("{:.6f} {:.6f} {:.6e}\n".format(t, x[i], psi[i].real))
+
+# ----------------------------------------------------------
+def plot_mom(t, momx, momx2, momp, momp2, file_mom):
+    """ Plots expectation values of the current x, x*x, p and p*p """
+    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t, momx.real, momx2.real, momp.real, momp2.real))
 
 # ----------------------------------------------------------
 def main(argv):
@@ -392,7 +418,7 @@ def main(argv):
     # analyze cmdline:
     try:
         options, arguments = getopt.getopt(argv, 'h', ['help', 'dx=', 'np=', 'nch=', 'dt=', 'nt=', 'x0=', 'p0=', \
-                                            'lmin=', 'file_abs=', 'file_real='])
+                                            'lmin=', 'file_abs=', 'file_real=', 'file_mom='])
     except getopt.GetoptError:
         print >> sys.stderr, "\tThere are unrecognized options!"
         print >> sys.stderr, "\tRun this script with '-h' option to see the usage info and available options."
@@ -409,6 +435,7 @@ def main(argv):
     lmin = 0
     file_abs = "fort.21"
     file_real = "fort.22"
+    file_mom = "fort.23"
 
     # analyze provided options and their values (if any):
     for opt, val in options:
@@ -435,6 +462,8 @@ def main(argv):
             file_abs = val
         elif opt == "file_real":
             file_real = val
+        elif opt == "file_mom":
+            file_mom = val
 
     # analyze provided arguments
     if (not math.log2(np).is_integer() or not math.log2(nch).is_integer()):
@@ -454,20 +483,20 @@ must be positive. Exiting", sys.stderr)
 
     # setting the coordinate grid
     x = coord_grid(dx, np)
-    print(x)
+#    print(x)
 
     # evaluating of potential(s)
     v = pot(x)
-    print(v)
+#    print(v)
 
     # evaluating of initial wavefunction
     psi0 = psi_init(x, x0, p0)
-    abs_psi0 = [abs(i) for i in psi0]
-    print(abs_psi0)
+#   abs_psi0 = [abs(i) for i in psi0]
+#   print(abs_psi0)
 
     # initial normalization check
     cnorm0 = cprod(psi0, psi0, dx, np)
-    print("Initial normalization: %f" % abs(cnorm0))
+    print("Initial normalization: ", abs(cnorm0))
 
 #    cx1 = []
 #    for i in range(np):
@@ -477,13 +506,13 @@ must be positive. Exiting", sys.stderr)
 
     # evaluating of k vector
     akx2 = initak(np, dx, 2)
-    print(akx2)
+#    print(akx2)
 
     # evaluating of kinetic energy
     m = 1.0
     coef_kin = -1.0 / (2.0 * m)
     akx2 = [ak * coef_kin for ak in akx2]
-    print(akx2)
+ #   print(akx2)
 
 #    phi0_kin = diff(psi0, akx2, np)
 #    print(phi0_kin)
@@ -491,19 +520,62 @@ must be positive. Exiting", sys.stderr)
     # calculating of initial energy
     phi0 = hamil(psi0, v, akx2, np)
     cener0 = cprod(phi0, psi0, dx, np)
-    print("Initial energy: %f" % abs(cener0))
+    print("Initial energy: ", abs(cener0))
 
 #    jj = reorder(nch)
 #    for i in range(nch):
 #        print(i, jj[i])
 
+    # time propagation
+    dt *= math.pi
+    psi = []
+    psi[:] = psi0[:]
 
+    # main propagation loop
+    with open(file_abs, 'w') as f_abs:
+        with open(file_real, 'w') as f_real:
+            with open(file_mom, 'w') as f_mom:
+                for l in range(1, nt + 1):
+                    psi = prop(psi, dt, nch, np, v, akx2)
 
+                    cnorm = cprod(psi, psi, dx, np)
+                    overlp = cprod(psi0, psi, dx, np)
+
+                    t = dt * l
+                    print("t = ", t)
+                    print("normalization = ", cnorm)
+                    print("overlap = ", overlp)
+
+	                # renormalization
+                    psi = [el / math.sqrt(abs(cnorm)) for el in psi]
+
+	                # calculating of a current energy
+                    phi = hamil(psi, v, akx2, np)
+                    cener = cprod(psi, phi, dx, np)
+                    print("energy = ", cener.real)
+
+                    # calculating of expectation values
+	                # for x
+                    momx = cprod2(psi, x, dx, np)
+                    # for x^2
+                    x2 = [el * el for el in x]
+                    momx2 = cprod2(psi, x2, dx, np)
+	                # for p^2
+                    phi_kin = diff(psi, akx2, np)
+                    phi_p2 = [el / (-coef_kin) for el in phi_kin]
+                    momp2 = cprod(psi, phi_p2, dx, np)
+	                # for p
+                    akx = initak(np, dx, 1)
+                    akx = [el / (-1j) for el in akx]
+                    phip = diff(psi, akx, np)
+                    momp = cprod(psi, phip, dx, np)
+
+	                # plotting the result
+                    if (l >= lmin):
+                        plot(psi, t, x, np, f_abs, f_real)
+                    if (l >= lmin):
+                        plot_mom(t, momx, momx2, momp, momp2, f_mom)
 
 # ----------------------------------------------------------
 if __name__ == "__main__":
     main(sys.argv[1:])
-
-
-
-
