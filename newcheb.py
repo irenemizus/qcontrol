@@ -7,6 +7,9 @@ Usage: python newcheb.py [options]
 Options:
     -h, --help
         print this usage info and exit
+    -m, --mass
+        reduced mass value of the considered system
+        by default, is equal to 0.5 Dalton
     --dx
         coordinate grid step value in a_0
         by default, is equal to 0.2 a_0
@@ -27,6 +30,9 @@ Options:
         by default, is equal to 0
     --p0
         momentum initial conditions in 1 / a_0
+    --omega_0
+        value of the harmonic frequency of the considered system
+        by default, is equal to 1.0 1 / cm
     --lmin
         number of a time step, from which the result should be written to a file.
         A negative value will be considered as 0
@@ -57,7 +63,6 @@ from phys_base import diff, hamil, prop
 
 OUT_PATH="output"
 
-# ----------------------------------------------------------
 import os
 import os.path
 import sys
@@ -65,17 +70,10 @@ import getopt
 import math
 
 
-# ----------------------------------------------------------
 def usage():
     """ Print usage information """
 
     print (__doc__)
-
-
-
-#xp, dv = points(8, 0.1)
-#print(xp)
-#print(dv)
 
 
 def plot(psi, t, x, np, file_abs, file_real):
@@ -94,21 +92,23 @@ def main(argv):
     """ The main() function """
     # analyze cmdline:
     try:
-        options, arguments = getopt.getopt(argv, 'h', ['help', 'dx=', 'np=', 'nch=', 'dt=', 'nt=', 'x0=', 'p0=', \
-                                            'lmin=', 'file_abs=', 'file_real=', 'file_mom='])
+        options, arguments = getopt.getopt(argv, 'hm:', ['help', 'mass=', 'dx=', 'np=', 'nch=', 'dt=', 'nt=', 'x0=', 'p0=', \
+                                          'omega_0=', 'lmin=', 'file_abs=', 'file_real=', 'file_mom='])
     except getopt.GetoptError:
         print >> sys.stderr, "\tThere are unrecognized options!"
         print >> sys.stderr, "\tRun this script with '-h' option to see the usage info and available options."
         sys.exit(2)
 
-    #default values
-    dx = 0.2
+    # default values
+    m = 0.5
+    dx = 2.43
     np = 128
     nch = 64
     dt = 0.1
     nt = 10
     x0 = 0
     p0 = 0
+    omega_0 = 1.0
     lmin = 0
     file_abs = "fort.21"
     file_real = "fort.22"
@@ -119,6 +119,8 @@ def main(argv):
         if opt in ("-h", "--help"):
             usage()
             sys.exit()
+        elif opt in ("-m", "--mass"):
+            m = float(val)
         elif opt == "dx":
             dx = float(val)
         elif opt == "np":
@@ -127,6 +129,8 @@ def main(argv):
             nch = int(val)
         elif opt == "dt":
             dt = float(val)
+        elif opt == "omega_0":
+            omega_0 = float(val)
         elif opt == "nt":
             nt = int(val)
         elif opt == "x0":
@@ -158,6 +162,11 @@ should be written to a file, is negative and will be changed to zero", sys.stder
 must be positive. Exiting", sys.stderr)
         sys.exit(1)
 
+    if (not m > 0.0 or not omega_0 > 0.0):
+        print("The value of a reduced mass 'm/mass' and of a harmonic frequency 'omega_0' \
+    must be positive. Exiting", sys.stderr)
+        sys.exit(1)
+
     # creating a directory for output files
     os.makedirs(OUT_PATH, exist_ok=True)
 
@@ -166,11 +175,11 @@ must be positive. Exiting", sys.stderr)
 #    print(x)
 
     # evaluating of potential(s)
-    v = pot(x)
+    v = pot(x, m, omega_0)
 #    print(v)
 
     # evaluating of initial wavefunction
-    psi0 = psi_init(x, x0, p0)
+    psi0 = psi_init(x, x0, p0, m, omega_0)
 #   abs_psi0 = [abs(i) for i in psi0]
 #   print(abs_psi0)
 
@@ -189,7 +198,6 @@ must be positive. Exiting", sys.stderr)
 #    print(akx2)
 
     # evaluating of kinetic energy
-    m = 1.0
     coef_kin = -1.0 / (2.0 * m)
     akx2 = [ak * coef_kin for ak in akx2]
  #   print(akx2)
