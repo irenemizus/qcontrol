@@ -4,7 +4,7 @@ import numpy
 from math_base import points
 
 hart_to_cm = 219474.6313708 # 1 / cm / hartree
-dalt_to_au = 1822.888 # a.u. / D
+dalt_to_au = 1822.888486 # a.u. / D
 
 
 def diff(psi, akx2, np):

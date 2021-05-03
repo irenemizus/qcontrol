@@ -12,7 +12,9 @@ Options:
         by default, is equal to 0.5 Dalton
     --dx
         coordinate grid step value in a_0
-        by default, is equal to 0.2 a_0
+        by default, is equal to 2.43 a_0 for a single harmonic potential
+                    is equal to 2.89 a_0 for a single Morse potential
+                    is equal to 0.2 a_0 for a model harmonic potential with a = 1.0
     --np
         number of collocation points; must be a power of 2
         by default, is equal to 128
@@ -57,7 +59,10 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
-from harmonic import pot, psi_init
+from harmonic import pot
+from harmonic import psi_init
+#from single_morse import pot
+#from single_morse import psi_init
 from math_base import coord_grid, cprod, cprod2, initak
 from phys_base import diff, hamil, prop
 
@@ -100,8 +105,8 @@ def main(argv):
         sys.exit(2)
 
     # default values
-    m = 0.5
-    dx = 2.43
+    m = 1.0
+    dx = 0.2 # 0.2 -- for a model harmonic oscillator with a = 1.0 # 2.89 -- for single morse oscillator # 2.43 -- for harmonic oscillator
     np = 128
     nch = 64
     dt = 0.1

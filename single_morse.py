@@ -2,6 +2,7 @@ import cmath
 import math
 
 from phys_base import hart_to_cm, dalt_to_au
+De = 20000.0
 
 
 def pot(x, m, omega_0):
@@ -13,11 +14,10 @@ def pot(x, m, omega_0):
         OUTPUT
         v       real vector of length np describing the potential V(X) """
 
-    # stiffness coefficient
-#    k_s = 2.0 * m * omega_0 * omega_0 * dalt_to_au / hart_to_cm
-    k_s = 1.0
-    # Single harmonic potential
-    v = [k_s * xi * xi / 2.0 for xi in x]
+    # scaling factor
+    a = math.sqrt(2.0 * m * omega_0 * omega_0 * dalt_to_au / 2.0 / De / hart_to_cm)
+    # Single morse potential
+    v = [De * (1.0 - math.exp(-a * xi)) * (1.0 - math.exp(-a * xi)) for xi in x]
     return v
 
 
@@ -34,7 +34,11 @@ def psi_init(x, x0, p0, m, omega_0):
         psi     complex vector of length np describing the wavefunction """
 
     # scaling factor
-#    a = math.sqrt(hart_to_cm / m / omega_0 / dalt_to_au)
-    a = 1.0
-    psi = [cmath.exp(-(xi - x0) * (xi - x0) / 2.0 / a / a + 1j * p0 * xi) / pow(math.pi, 0.25) / math.sqrt(a) for xi in x]
+    a = math.sqrt(m * omega_0 * omega_0 * dalt_to_au / 2.0 / De / hart_to_cm)
+
+    # anharmonicity factor
+    xe = omega_0 / 4.0 / De
+    y = [math.exp(-a * xi) / xe for xi in x]
+    arg = 1.0 / xe - 1.0
+    psi = [math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, float(arg / 2.0)) for yi in y]
     return psi
