@@ -9,32 +9,37 @@ Options:
         print this usage info and exit
     -m, --mass
         reduced mass value of the considered system
-        by default, is equal to 0.5 Dalton
-    --dx
-        coordinate grid step value in a_0
-        by default, is equal to 2.43 a_0 for a single harmonic potential
-                    is equal to 2.89 a_0 for a single Morse potential
-                    is equal to 0.2 a_0 for a model harmonic potential with a = 1.0
+        by default, is equal to 0.5 Dalton for dimensional problem
+                    is equal to 1.0 for dimensionless problem
+    -L
+        spatial range of the problem (in a_0 if applicable)
+        by default, is equal to 0.2 a_0 for dimensional problem
+                    is equal to 15 for dimensionless problem
     --np
         number of collocation points; must be a power of 2
         by default, is equal to 128
     --nch
         number of Chebyshev interpolation points; must be a power of 2
         by default, is equal to 64
-    --dt
-        time step in pi (half periods) units
-        by default, is equal to 0.1
+    --T
+        time range of the problem in femtosec or in pi (half periods) units
+        by default, is equal to 10.0 fs for dimensional problem
+                    is equal to 0.1 for dimensionless problem
     --nt
         number of time grid points
         by default, is equal to 10
     --x0
-        coordinate initial conditions in a_0
+        coordinate initial conditions for dimensionless problem
         by default, is equal to 0
     --p0
-        momentum initial conditions in 1 / a_0
-    --omega_0
-        value of the harmonic frequency of the considered system
-        by default, is equal to 1.0 1 / cm
+        momentum initial conditions for dimensionless problem
+        by default, is equal to 0
+    -a
+        scaling coefficient for dimensional problem
+        by default, is equal to 1.0 1 / a_0
+    --De
+        dissociation energy value for dimensional problem
+        by default, is equal to 20000.0 1 / cm
     --lmin
         number of a time step, from which the result should be written to a file.
         A negative value will be considered as 0
@@ -50,8 +55,8 @@ Options:
         by default, is equal to "fort.23"
 
 Examples:
-    python newcheb.py  --file_abs "res_abs" --dx 0.12
-            perform a propagation task using coordinate grid step equal to 0.12 a_0,
+    python newcheb.py  --file_abs "res_abs" -L 30
+            perform a propagation task using spatial range of the dimensionless problem equal to 30,
             the name "res_abs" for the absolute wavefunctions values output file, and
             default values for other parameters
 """
@@ -59,12 +64,13 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
-from harmonic import pot
+#from harmonic import pot
 from harmonic import psi_init
-#from single_morse import pot
+from single_morse import pot
 #from single_morse import psi_init
 from math_base import coord_grid, cprod, cprod2, initak
 from phys_base import diff, hamil, prop
+from phys_base import hart_to_cm, dalt_to_au, Red_Planck_h, cm_to_erg
 
 OUT_PATH="output"
 
@@ -84,36 +90,37 @@ def usage():
 def plot(psi, t, x, np, file_abs, file_real):
     """ Plots absolute and real values of the current wavefunction """
     for i in range(np):
-        file_abs.write("{:.6f} {:.6f} {:.6e}\n".format(t, x[i], abs(psi[i])))
-        file_real.write("{:.6f} {:.6f} {:.6e}\n".format(t, x[i], psi[i].real))
+        file_abs.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], abs(psi[i])))
+        file_real.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], psi[i].real))
 
 
 def plot_mom(t, momx, momx2, momp, momp2, file_mom):
     """ Plots expectation values of the current x, x*x, p and p*p """
-    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t, momx.real, momx2.real, momp.real, momp2.real))
+    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real))
 
 
 def main(argv):
     """ The main() function """
     # analyze cmdline:
     try:
-        options, arguments = getopt.getopt(argv, 'hm:', ['help', 'mass=', 'dx=', 'np=', 'nch=', 'dt=', 'nt=', 'x0=', 'p0=', \
-                                          'omega_0=', 'lmin=', 'file_abs=', 'file_real=', 'file_mom='])
+        options, arguments = getopt.getopt(argv, 'hm:L:a:T:', ['help', 'mass=', '', '', '', 'np=', 'nch=', 'nt=', 'x0=', 'p0=', \
+                                          'De=', 'lmin=', 'file_abs=', 'file_real=', 'file_mom='])
     except getopt.GetoptError:
         print >> sys.stderr, "\tThere are unrecognized options!"
         print >> sys.stderr, "\tRun this script with '-h' option to see the usage info and available options."
         sys.exit(2)
 
     # default values
-    m = 1.0
-    dx = 0.2 # 0.2 -- for a model harmonic oscillator with a = 1.0 # 2.89 -- for single morse oscillator # 2.43 -- for harmonic oscillator
-    np = 128
+    m = 0.5
+    L = 4.0 # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for single morse oscillator
+    np = 512 #8192
     nch = 64
-    dt = 0.1
-    nt = 10
+    T = 60e-15 # s -- for single morse oscillator
+    nt = 120000
     x0 = 0
     p0 = 0
-    omega_0 = 1.0
+    a = 1.0
+    De = 20000.0
     lmin = 0
     file_abs = "fort.21"
     file_real = "fort.22"
@@ -126,22 +133,24 @@ def main(argv):
             sys.exit()
         elif opt in ("-m", "--mass"):
             m = float(val)
-        elif opt == "dx":
-            dx = float(val)
+        elif opt == "L":
+            L = float(val)
         elif opt == "np":
             np = int(val)
         elif opt == "nch":
             nch = int(val)
-        elif opt == "dt":
-            dt = float(val)
-        elif opt == "omega_0":
-            omega_0 = float(val)
+        elif opt == "T":
+            T = float(val)
+        elif opt == "a":
+            a = float(val)
         elif opt == "nt":
             nt = int(val)
         elif opt == "x0":
             x0 = float(val)
         elif opt == "p0":
             p0 = float(val)
+        elif opt == "De":
+            De = float(val)
         elif opt == "lmin":
             lmin = int(val)
         elif opt == "file_abs":
@@ -152,7 +161,7 @@ def main(argv):
             file_mom = val
 
     # analyze provided arguments
-    if (not math.log2(np).is_integer() or not math.log2(nch).is_integer()):
+    if not math.log2(np).is_integer() or not math.log2(nch).is_integer():
         print("The number of collocation points 'np' and of Chebyshev \
 interpolation points 'nch' must be positive integers and powers of 2. Exiting", sys.stderr)
         sys.exit(1)
@@ -162,31 +171,34 @@ interpolation points 'nch' must be positive integers and powers of 2. Exiting", 
 should be written to a file, is negative and will be changed to zero", sys.stderr)
         lmin = 0
 
-    if (not dx > 0.0 or not dt > 0.0):
-        print("The value of coordinate step 'dx' and of time step 'dt' \
+    if not L > 0.0 or not T > 0.0:
+        print("The value of spatial range 'L' and of time range 'T' of the problem \
 must be positive. Exiting", sys.stderr)
         sys.exit(1)
 
-    if (not m > 0.0 or not omega_0 > 0.0):
-        print("The value of a reduced mass 'm/mass' and of a harmonic frequency 'omega_0' \
-    must be positive. Exiting", sys.stderr)
+    if not m > 0.0 or not a > 0.0 or not De > 0.0:
+        print("The value of a reduced mass 'm/mass', of a scaling factor 'a' \
+and of a dissociation energy 'De' must be positive. Exiting", sys.stderr)
         sys.exit(1)
 
     # creating a directory for output files
     os.makedirs(OUT_PATH, exist_ok=True)
+
+    # calculating coordinate step of the problem
+    dx = L / (np - 1)
 
     # setting the coordinate grid
     x = coord_grid(dx, np)
 #    print(x)
 
     # evaluating of potential(s)
-    v = pot(x, m, omega_0)
+    v = pot(x, m, De, a)
 #    print(v)
 
     # evaluating of initial wavefunction
-    psi0 = psi_init(x, x0, p0, m, omega_0)
-#   abs_psi0 = [abs(i) for i in psi0]
-#   print(abs_psi0)
+    psi0 = psi_init(x, x0, p0, m, De, a)
+#    abs_psi0 = [abs(i) for i in psi0]
+#    print(abs_psi0)
 
     # initial normalization check
     cnorm0 = cprod(psi0, psi0, dx, np)
@@ -203,7 +215,7 @@ must be positive. Exiting", sys.stderr)
 #    print(akx2)
 
     # evaluating of kinetic energy
-    coef_kin = -1.0 / (2.0 * m)
+    coef_kin = -hart_to_cm / (2.0 * m * dalt_to_au)
     akx2 = [ak * coef_kin for ak in akx2]
  #   print(akx2)
 
@@ -215,12 +227,21 @@ must be positive. Exiting", sys.stderr)
     cener0 = cprod(phi0, psi0, dx, np)
     print("Initial energy: ", abs(cener0))
 
-#    jj = reorder(nch)
-#    for i in range(nch):
-#        print(i, jj[i])
+    # check if input data are correct in terms of the given problem
+    # calculating the initial energy range of the Hamiltonian operator H
+    emax0 = v[0] + abs(akx2[int(np / 2 - 1)]) + 2.0
+    print("Initial emax = ", emax0)
+
+    # calculating the initial minimum number of collocation points that is needed for convergence
+    np_min0 = int(math.ceil(L * math.sqrt(2 * m * emax0 * dalt_to_au / hart_to_cm) / math.pi))
+
+    if np < np_min0:
+        print("The number of collocation points np = {} should be more than an estimated initial value {}. \
+You've got a divergence!".format(np, np_min0))
+    print(np_min0)
 
     # time propagation
-    dt *= math.pi
+    dt = T / (nt - 1)
     psi = []
     psi[:] = psi0[:]
 
@@ -230,15 +251,36 @@ must be positive. Exiting", sys.stderr)
          open(os.path.join(OUT_PATH, file_mom), 'w') as f_mom:
 
         for l in range(1, nt + 1):
-            psi = prop(psi, dt, nch, np, v, akx2)
+            # calculating the energy range of the Hamiltonian operator H
+            emax = v[0] + abs(akx2[int(np / 2 - 1)]) + 2.0
+            t_sc = dt * emax * cm_to_erg / 4.0 / Red_Planck_h
+
+            if l % 10 == 0:
+                print("emax = ", emax)
+                print("Normalized scaled time interval = ", t_sc)
+
+            # calculating the minimum number of collocation points and time steps that are needed for convergence
+            nt_min = int(math.ceil(emax * T * cm_to_erg / 2.0 / Red_Planck_h))
+            np_min = int(math.ceil(L * math.sqrt(2 * m * emax * dalt_to_au / hart_to_cm) / math.pi))
+
+            if np < np_min and l % 10 == 0:
+                print("The number of collocation points np = {} should be more than an estimated value {}. \
+You've got a divergence!".format(np, np_min))
+            if nt < nt_min and l % 10 == 0:
+                print("The number of time steps nt = {} should be more than an estimated value {}. \
+            You've got a divergence!".format(nt, nt_min))
+
+            psi = prop(psi, t_sc, nch, np, v, akx2, emax)
 
             cnorm = cprod(psi, psi, dx, np)
             overlp = cprod(psi0, psi, dx, np)
 
             t = dt * l
-            print("t = ", t)
-            print("normalization = ", cnorm)
-            print("overlap = ", overlp)
+            if l % 10 == 0:
+                print("l = ", l)
+                print("t = ", t * 1e15, "fs")
+                print("normalization = ", cnorm)
+                print("overlap = ", overlp)
 
             # renormalization
             psi = [el / math.sqrt(abs(cnorm)) for el in psi]
@@ -246,7 +288,8 @@ must be positive. Exiting", sys.stderr)
             # calculating of a current energy
             phi = hamil(psi, v, akx2, np)
             cener = cprod(psi, phi, dx, np)
-            print("energy = ", cener.real)
+            if l % 10 == 0:
+                print("energy = ", cener.real)
 
             # calculating of expectation values
             # for x

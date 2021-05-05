@@ -4,7 +4,9 @@ import numpy
 from math_base import points
 
 hart_to_cm = 219474.6313708 # 1 / cm / hartree
+cm_to_erg = 1.98644568e-16 # erg * cm
 dalt_to_au = 1822.888486 # a.u. / D
+Red_Planck_h = 1.054572e-27 # erg * s
 
 
 def diff(psi, akx2, np):
@@ -76,7 +78,7 @@ def func(z, t):
     """ The function to be interpolated
         INPUT
         z     real coordinate parameter
-        t     real time parameter
+        t     real time parameter (dimensionless)
         OUTPUT
         func  value of the function (complex)
         func = f (z, t) """
@@ -84,13 +86,13 @@ def func(z, t):
     return cmath.exp(-1j * z * t)
 
 
-def prop(psi, t, nch, np, v, akx2):
+def prop(psi, t_sc, nch, np, v, akx2, emax):
     """ Propagation subroutine using Newton interpolation
         P(O) psi = dv(1) psi + dv2 (O - x1 I) psi + dv3 (O - x2)(O - x1 I) psi + ...
         INPUT
         psi  complex vector of length np describing wavefunction
              at the beginning of interval
-        t    time interval
+        t_sc time interval (normalized by the reduced Planck constant)
         nch  order of interpolation polynomial (must be a power of 2 if
              reorder is necessary)
         np   number of grid points (must be a power of 2)
@@ -101,14 +103,9 @@ def prop(psi, t, nch, np, v, akx2):
              describing the propagated wavefunction
              phi(t) = exp(-iHt) psi(0) """
 
-    # calculating the energy range of the Hamiltonian operator H
-    emax = v[0] + abs(akx2[int(np / 2 - 1)]) + 2.0
-
-    t_sc = t * emax / 4.0
-    print("emax = ", emax, "\nscaled time interval = ", t_sc)
-
     # interpolation points and divided difference coefficients
     xp, dv = points(nch, t_sc, func)
+    dvr = [abs(el) for el in dv]
     # auxiliary vector used for recurrence
     phi = []
     phi[:] = psi[:]
