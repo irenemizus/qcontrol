@@ -67,7 +67,7 @@ def initak(n, dx, iorder):
 
     ak = []
     for j in range(n):
-        ak.append(0.0)
+        ak.append(0.0 + 0j)
 
     for i in range(int(n / 2)):
         ak[i + 1] = pow(1j * dk * float(i + 1), iorder)

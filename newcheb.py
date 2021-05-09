@@ -64,9 +64,9 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
-#from harmonic import pot
+from harmonic import pot
 from harmonic import psi_init
-from single_morse import pot
+#from single_morse import pot
 #from single_morse import psi_init
 from math_base import coord_grid, cprod, cprod2, initak
 from phys_base import diff, hamil, prop
@@ -94,9 +94,9 @@ def plot(psi, t, x, np, file_abs, file_real):
         file_real.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], psi[i].real))
 
 
-def plot_mom(t, momx, momx2, momp, momp2, file_mom):
+def plot_mom(t, momx, momx2, momp, momp2, ener, file_mom):
     """ Plots expectation values of the current x, x*x, p and p*p """
-    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real))
+    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f}  {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener))
 
 
 def main(argv):
@@ -112,12 +112,12 @@ def main(argv):
 
     # default values
     m = 0.5
-    L = 4.0 # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for single morse oscillator
+    L = 6.0 # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for single morse oscillator
     np = 512 #8192
     nch = 64
-    T = 60e-15 # s -- for single morse oscillator
-    nt = 120000
-    x0 = 0
+    T = 400e-15 # s -- for single morse oscillator
+    nt = 40000
+    x0 = 1
     p0 = 0
     a = 1.0
     De = 20000.0
@@ -224,6 +224,7 @@ and of a dissociation energy 'De' must be positive. Exiting", sys.stderr)
 
     # calculating of initial energy
     phi0 = hamil(psi0, v, akx2, np)
+
     cener0 = cprod(phi0, psi0, dx, np)
     print("Initial energy: ", abs(cener0))
 
@@ -238,7 +239,6 @@ and of a dissociation energy 'De' must be positive. Exiting", sys.stderr)
     if np < np_min0:
         print("The number of collocation points np = {} should be more than an estimated initial value {}. \
 You've got a divergence!".format(np, np_min0))
-    print(np_min0)
 
     # time propagation
     dt = T / (nt - 1)
@@ -268,7 +268,7 @@ You've got a divergence!".format(np, np_min0))
 You've got a divergence!".format(np, np_min))
             if nt < nt_min and l % 10 == 0:
                 print("The number of time steps nt = {} should be more than an estimated value {}. \
-            You've got a divergence!".format(nt, nt_min))
+You've got a divergence!".format(nt, nt_min))
 
             psi = prop(psi, t_sc, nch, np, v, akx2, emax)
 
@@ -299,11 +299,12 @@ You've got a divergence!".format(np, np_min))
             momx2 = cprod2(psi, x2, dx, np)
             # for p^2
             phi_kin = diff(psi, akx2, np)
-            phi_p2 = [el / (-coef_kin) for el in phi_kin]
+#            phi_p2 = [el / (-coef_kin) for el in phi_kin]
+            phi_p2 = [el * 2.0 * m for el in phi_kin]
             momp2 = cprod(psi, phi_p2, dx, np)
             # for p
             akx = initak(np, dx, 1)
-            akx = [el / (-1j) for el in akx]
+            akx = [el * hart_to_cm / (-1j) / dalt_to_au for el in akx]
             phip = diff(psi, akx, np)
             momp = cprod(psi, phip, dx, np)
 
@@ -311,7 +312,7 @@ You've got a divergence!".format(np, np_min))
             if (l >= lmin):
                 plot(psi, t, x, np, f_abs, f_real)
             if (l >= lmin):
-                plot_mom(t, momx, momx2, momp, momp2, f_mom)
+                plot_mom(t, momx, momx2, momp, momp2, cener.real, f_mom)
 
 
 if __name__ == "__main__":

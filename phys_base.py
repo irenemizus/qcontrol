@@ -8,6 +8,17 @@ cm_to_erg = 1.98644568e-16 # erg * cm
 dalt_to_au = 1822.888486 # a.u. / D
 Red_Planck_h = 1.054572e-27 # erg * s
 
+def test_fft():
+    test = []
+    for i in range(128):
+        test.append(i / 128 + 0j)
+
+    spectr = numpy.fft.fft(numpy.array(test))
+    test2 = numpy.fft.ifft(spectr)
+    pass
+
+test_fft()
+
 
 def diff(psi, akx2, np):
     """ Calculates kinetic energy mapping carried out in momentum space
@@ -42,6 +53,9 @@ def hamil(psi, v, akx2, np):
 
     # kinetic energy mapping
     phi = diff(psi, akx2, np)
+
+#    for i in range(np):
+#        print(i, v[i] * psi[i].real)
 
     # potential energy mapping and accumulation phi = H psi
     for i in range(np):
