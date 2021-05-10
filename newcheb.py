@@ -64,9 +64,9 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
-from harmonic import pot
+#from harmonic import pot
 from harmonic import psi_init
-#from single_morse import pot
+from single_morse import pot
 #from single_morse import psi_init
 from math_base import coord_grid, cprod, cprod2, initak
 from phys_base import diff, hamil, prop
@@ -112,13 +112,13 @@ def main(argv):
 
     # default values
     m = 0.5
-    L = 6.0 # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for single morse oscillator
-    np = 512 #8192
+    L = 6.0 # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for single morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
+    np = 2048 #8192
     nch = 64
-    T = 400e-15 # s -- for single morse oscillator
-    nt = 40000
-    x0 = 1
-    p0 = 0
+    T = 40e-15 # s -- for single morse oscillator
+    nt = 130000
+    x0 = 0 # TODO: to fix x0 != 0
+    p0 = 0 # TODO: to fix p0 != 0
     a = 1.0
     De = 20000.0
     lmin = 0

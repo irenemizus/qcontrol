@@ -20,7 +20,6 @@ def pot(x, m, De, a):
 #    k_s = 1.0
 
     # harmonic frequency  for dimensional case
-    # omega_0 = hart_to_cm / dalt_to_au / m / a / a
     omega_0 = k_s * a * a
     # theoretical ground energy value
     e_0 = omega_0 / 2.0
