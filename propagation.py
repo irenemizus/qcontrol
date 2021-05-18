@@ -8,7 +8,11 @@ import phys_base
 class PropagationSolver:
     def _warning_collocation_points(self, np_min):
         print("WARNING: The number of collocation points np = {} should be more than an estimated initial value {}. "
-              "You've got a divergence!".format(self.np, np_min), sys.stderr)
+              "You've got a divergence!".format(self.np, np_min), file=sys.stderr)
+
+    def _warning_time_steps(self, nt_min):
+        print("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
+              "You've got a divergence!".format(self.nt, nt_min), file=sys.stderr)
 
     def __init__(
             self,
@@ -17,8 +21,8 @@ class PropagationSolver:
             plot,
             plot_mom,
             m=0.5,
-            L=6.0,    # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for single morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
-            np=512,  # 8192
+            L=4.0,    # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for single morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
+            np=2048,  # 8192
             nch=64,
             T=40e-15,  # s -- for single morse oscillator
             nt=130000,
@@ -67,7 +71,6 @@ class PropagationSolver:
 
         # setting the coordinate grid
         self.x = math_base.coord_grid(self.dx, self.np)
-        #    print(x)
 
         # evaluating of potential(s)
         self.v = pot(self.x, self.m, self.De, self.a)
@@ -110,11 +113,12 @@ class PropagationSolver:
         # calculating the initial energy range of the Hamiltonian operator H
         self.emax0 = self.v[0] + abs(self.akx2[int(self.np / 2 - 1)]) + 2.0
         print("Initial emax = ", self.emax0)
+        self.emin0 = 0.0
 
         # calculating the initial minimum number of collocation points that is needed for convergence
         self.np_min0 = int(
             math.ceil(self.L *
-                      math.sqrt(2 * self.m * self.emax0 * phys_base.dalt_to_au / phys_base.hart_to_cm) /
+                      math.sqrt(2.0 * self.m * (self.emax0 - self.emin0) * phys_base.dalt_to_au / phys_base.hart_to_cm) /
                       math.pi
             )
         )
@@ -129,30 +133,26 @@ class PropagationSolver:
         psi[:] = self.psi0[:]
 
         # main propagation loop
-        #with open(os.path.join(OUT_PATH, file_abs), 'w') as f_abs, \
-        #        open(os.path.join(OUT_PATH, file_real), 'w') as f_real, \
-        #        open(os.path.join(OUT_PATH, file_mom), 'w') as f_mom:
-
         for l in range(1, self.nt + 1):
             # calculating the energy range of the Hamiltonian operator H
             emax = self.v[0] + abs(self.akx2[int(self.np / 2 - 1)]) + 2.0
-            t_sc = dt * emax * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
+            emin = 0.0
+            t_sc = dt * (emax - emin) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
 
             if l % 10 == 0:
                 print("emax = ", emax)
                 print("Normalized scaled time interval = ", t_sc)
 
             # calculating the minimum number of collocation points and time steps that are needed for convergence
-            nt_min = int(math.ceil(emax * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
-            np_min = int(math.ceil(self.L * math.sqrt(2 * self.m * emax * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
+            nt_min = int(math.ceil((emax - emin) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
+            np_min = int(math.ceil(self.L * math.sqrt(2.0 * self.m * (emax - emin) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
 
             if self.np < np_min and l % 10 == 0:
                 self._warning_collocation_points(np_min)
             if self.nt < nt_min and l % 10 == 0:
-                print("The number of time steps nt = {} should be more than an estimated value {}. \
-    You've got a divergence!".format(self.nt, nt_min))  # TODO make _warning_time_steps
+                self._warning_time_steps(nt_min)
 
-            psi = phys_base.prop(psi, t_sc, self.nch, self.np, self.v, self.akx2, emax)     # TODO move prop into this class
+            psi = phys_base.prop(psi, t_sc, self.nch, self.np, self.v, self.akx2, emax, emin)     # TODO move prop into this class
 
             cnorm = math_base.cprod(psi, psi, self.dx, self.np)
             overlp = math_base.cprod(self.psi0, psi, self.dx, self.np)
@@ -181,7 +181,6 @@ class PropagationSolver:
             momx2 = math_base.cprod2(psi, x2, self.dx, self.np)
             # for p^2
             phi_kin = phys_base.diff(psi, self.akx2, self.np)
-            #            phi_p2 = [el / (-coef_kin) for el in phi_kin]
             phi_p2 = [el * 2.0 * self.m for el in phi_kin]
             momp2 = math_base.cprod(psi, phi_p2, self.dx, self.np)
             # for p
@@ -192,6 +191,6 @@ class PropagationSolver:
 
             # plotting the result
             if l >= self.lmin:
-                self.plot(psi, t, self.x, self.np)  #, f_abs, f_real)
+                self.plot(psi, t, self.x, self.np)
             if l >= self.lmin:
-                self.plot_mom(t, momx, momx2, momp, momp2, cener.real) #, f_mom)
+                self.plot_mom(t, momx, momx2, momp, momp2, cener.real)

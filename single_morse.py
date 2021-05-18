@@ -1,4 +1,3 @@
-import cmath
 import math
 
 from phys_base import hart_to_cm, dalt_to_au
@@ -37,7 +36,7 @@ def psi_init(x, x0, p0, m, De, a):
     """ Initial wave function generator
         INPUT
         x       vector of length np defining positions of grid points
-        x0      initial coordinate (dummy variable)
+        x0      initial coordinate
         p0      initial momentum (dummy variable)
         m       reduced mass of the system
         a       scaling factor
@@ -57,7 +56,7 @@ def psi_init(x, x0, p0, m, De, a):
     e_0 = omega_0 / 2.0 * (1 - xe / 2.0)
     print("Theoretical ground energy = ", e_0)
 
-    y = [math.exp(-a * xi) / xe for xi in x]
+    y = [math.exp(-a * (xi - x0)) / xe for xi in x]
     arg = 1.0 / xe - 1.0
     psi = [math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, float(arg / 2.0)) for yi in y]
     return psi

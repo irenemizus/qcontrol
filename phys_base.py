@@ -8,17 +8,6 @@ cm_to_erg = 1.98644568e-16 # erg * cm
 dalt_to_au = 1822.888486 # a.u. / D
 Red_Planck_h = 1.054572e-27 # erg * s
 
-def test_fft():
-    test = []
-    for i in range(128):
-        test.append(i / 128 + 0j)
-
-    spectr = numpy.fft.fft(numpy.array(test))
-    test2 = numpy.fft.ifft(spectr)
-    pass
-
-test_fft()
-
 
 def diff(psi, akx2, np):
     """ Calculates kinetic energy mapping carried out in momentum space
@@ -64,25 +53,26 @@ def hamil(psi, v, akx2, np):
     return phi
 
 
-def residum(psi, v, akx2, xp, np, emax):
+def residum(psi, v, akx2, xp, np, emax, emin):
     """ Scaled and normalized mapping phi = ( O - xp I ) phi
         INPUT
         psi  complex vector of length np
         v    potential energy of length np
         xp   sampling interpolation point
         np   number of grid points (must be a power of 2)
-        emax range of energy spectrum
+        emax upper limit of energy spectrum
+        emin lower limit of energy spectrum
         OUTPUT
         phi  complex vector of length np
              the operator is normalized from -2 to 2 resulting in:
-             phi = (4.O / emax - 2I) phi - xp I phi	(emin = 0) """
+             phi = 4.O / (emax - emin) * H phi - 2.0 (emax + emin) / (emax - emin) * I phi - xp I phi """
 
     hpsi = hamil(psi, v, akx2, np)
 
     # changing the range from -2 to 2
     phi = []
     for i in range(np):
-        hpsi[i] = 2.0 * (2.0 * hpsi[i] / emax - psi[i])
+        hpsi[i] = 2.0 * (2.0 * hpsi[i] / (emax - emin) - (emax + emin) * psi[i] / (emax - emin))
         phi.append(hpsi[i] - xp * psi[i])
 
     return phi
@@ -100,7 +90,7 @@ def func(z, t):
     return cmath.exp(-1j * z * t)
 
 
-def prop(psi, t_sc, nch, np, v, akx2, emax):
+def prop(psi, t_sc, nch, np, v, akx2, emax, emin):
     """ Propagation subroutine using Newton interpolation
         P(O) psi = dv(1) psi + dv2 (O - x1 I) psi + dv3 (O - x2)(O - x1 I) psi + ...
         INPUT
@@ -112,6 +102,9 @@ def prop(psi, t_sc, nch, np, v, akx2, emax):
         np   number of grid points (must be a power of 2)
         v    potential energy vector of length np
         akx2 kinetic energy vector of length np
+        emax upper limit of energy spectrum
+        emin lower limit of energy spectrum
+
         OUTPUT
         psi  complex vector of length np
              describing the propagated wavefunction
@@ -119,7 +112,6 @@ def prop(psi, t_sc, nch, np, v, akx2, emax):
 
     # interpolation points and divided difference coefficients
     xp, dv = points(nch, t_sc, func)
-    dvr = [abs(el) for el in dv]
     # auxiliary vector used for recurrence
     phi = []
     phi[:] = psi[:]
@@ -130,12 +122,12 @@ def prop(psi, t_sc, nch, np, v, akx2, emax):
     # recurrence loop
     for j in range(nch - 1):
         # mapping by scaled operator of phi
-        phi = residum(phi, v, akx2, xp[j], np, emax)
+        phi = residum(phi, v, akx2, xp[j], np, emax, emin)
 
         # accumulation of Newtonian's interpolation
         for i in range(np):
             psi[i] += dv[j + 1] * phi[i]
 
-    psi = [el * cmath.exp(-1j * 2.0 * t_sc) for el in psi]
+    psi = [el * cmath.exp(-1j * 2.0 * t_sc * (emax + emin) / (emax - emin)) for el in psi]
 
     return psi

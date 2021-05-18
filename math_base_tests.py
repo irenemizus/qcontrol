@@ -59,5 +59,17 @@ class points_Tests(unittest.TestCase):
                                                     complex(-2.1243197887715325e-17, 0.135982856037932)])))
 
 
+class points_Tests(unittest.TestCase):
+    def test_fft(self):
+        test = []
+        for i in range(128):
+            test.append(i / 128 + 0j)
+
+        spectr = numpy.fft.fft(numpy.array(test))
+        test2 = numpy.fft.ifft(spectr)
+
+        self.assertTrue(numpy.allclose(test, test2))
+
+
 if __name__ == '__main__':
     unittest.main()

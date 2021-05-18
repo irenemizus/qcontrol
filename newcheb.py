@@ -64,15 +64,10 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
-#from harmonic import psi_init
-#from single_morse import psi_init
 
 import harmonic
 import single_morse
-
-from math_base import coord_grid, cprod, cprod2, initak
-from phys_base import diff, hamil, prop
-from phys_base import hart_to_cm, dalt_to_au, Red_Planck_h, cm_to_erg
+import double_morse
 
 OUT_PATH="output"
 
@@ -80,8 +75,8 @@ import os
 import os.path
 import sys
 import getopt
-import math
 import propagation
+
 
 def usage():
     """ Print usage information """
@@ -108,10 +103,11 @@ def main(argv):
         options, arguments = getopt.getopt(argv, 'hm:L:a:T:', ['help', 'mass=', '', '', '', 'np=', 'nch=', 'nt=', 'x0=', 'p0=', \
                                           'De=', 'lmin=', 'file_abs=', 'file_real=', 'file_mom='])
     except getopt.GetoptError:
-        print >> sys.stderr, "\tThere are unrecognized options!"
-        print >> sys.stderr, "\tRun this script with '-h' option to see the usage info and available options."
+        print("\tThere are unrecognized options!", sys.stderr)
+        print("\tRun this script with '-h' option to see the usage info and available options.", sys.stderr)
         sys.exit(2)
 
+    # default filenames
     file_abs = "fort.21"
     file_real = "fort.22"
     file_mom = "fort.23"
@@ -150,8 +146,8 @@ def main(argv):
         elif opt == "file_mom":
             file_mom = val
 
-    psi_init = harmonic.psi_init
-    pot = harmonic.pot
+    psi_init = single_morse.psi_init
+    pot = single_morse.pot
 
     # main propagation loop
     with open(os.path.join(OUT_PATH, file_abs), 'w') as f_abs, \
@@ -164,12 +160,7 @@ def main(argv):
         def plot_mom(t, momx, momx2, momp, momp2, ener):
             plot_mom_file(t, momx, momx2, momp, momp2, ener, f_mom)
 
-        solver = propagation.PropagationSolver(
-            psi_init,
-            pot,
-            plot,
-            plot_mom)
-
+        solver = propagation.PropagationSolver(psi_init, pot, plot, plot_mom)
         solver.time_propagation()
 
 
