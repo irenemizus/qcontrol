@@ -3,10 +3,11 @@ import math
 from phys_base import hart_to_cm, dalt_to_au
 
 
-def pot(x, m, De, a):
+def pot(x, np, m, De, a):
     """ Potential energy vectors
         INPUT
         x       vector of length np defining positions of grid points
+        np      number of grid points
         a       scaling factor
         De      dissociation energy
         m       reduced mass of the system
@@ -25,10 +26,11 @@ def pot(x, m, De, a):
     return v
 
 
-def psi_init(x, x0, p0, m, De, a):
+def psi_init(x, np, x0, p0, m, De, a):
     """ Initial wave function generator
         INPUT
         x       vector of length np defining positions of grid points
+        np      number of grid points
         x0      initial coordinate
         p0      initial momentum (dummy variable)
         m       reduced mass of the system
@@ -39,7 +41,6 @@ def psi_init(x, x0, p0, m, De, a):
         psi     a list of complex vectors of length np describing the wavefunctions psi_u(X) and psi_l(X) """
 
     psi = []
-    np = len(x)
     # harmonic frequency of the system on the lower PEC
     omega_0 = a * math.sqrt(2.0 * De / hart_to_cm / m / dalt_to_au) * hart_to_cm
 

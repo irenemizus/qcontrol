@@ -146,8 +146,8 @@ def main(argv):
         elif opt == "file_mom":
             file_mom = val
 
-    psi_init = single_morse.psi_init
-    pot = single_morse.pot
+    psi_init = harmonic.psi_init
+    pot = harmonic.pot
 
     # main propagation loop
     with open(os.path.join(OUT_PATH, file_abs), 'w') as f_abs, \
