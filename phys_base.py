@@ -1,4 +1,6 @@
 import cmath
+import math
+
 import numpy
 import copy
 
@@ -8,6 +10,22 @@ hart_to_cm = 219474.6313708 # 1 / cm / hartree
 cm_to_erg = 1.98644568e-16 # erg * cm
 dalt_to_au = 1822.888486 # a.u. / D
 Red_Planck_h = 1.054572e-27 # erg * s
+
+
+def laser_field(E0, t, t0, sigma, nu_L):
+    """ Calculates energy of external laser field impulse
+        INPUT
+        E0      amplitude value of the laser field energy envelope
+        t0      initial time, when the laser field is switched on
+        sigma   scaling parameter of the laser field envelope
+        nu_L basic frequency of the laser field
+        t       current time value
+        OUTPUT
+        E       complex value of current external laser field  """
+
+    E = E0 * math.exp(-(t - t0) * (t - t0) / 2.0 / sigma / sigma) * cmath.exp(1j * 2.0 * math.pi * nu_L * t)
+
+    return E
 
 
 def diff(psi, akx2, np):

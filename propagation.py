@@ -21,16 +21,20 @@ class PropagationSolver:
             pot,
             plot,
             plot_mom,
-            m=0.5,
-            L=6.0,    # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
-            np=512,  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
+            m=0.5,    # Dalton
+            L=5.0,    # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
+            np=1024,  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
             nch=64,
-            T=40e-15,  # s -- for morse oscillator
-            nt=13000,
+            T=30e-15,  # s -- for morse oscillator
+            nt=100000,
             x0=0,  # TODO: to fix x0 != 0
             p0=0,  # TODO: to fix p0 != 0
-            a=1.0,
-            De=20000.0,
+            a=1.0, # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
+            De=20000.0, # 1/cm
+            E0=1.0/120.0, # 1/cm
+            t0=25e-15,  # s
+            sigma=10e-15, # s
+            nu_L=0.6e15, # Hz
             lmin=0):
 
         self.pot = pot
@@ -48,6 +52,10 @@ class PropagationSolver:
         self.p0 = p0
         self.a = a
         self.De = De
+        self.E0 = E0
+        self.t0 = t0
+        self.sigma = sigma
+        self.nu_L = nu_L
         self.lmin = lmin
 
         # analyze provided arguments
@@ -66,6 +74,11 @@ class PropagationSolver:
         if not m > 0.0 or not a > 0.0 or not De > 0.0:
             raise ValueError("The value of a reduced mass 'm/mass', of a scaling factor 'a'"
                              "and of a dissociation energy 'De' must be positive")
+
+        if not E0 > 0.0 or not sigma > 0.0 or not nu_L > 0.0:
+            raise ValueError("The value of an amplitude value of the laser field energy envelope 'E0',"
+                             "of a scaling parameter of the laser field envelope 'sigma'"
+                             "and of a basic frequency of the laser field 'nu_L' must be positive")
 
         # calculating coordinate step of the problem
         self.dx = self.L / (self.np - 1)
@@ -104,10 +117,10 @@ class PropagationSolver:
         #    phi0_kin = diff(psi0, akx2, np)
         #    print(phi0_kin)
 
-        E = 0.0
+        self.E = phys_base.laser_field(0.0, 0.0, self.t0, self.sigma, self.nu_L)
 
         # calculating of initial energy
-        self.phi0 = phys_base.hamil(self.psi0, self.v, self.akx2, self.np, E)
+        self.phi0 = phys_base.hamil(self.psi0, self.v, self.akx2, self.np, self.E)
 
         self.cener0 = math_base.cprod(self.phi0[0], self.psi0[0], self.dx, self.np)
         print("Initial energy: ", abs(self.cener0))
@@ -132,7 +145,6 @@ class PropagationSolver:
     def time_propagation(self):
         # time propagation
         dt = self.T / (self.nt - 1)
-        psi = []
         psi = copy.deepcopy(self.psi0)
 
         # main propagation loop
@@ -168,14 +180,14 @@ class PropagationSolver:
             if self.nt < nt_min and l % 10 == 0:
                 self._warning_time_steps(nt_min)
 
-            E = 0.0
+            t = dt * l
+            E = phys_base.laser_field(self.E0, t, self.t0, self.sigma, self.nu_L)
             psi = phys_base.prop(psi, t_sc_l, t_sc_u, self.nch, self.np, self.v, self.akx2, edges, E)     # TODO move prop into this class
 
             # TODO: all the following - for the upper state
             cnorm = math_base.cprod(psi[0], psi[0], self.dx, self.np)
             overlp = math_base.cprod(self.psi0[0], psi[0], self.dx, self.np)
 
-            t = dt * l
             if l % 10 == 0:
                 print("l = ", l)
                 print("t = ", t * 1e15, "fs")
@@ -211,4 +223,4 @@ class PropagationSolver:
             if l >= self.lmin:
                 self.plot(psi[0], t, self.x, self.np)
             if l >= self.lmin:
-                self.plot_mom(t, momx, momx2, momp, momp2, cener.real)
+                self.plot_mom(t, momx, momx2, momp, momp2, cener.real, E.real)
