@@ -21,26 +21,28 @@ class PropagationSolver:
             pot,
             plot,
             plot_mom,
+            plot_test,
             m=0.5,    # Dalton
             L=5.0,    # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
             np=1024,  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
             nch=64,
-            T=30e-15,  # s -- for morse oscillator
+            T=60e-15,  # s -- for morse oscillator
             nt=100000,
             x0=0,  # TODO: to fix x0 != 0
             p0=0,  # TODO: to fix p0 != 0
             a=1.0, # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
             De=20000.0, # 1/cm
-            E0=1.0/120.0, # 1/cm
+            E0=71.68, # 1/cm
             t0=25e-15,  # s
             sigma=10e-15, # s
-            nu_L=0.6e15, # Hz
+            nu_L=0.599586e15, # Hz
             lmin=0):
 
         self.pot = pot
         self.psi_init = psi_init
         self.plot = plot
         self.plot_mom = plot_mom
+        self.plot_test = plot_test
 
         self.m = m
         self.L = L
@@ -75,7 +77,7 @@ class PropagationSolver:
             raise ValueError("The value of a reduced mass 'm/mass', of a scaling factor 'a'"
                              "and of a dissociation energy 'De' must be positive")
 
-        if not E0 > 0.0 or not sigma > 0.0 or not nu_L > 0.0:
+        if not E0 >= 0.0 or not sigma > 0.0 or not nu_L > 0.0:
             raise ValueError("The value of an amplitude value of the laser field energy envelope 'E0',"
                              "of a scaling parameter of the laser field envelope 'sigma'"
                              "and of a basic frequency of the laser field 'nu_L' must be positive")
@@ -182,7 +184,7 @@ class PropagationSolver:
 
             t = dt * l
             E = phys_base.laser_field(self.E0, t, self.t0, self.sigma, self.nu_L)
-            psi = phys_base.prop(psi, t_sc_l, t_sc_u, self.nch, self.np, self.v, self.akx2, edges, E)     # TODO move prop into this class
+            psi = phys_base.prop(psi, t_sc_l, t_sc_u, self.nch, self.np, self.v, self.akx2, edges, E) # TODO move prop into this class
 
             # TODO: all the following - for the upper state
             cnorm = math_base.cprod(psi[0], psi[0], self.dx, self.np)
@@ -199,6 +201,10 @@ class PropagationSolver:
 
             # calculating of a current energy
             phi = phys_base.hamil(psi, self.v, self.akx2, self.np, E)
+
+            if l % 100 == 0:
+                self.plot_test(l, phi[0])
+
             cener = math_base.cprod(psi[0], phi[0], self.dx, self.np)
             if l % 10 == 0:
                 print("energy = ", cener.real)

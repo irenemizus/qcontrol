@@ -108,6 +108,12 @@ def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, file_mom):
     file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E))
 
 
+def plot_test_file(l, phi, f):
+    f.write("{0}\n".format(l))
+    for i in range(len(phi)):
+        f.write("{0}\n".format(phi[i]))
+
+
 def main(argv):
     """ The main() function """
     # analyze cmdline:
@@ -172,7 +178,8 @@ def main(argv):
     # main propagation loop
     with open(os.path.join(OUT_PATH, file_abs), 'w') as f_abs, \
          open(os.path.join(OUT_PATH, file_real), 'w') as f_real, \
-         open(os.path.join(OUT_PATH, file_mom), 'w') as f_mom:
+         open(os.path.join(OUT_PATH, file_mom), 'w') as f_mom, \
+         open("test", 'w') as f:
 
         def plot(psi, t, x, np):
             plot_file(psi, t, x, np, f_abs, f_real)
@@ -180,7 +187,10 @@ def main(argv):
         def plot_mom(t, momx, momx2, momp, momp2, ener, E):
             plot_mom_file(t, momx, momx2, momp, momp2, ener, E, f_mom)
 
-        solver = propagation.PropagationSolver(psi_init, pot, plot, plot_mom)
+        def plot_test(l, phi):
+            plot_test_file(l, phi, f)
+
+        solver = propagation.PropagationSolver(psi_init, pot, plot, plot_mom, plot_test)
         solver.time_propagation()
 
 
