@@ -14,6 +14,17 @@ def pot(x, np, m, De, a):
         OUTPUT
         v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
 
+    # harmonic frequency of the system on the lower PEC
+    omega_0 = a * math.sqrt(2.0 * De / hart_to_cm / m / dalt_to_au) * hart_to_cm
+
+    # anharmonicity factor of the system on the lower PEC
+    xe = omega_0 / 4.0 / De
+    print("Theoretical anharmonicity factor of the system on the lower PEC = ", xe)
+
+    # theoretical ground energy value
+    e_0 = omega_0 / 2.0 * (1 - xe / 2.0)
+    print("Theoretical ground energy of the system on the lower PEC = ", e_0)
+
     v = []
     # Lower morse potential
     Dl = De
@@ -40,7 +51,6 @@ def psi_init(x, np, x0, p0, m, De, a):
         OUTPUT
         psi     a list of complex vectors of length np describing the wavefunctions psi_u(X) and psi_l(X) """
 
-    psi = []
     # harmonic frequency of the system on the lower PEC
     omega_0 = a * math.sqrt(2.0 * De / hart_to_cm / m / dalt_to_au) * hart_to_cm
 
@@ -52,6 +62,7 @@ def psi_init(x, np, x0, p0, m, De, a):
     e_0 = omega_0 / 2.0 * (1 - xe / 2.0)
     print("Theoretical ground energy of the system on the lower PEC = ", e_0)
 
+    psi = []
     y = [math.exp(-a * (xi - x0)) / xe for xi in x]
     arg = 1.0 / xe - 1.0
     psi_l = [math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, float(arg / 2.0)) for yi in y]

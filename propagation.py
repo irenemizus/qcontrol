@@ -22,17 +22,19 @@ class PropagationSolver:
             plot,
             plot_mom,
             plot_test,
+            plot_up,
+            plot_mom_up,
             m=0.5,    # Dalton
-            L=5.0,    # 0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
-            np=1024,  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
+            L=6.0,    # a_0   0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
+            np=1024,  #       128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
             nch=64,
-            T=60e-15,  # s -- for morse oscillator
-            nt=100000,
+            T=150e-15,  # s -- for morse oscillator
+            nt=200000,
             x0=0,  # TODO: to fix x0 != 0
             p0=0,  # TODO: to fix p0 != 0
             a=1.0, # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
             De=20000.0, # 1/cm
-            E0=71.68, # 1/cm
+            E0=0.0, #71.68, # 1/cm
             t0=25e-15,  # s
             sigma=10e-15, # s
             nu_L=0.599586e15, # Hz
@@ -42,6 +44,8 @@ class PropagationSolver:
         self.psi_init = psi_init
         self.plot = plot
         self.plot_mom = plot_mom
+        self.plot_up = plot_up
+        self.plot_mom_up = plot_mom_up
         self.plot_test = plot_test
 
         self.m = m
@@ -186,47 +190,75 @@ class PropagationSolver:
             E = phys_base.laser_field(self.E0, t, self.t0, self.sigma, self.nu_L)
             psi = phys_base.prop(psi, t_sc_l, t_sc_u, self.nch, self.np, self.v, self.akx2, edges, E) # TODO move prop into this class
 
-            # TODO: all the following - for the upper state
-            cnorm = math_base.cprod(psi[0], psi[0], self.dx, self.np)
+            cnorm_l = math_base.cprod(psi[0], psi[0], self.dx, self.np)
+            cnorm_u = math_base.cprod(psi[1], psi[1], self.dx, self.np)
+            orthog_lu = math_base.cprod(psi[0], psi[1], self.dx, self.np)
+            orthog_ul = math_base.cprod(psi[1], psi[0], self.dx, self.np)
             overlp = math_base.cprod(self.psi0[0], psi[0], self.dx, self.np)
 
             if l % 10 == 0:
                 print("l = ", l)
                 print("t = ", t * 1e15, "fs")
-                print("normalization on the lower state = ", cnorm)
+                print("normalization on the lower state = ", cnorm_l)
+                print("normalization on the upper state = ", cnorm_u)
+                print("orthogonality of the lower and upper wavefunctions (psi_0, psi_1^*) = ", orthog_lu)
+                print("orthogonality of the upper and lower wavefunctions (psi_1, psi_0^*) = ", orthog_ul)
                 print("overlap = ", overlp)
 
             # renormalization
-            psi[0] = [el / math.sqrt(abs(cnorm)) for el in psi[0]]
+            if cnorm_l > 0.0:
+                psi[0] = [el / math.sqrt(abs(cnorm_l)) for el in psi[0]]
+            if cnorm_u > 0.0:
+                psi[1] = [el / math.sqrt(abs(cnorm_u)) for el in psi[1]]
 
             # calculating of a current energy
             phi = phys_base.hamil(psi, self.v, self.akx2, self.np, E)
 
             if l % 100 == 0:
-                self.plot_test(l, phi[0])
+                self.plot_test(l, phi[0], phi[1])
 
-            cener = math_base.cprod(psi[0], phi[0], self.dx, self.np)
+            cener_l = math_base.cprod(phi[0], psi[0], self.dx, self.np)
+            cener_u = math_base.cprod(phi[1], psi[1], self.dx, self.np)
             if l % 10 == 0:
-                print("energy = ", cener.real)
+                print("energy on the lower state = ", cener_l.real)
+                print("energy on the upper state = ", cener_u.real)
 
             # calculating of expectation values
             # for x
-            momx = math_base.cprod2(psi[0], self.x, self.dx, self.np)
+            momx_l = math_base.cprod2(psi[0], self.x, self.dx, self.np)
+            momx_u = math_base.cprod2(psi[1], self.x, self.dx, self.np)
+
             # for x^2
             x2 = [el * el for el in self.x]
-            momx2 = math_base.cprod2(psi[0], x2, self.dx, self.np)
+
+            momx2_l = math_base.cprod2(psi[0], x2, self.dx, self.np)
+            momx2_u = math_base.cprod2(psi[1], x2, self.dx, self.np)
+
             # for p^2
-            phi_kin = phys_base.diff(psi[0], self.akx2, self.np)
-            phi_p2 = [el * 2.0 * self.m for el in phi_kin]
-            momp2 = math_base.cprod(psi[0], phi_p2, self.dx, self.np)
+            phi_kin_l = phys_base.diff(psi[0], self.akx2, self.np)
+            phi_p2_l = [el * 2.0 * self.m for el in phi_kin_l]
+            momp2_l = math_base.cprod(psi[0], phi_p2_l, self.dx, self.np)
+
+            phi_kin_u = phys_base.diff(psi[1], self.akx2, self.np)
+            phi_p2_u = [el * 2.0 * self.m for el in phi_kin_u]
+            momp2_u = math_base.cprod(psi[1], phi_p2_u, self.dx, self.np)
+
             # for p
             akx = math_base.initak(self.np, self.dx, 1)
             akx = [el * phys_base.hart_to_cm / (-1j) / phys_base.dalt_to_au for el in akx]
-            phip = phys_base.diff(psi[0], akx, self.np)
-            momp = math_base.cprod(psi[0], phip, self.dx, self.np)
+
+            phip_l = phys_base.diff(psi[0], akx, self.np)
+            momp_l = math_base.cprod(psi[0], phip_l, self.dx, self.np)
+
+            phip_u = phys_base.diff(psi[1], akx, self.np)
+            momp_u = math_base.cprod(psi[1], phip_u, self.dx, self.np)
 
             # plotting the result
-            if l >= self.lmin:
-                self.plot(psi[0], t, self.x, self.np)
-            if l >= self.lmin:
-                self.plot_mom(t, momx, momx2, momp, momp2, cener.real, E.real)
+            if l % 100 == 0:
+                if l >= self.lmin:
+                    self.plot(psi[0], t, self.x, self.np)
+                    self.plot_up(psi[1], t, self.x, self.np)
+
+                if l >= self.lmin:
+                    self.plot_mom(t, momx_l, momx2_l, momp_l, momp2_l, cener_l.real, E.real)
+                    self.plot_mom_up(t, momx_u, momx2_u, momp_u, momp2_u, cener_u.real, E.real)

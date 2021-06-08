@@ -23,7 +23,7 @@ Options:
         by default, is equal to 64
     --T
         time range of the problem in femtosec or in pi (half periods) units
-        by default, is equal to 30.0 fs for dimensional problem
+        by default, is equal to 60.0 fs for dimensional problem
                     is equal to 0.1 for dimensionless problem
     --nt
         number of time grid points
@@ -36,13 +36,13 @@ Options:
         by default, is equal to 0
     -a
         scaling coefficient for dimensional problem
-        by default, is equal to 1.0 1 / a_0
+        by default, is equal to 1.0 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
     --De
         dissociation energy value for dimensional problem
         by default, is equal to 20000.0 1 / cm
     --E0
         amplitude value of the laser field energy envelope in 1 / cm
-        by default, is equal to 1.0 / 1200.0 1 / cm
+        by default, is equal to 71.68 1 / cm
     --t0
         initial time, when the laser field is switched on, in femtosec
         by default, is equal to 25 fs
@@ -51,7 +51,7 @@ Options:
         by default, is equal to 10 fs
     --nu_L
         basic frequency of the laser field in PHz
-        by default, is equal to 0.6 PHz
+        by default, is equal to 0.599586 PHz
     --lmin
         number of a time step, from which the result should be written to a file.
         A negative value will be considered as 0
@@ -108,11 +108,14 @@ def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, file_mom):
     file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E))
 
 
-def plot_test_file(l, phi, f):
-    f.write("{0}\n".format(l))
-    for i in range(len(phi)):
-        f.write("{0}\n".format(phi[i]))
-
+def plot_test_file(l, phi_l, phi_u, f):
+    f.write("Step number: {0}\n".format(l))
+    f.write("Lower state wavefunction:")
+    for i in range(len(phi_l)):
+        f.write("{0}\n".format(phi_l[i]))
+    f.write("Upper state wavefunction:")
+    for i in range(len(phi_u)):
+        f.write("{0}\n".format(phi_u[i]))
 
 def main(argv):
     """ The main() function """
@@ -172,13 +175,16 @@ def main(argv):
         elif opt == "file_mom":
             file_mom = val
 
-    psi_init = double_morse.psi_init
+    psi_init = harmonic.psi_init
     pot = double_morse.pot
 
     # main propagation loop
     with open(os.path.join(OUT_PATH, file_abs), 'w') as f_abs, \
          open(os.path.join(OUT_PATH, file_real), 'w') as f_real, \
          open(os.path.join(OUT_PATH, file_mom), 'w') as f_mom, \
+         open(os.path.join(OUT_PATH, file_abs) + "_exc", 'w') as f_abs_up, \
+         open(os.path.join(OUT_PATH, file_real + "_exc"), 'w') as f_real_up, \
+         open(os.path.join(OUT_PATH, file_mom + "_exc"), 'w') as f_mom_up, \
          open("test", 'w') as f:
 
         def plot(psi, t, x, np):
@@ -187,10 +193,16 @@ def main(argv):
         def plot_mom(t, momx, momx2, momp, momp2, ener, E):
             plot_mom_file(t, momx, momx2, momp, momp2, ener, E, f_mom)
 
-        def plot_test(l, phi):
-            plot_test_file(l, phi, f)
+        def plot_up(psi, t, x, np):
+            plot_file(psi, t, x, np, f_abs_up, f_real_up)
 
-        solver = propagation.PropagationSolver(psi_init, pot, plot, plot_mom, plot_test)
+        def plot_mom_up(t, momx, momx2, momp, momp2, ener, E):
+            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, f_mom_up)
+
+        def plot_test(l, phi_l, phi_u):
+            plot_test_file(l, phi_l, phi_u, f)
+
+        solver = propagation.PropagationSolver(psi_init, pot, plot, plot_mom, plot_test, plot_up, plot_mom_up)
         solver.time_propagation()
 
 
