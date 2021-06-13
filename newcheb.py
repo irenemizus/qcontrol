@@ -175,7 +175,7 @@ def main(argv):
         elif opt == "file_mom":
             file_mom = val
 
-    psi_init = harmonic.psi_init
+    psi_init = double_morse.psi_init
     pot = double_morse.pot
 
     # main propagation loop

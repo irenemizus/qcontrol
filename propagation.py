@@ -25,16 +25,16 @@ class PropagationSolver:
             plot_up,
             plot_mom_up,
             m=0.5,    # Dalton
-            L=6.0,    # a_0   0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
+            L=5.0,    # a_0   0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
             np=1024,  #       128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
             nch=64,
-            T=150e-15,  # s -- for morse oscillator
-            nt=200000,
+            T=60e-15,  # s -- for morse oscillator
+            nt=100000,
             x0=0,  # TODO: to fix x0 != 0
             p0=0,  # TODO: to fix p0 != 0
             a=1.0, # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
             De=20000.0, # 1/cm
-            E0=0.0, #71.68, # 1/cm
+            E0=71.68, # 1/cm
             t0=25e-15,  # s
             sigma=10e-15, # s
             nu_L=0.599586e15, # Hz
@@ -217,8 +217,8 @@ class PropagationSolver:
             if l % 100 == 0:
                 self.plot_test(l, phi[0], phi[1])
 
-            cener_l = math_base.cprod(phi[0], psi[0], self.dx, self.np)
-            cener_u = math_base.cprod(phi[1], psi[1], self.dx, self.np)
+            cener_l = math_base.cprod(phi[0], psi[0], self.dx, self.np) - (E * orthog_ul)
+            cener_u = math_base.cprod(phi[1], psi[1], self.dx, self.np) - (E.conjugate() * orthog_lu)
             if l % 10 == 0:
                 print("energy on the lower state = ", cener_l.real)
                 print("energy on the upper state = ", cener_u.real)
@@ -254,7 +254,7 @@ class PropagationSolver:
             momp_u = math_base.cprod(psi[1], phip_u, self.dx, self.np)
 
             # plotting the result
-            if l % 100 == 0:
+            if l % 10 == 0:
                 if l >= self.lmin:
                     self.plot(psi[0], t, self.x, self.np)
                     self.plot_up(psi[1], t, self.x, self.np)
