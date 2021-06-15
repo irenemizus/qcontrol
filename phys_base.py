@@ -10,9 +10,10 @@ hart_to_cm = 219474.6313708 # 1 / cm / hartree
 cm_to_erg = 1.98644568e-16 # erg * cm
 dalt_to_au = 1822.888486 # a.u. / D
 Red_Planck_h = 1.054572e-27 # erg * s
+Hz_to_cm = 3.33563492e-11 # s / cm
 
 
-def laser_field(E0, t, t0, sigma, nu_L):
+def laser_field(E0, t, t0, sigma):
     """ Calculates energy of external laser field impulse
         INPUT
         E0      amplitude value of the laser field energy envelope
@@ -23,7 +24,7 @@ def laser_field(E0, t, t0, sigma, nu_L):
         OUTPUT
         E       complex value of current external laser field  """
 
-    E = E0 * math.exp(-(t - t0) * (t - t0) / 2.0 / sigma / sigma) * cmath.exp(1j * 2.0 * math.pi * nu_L * t)
+    E = E0 * math.exp(-(t - t0) * (t - t0) / 2.0 / sigma / sigma)
 
     return E
 
@@ -49,30 +50,51 @@ def diff(psi, akx2, np):
     return phi
 
 
-def hamil(psi, v, akx2, np, E):
-    """ Calculates Hamiltonian mapping of vector psi
+def hamil(psi, v, akx2, np):
+    """ Calculates the simplest one-dimensional Hamiltonian mapping of vector psi
+        INPUT
+        psi   list of complex vectors of length np
+        v     list of potential energy real vectors of length np
+        akx2  complex kinetic energy vector of length np, = k^2/2m
+        np    number of grid points
+        OUTPUT
+        phi = H psi list of complex vectors of length np """
+
+    # kinetic energy mapping
+    phi = diff(psi, akx2, np)
+    # potential energy mapping and accumulation phi_l = H psi_l
+    for i in range(np):
+        phi[i] += v[i] * psi[i]
+
+    return phi
+
+
+def hamil2D(psi, v, akx2, np, E, eL):
+    """ Calculates two-dimensional Hamiltonian mapping of vector psi
         INPUT
         psi   list of complex vectors of length np
         v     list of potential energy real vectors of length np
         akx2  complex kinetic energy vector of length np, = k^2/2m
         np    number of grid points
         E     a complex value of external laser field
+        eL    a laser field energy shift
         OUTPUT
         phi = H psi list of complex vectors of length np """
 
     phi = []
-    # diagonal terms
-    # kinetic energy mapping for the lower state
-    phi_dl = diff(psi[0], akx2, np)
-    # potential energy mapping and accumulation phi_l = H psi_l
-    for i in range(np):
-        phi_dl[i] += v[0][1][i] * psi[0][i]
 
-    # kinetic energy mapping for the upper state
-    phi_du = diff(psi[1], akx2, np)
-    # potential energy mapping and accumulation phi_u = H psi_u
+    # diagonal terms
+    # ground state 1D Hamiltonian mapping for the lower state
+    phi_dl = hamil(psi[0], v[0][1], akx2, np)
+    # adding of the laser field energy shift
     for i in range(np):
-        phi_du[i] += v[1][1][i] * psi[1][i]
+        phi_dl[i] += eL * psi[0][i]
+
+    # excited state 1D Hamiltonian mapping for the upper state
+    phi_du = hamil(psi[1], v[1][1], akx2, np)
+    # adding of the laser field energy shift
+    for i in range(np):
+        phi_du[i] -= eL * psi[1][i]
 
     # adding non-diagonal terms
     phi_l = []
@@ -82,44 +104,37 @@ def hamil(psi, v, akx2, np, E):
 
     phi_u = []
     for i in range(np):
-        phi_u.append(phi_du[i] - E.conjugate() * psi[0][i])
+        phi_u.append(phi_du[i] - E * psi[0][i])
     phi.append(phi_u)
 
     return phi
 
 
-def residum(psi, v, akx2, xp, np, edges, E):
+def residum(psi, v, akx2, xp, np, emin, emax, E, eL):
     """ Scaled and normalized mapping phi = ( O - xp I ) phi
         INPUT
-        psi   list of complex vectors of length np
-        v     list of potential energy vectors of length np
-        xp    sampling interpolation point
-        np    number of grid points (must be a power of 2)
-        edges upper and lower limits of energy spectra for the lower and upper states
-              edges = [emax_l, emin_l, emax_u, emin_u]
-        E     a complex value of external laser field
+        psi         list of complex vectors of length np
+        v           list of potential energy vectors of length np
+        xp          sampling interpolation point
+        np          number of grid points (must be a power of 2)
+        emax, emin  upper and lower limits of energy spectra
+        E           a complex value of external laser field
+        eL          a laser field energy shift
         OUTPUT
         phi  list of complex vectors of length np
              the operator is normalized from -2 to 2 resulting in:
              phi = 4.O / (emax - emin) * H phi - 2.0 (emax + emin) / (emax - emin) * I phi - xp I phi """
 
-    hpsi = hamil(psi, v, akx2, np, E)
+    hpsi = hamil2D(psi, v, akx2, np, E, eL)
 
     phi = []
     # changing the range from -2 to 2
-    # for the lower state
-    phi_l = []
-    for i in range(np):
-        hpsi[0][i] = 2.0 * (2.0 * hpsi[0][i] / (edges[0] - edges[1]) - (edges[0] + edges[1]) * psi[0][i] / (edges[0] - edges[1]))
-        phi_l.append(hpsi[0][i] - xp * psi[0][i])
-    phi.append(phi_l)
-
-    # for the upper state
-    phi_u = []
-    for i in range(np):
-        hpsi[1][i] = 2.0 * (2.0 * hpsi[1][i] / (edges[2] - edges[3]) - (edges[2] + edges[3]) * psi[1][i] / (edges[2] - edges[3]))
-        phi_u.append(hpsi[1][i] - xp * psi[1][i])
-    phi.append(phi_u)
+    for n in range(len(psi)):
+        phi_n = []
+        for i in range(np):
+            hpsi[n][i] = 2.0 * (2.0 * hpsi[n][i] / (emax - emin) - (emax + emin) * psi[n][i] / (emax - emin))
+            phi_n.append(hpsi[n][i] - xp * psi[n][i])
+        phi.append(phi_n)
 
     return phi
 
@@ -136,22 +151,21 @@ def func(z, t):
     return cmath.exp(-1j * z * t)
 
 
-def prop(psi, t_sc_l, t_sc_u, nch, np, v, akx2, edges, E):
+def prop(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL):
     """ Propagation subroutine using Newton interpolation
         P(O) psi = dv(1) psi + dv2 (O - x1 I) psi + dv3 (O - x2)(O - x1 I) psi + ...
         INPUT
-        psi  list of complex vectors of length np describing wavefunctions
-             at the beginning of interval
-        t_sc_l time interval for the lower state (normalized by the reduced Planck constant)
-        t_sc_u time interval for the upper state (normalized by the reduced Planck constant)
-        nch  order of interpolation polynomial (must be a power of 2 if
-             reorder is necessary)
-        np   number of grid points (must be a power of 2)
-        v    list of potential energy vectors of length np
-        akx2 kinetic energy vector of length np
-        edges upper and lower limits of energy spectra for the lower and upper states
-              edges = [emax_l, emin_l, emax_u, emin_u]
-        E     a complex value of external laser field
+        psi         list of complex vectors of length np describing wavefunctions
+                    at the beginning of interval
+        t_sc        time interval (normalized by the reduced Planck constant)
+        nch         order of interpolation polynomial (must be a power of 2 if
+                    reorder is necessary)
+        np          number of grid points (must be a power of 2)
+        v           list of potential energy vectors of length np
+        akx2        kinetic energy vector of length np
+        emax, emin  upper and lower limits of energy spectra
+        E           a complex value of external laser field
+        eL          a laser field energy shift
 
         OUTPUT
         psi  list of complex vectors of length np
@@ -159,28 +173,26 @@ def prop(psi, t_sc_l, t_sc_u, nch, np, v, akx2, edges, E):
              phi(t) = exp(-iHt) psi(0) """
 
     # interpolation points and divided difference coefficients
-    xp, dv_l = points(nch, t_sc_l, func)
-    xp, dv_u = points(nch, t_sc_u, func)
+    xp, dv = points(nch, t_sc, func)
 
     # auxiliary vector used for recurrence
-    phi = []
     phi = copy.deepcopy(psi)
 
     # accumulating first term
-    psi[0] = [el * dv_l[0] for el in psi[0]]
-    psi[1] = [el * dv_u[0] for el in psi[1]]
+    for n in range(len(psi)):
+        psi[n] = [el * dv[0] for el in psi[n]]
 
     # recurrence loop
     for j in range(nch - 1):
         # mapping by scaled operator of phi
-        phi = residum(phi, v, akx2, xp[j], np, edges, E)
+        phi = residum(phi, v, akx2, xp[j], np, emin, emax, E, eL)
 
         # accumulation of Newtonian's interpolation
-        for i in range(np):
-            psi[0][i] += dv_l[j + 1] * phi[0][i]
-            psi[1][i] += dv_u[j + 1] * phi[1][i]
+        for n in range(len(psi)):
+            for i in range(np):
+                psi[n][i] += dv[j + 1] * phi[n][i]
 
-    psi[0] = [el * cmath.exp(-1j * 2.0 * t_sc_l * (edges[0] + edges[1]) / (edges[0] - edges[1])) for el in psi[0]]
-    psi[1] = [el * cmath.exp(-1j * 2.0 * t_sc_u * (edges[2] + edges[3]) / (edges[2] - edges[3])) for el in psi[1]]
+    for n in range(len(psi)):
+        psi[n] = [el * cmath.exp(-1j * 2.0 * t_sc * (emax + emin) / (emax - emin)) for el in psi[n]]
 
     return psi

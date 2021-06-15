@@ -1,4 +1,5 @@
 import math
+import cmath
 import sys
 import copy
 
@@ -123,12 +124,10 @@ class PropagationSolver:
         #    phi0_kin = diff(psi0, akx2, np)
         #    print(phi0_kin)
 
-        self.E = phys_base.laser_field(0.0, 0.0, self.t0, self.sigma, self.nu_L)
-
         # calculating of initial energy
-        self.phi0 = phys_base.hamil(self.psi0, self.v, self.akx2, self.np, self.E)
+        self.phi0 = phys_base.hamil(self.psi0[0], self.v[0][1], self.akx2, self.np)
 
-        self.cener0 = math_base.cprod(self.phi0[0], self.psi0[0], self.dx, self.np)
+        self.cener0 = math_base.cprod(self.phi0, self.psi0[0], self.dx, self.np)
         print("Initial energy: ", abs(self.cener0))
 
         # check if input data are correct in terms of the given problem
@@ -155,45 +154,76 @@ class PropagationSolver:
 
         # main propagation loop
         for l in range(1, self.nt + 1):
-            # calculating limits of energy ranges of the Hamiltonian operator H
+            # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_l
             emax_l = self.v[0][1][0] + abs(self.akx2[int(self.np / 2 - 1)]) + 2.0
             emin_l = self.v[0][0]
+            # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_u
             emax_u = self.v[1][1][0] + abs(self.akx2[int(self.np / 2 - 1)]) + 2.0
             emin_u = self.v[1][0]
-            edges = [emax_l, emin_l, emax_u, emin_u]
 
-            t_sc_l = dt * (emax_l - emin_l) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
-            t_sc_u = dt * (emax_u - emin_u) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
+            t = dt * l
+            # Here we're transforming the problem to the one for psi_omega
+            psi_omega = []
+            psi_omega_l = [el * cmath.exp(-1j * math.pi * self.nu_L * t) for el in psi[0]]
+            psi_omega.append(psi_omega_l)
+            psi_omega_u = [el * cmath.exp(1j * math.pi * self.nu_L * t) for el in psi[1]]
+            psi_omega.append(psi_omega_u)
+
+            # New energy ranges
+            eL = self.nu_L * phys_base.Hz_to_cm / 2.0
+            emax_l_omega = emax_l + self.E0 + eL
+            emin_l_omega = emin_l - self.E0 + eL
+
+            emax_u_omega = emax_u + self.E0 - eL
+            emin_u_omega = emin_u - self.E0 - eL
+
+            emax = max(emax_l_omega, emin_l_omega, emax_u_omega, emin_u_omega)
+            emin = min(emax_l_omega, emin_l_omega, emax_u_omega, emin_u_omega)
+
+            t_sc = dt * (emax - emin) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
 
             if l % 10 == 0:
-                print("emax for the lower state = ", emax_l)
-                print("emax for the upper state = ", emax_u)
-                print("Normalized scaled time interval for the lower state = ", t_sc_l)
-                print("Normalized scaled time interval for the upper state = ", t_sc_u)
+                print("emax = ", emax)
+                print("emin = ", emin)
+                print("Normalized scaled time interval = ", t_sc)
 
             # calculating the minimum number of collocation points and time steps that are needed for convergence
-            nt_min_l = int(math.ceil((emax_l - emin_l) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
-            nt_min_u = int(math.ceil((emax_u - emin_u) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
-
-            np_min_l = int(math.ceil(self.L * math.sqrt(2.0 * self.m * (emax_l - emin_l) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
-            np_min_u = int(math.ceil(self.L * math.sqrt(2.0 * self.m * (emax_u - emin_u) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
-
-            np_min = max(np_min_l, np_min_u)
-            nt_min = max(nt_min_l, nt_min_u)
+            nt_min = int(math.ceil((emax - emin) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
+            np_min = int(math.ceil(self.L * math.sqrt(2.0 * self.m * (emax - emin) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
 
             if self.np < np_min and l % 10 == 0:
                 self._warning_collocation_points(np_min)
             if self.nt < nt_min and l % 10 == 0:
                 self._warning_time_steps(nt_min)
 
-            t = dt * l
-            E = phys_base.laser_field(self.E0, t, self.t0, self.sigma, self.nu_L)
-            psi = phys_base.prop(psi, t_sc_l, t_sc_u, self.nch, self.np, self.v, self.akx2, edges, E) # TODO move prop into this class
+            E = phys_base.laser_field(self.E0, t, self.t0, self.sigma)
+            E_full = E * cmath.exp(1j * 2.0 * math.pi * self.nu_L * t)
+            psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, self.v, self.akx2, emin, emax, E, eL) # TODO move prop into this class
+
+            # converting back to psi
+            psi[0] = [el * cmath.exp(1j * math.pi * self.nu_L * t) for el in psi_omega[0]]
+            psi[1] = [el * cmath.exp(-1j * math.pi * self.nu_L * t) for el in psi_omega[1]]
 
             cnorm_l = math_base.cprod(psi[0], psi[0], self.dx, self.np)
             cnorm_u = math_base.cprod(psi[1], psi[1], self.dx, self.np)
             orthog_lu = math_base.cprod(psi[0], psi[1], self.dx, self.np)
             orthog_ul = math_base.cprod(psi[1], psi[0], self.dx, self.np)
+
+            # renormalization
+            if cnorm_l > 0.0:
+                psi[0] = [el / math.sqrt(abs(cnorm_l)) for el in psi[0]]
+            if cnorm_u > 0.0:
+                psi[1] = [el / math.sqrt(abs(cnorm_u)) for el in psi[1]]
+
+            # calculating of a current energy
+            phi_l = phys_base.hamil(psi[0], self.v[0][1], self.akx2, self.np)
+            phi_u = phys_base.hamil(psi[1], self.v[1][1], self.akx2, self.np)
+
+#            if l % 100 == 0:
+#                self.plot_test(l, phi[0], phi[1])
+
+            cener_l = math_base.cprod(phi_l, psi[0], self.dx, self.np) - (E_full * orthog_ul)
+            cener_u = math_base.cprod(phi_u, psi[1], self.dx, self.np) - (E_full.conjugate() * orthog_lu)
             overlp = math_base.cprod(self.psi0[0], psi[0], self.dx, self.np)
 
             if l % 10 == 0:
@@ -204,22 +234,6 @@ class PropagationSolver:
                 print("orthogonality of the lower and upper wavefunctions (psi_0, psi_1^*) = ", orthog_lu)
                 print("orthogonality of the upper and lower wavefunctions (psi_1, psi_0^*) = ", orthog_ul)
                 print("overlap = ", overlp)
-
-            # renormalization
-            if cnorm_l > 0.0:
-                psi[0] = [el / math.sqrt(abs(cnorm_l)) for el in psi[0]]
-            if cnorm_u > 0.0:
-                psi[1] = [el / math.sqrt(abs(cnorm_u)) for el in psi[1]]
-
-            # calculating of a current energy
-            phi = phys_base.hamil(psi, self.v, self.akx2, self.np, E)
-
-            if l % 100 == 0:
-                self.plot_test(l, phi[0], phi[1])
-
-            cener_l = math_base.cprod(phi[0], psi[0], self.dx, self.np) - (E * orthog_ul)
-            cener_u = math_base.cprod(phi[1], psi[1], self.dx, self.np) - (E.conjugate() * orthog_lu)
-            if l % 10 == 0:
                 print("energy on the lower state = ", cener_l.real)
                 print("energy on the upper state = ", cener_u.real)
 
@@ -260,5 +274,5 @@ class PropagationSolver:
                     self.plot_up(psi[1], t, self.x, self.np)
 
                 if l >= self.lmin:
-                    self.plot_mom(t, momx_l, momx2_l, momp_l, momp2_l, cener_l.real, E.real)
-                    self.plot_mom_up(t, momx_u, momx2_u, momp_u, momp2_u, cener_u.real, E.real)
+                    self.plot_mom(t, momx_l, momx2_l, momp_l, momp2_l, cener_l.real, E_full.real)
+                    self.plot_mom_up(t, momx_u, momx2_u, momp_u, momp2_u, cener_u.real, E_full.real)
