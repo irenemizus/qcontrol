@@ -123,7 +123,7 @@ def residum(psi, v, akx2, xp, np, emin, emax, E, eL):
         OUTPUT
         phi  list of complex vectors of length np
              the operator is normalized from -2 to 2 resulting in:
-             phi = 4.O / (emax - emin) * H phi - 2.0 (emax + emin) / (emax - emin) * I phi - xp I phi """
+             phi = 4.O / (emax - emin) * H psi - 2.0 (emax + emin) / (emax - emin) * I psi - xp I psi """
 
     hpsi = hamil2D(psi, v, akx2, np, E, eL)
 

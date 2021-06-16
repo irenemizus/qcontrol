@@ -164,9 +164,10 @@ class PropagationSolver:
             t = dt * l
             # Here we're transforming the problem to the one for psi_omega
             psi_omega = []
-            psi_omega_l = [el * cmath.exp(-1j * math.pi * self.nu_L * t) for el in psi[0]]
+            exp_L = cmath.exp(1j * math.pi * self.nu_L * t)
+            psi_omega_l = [el / exp_L for el in psi[0]]
             psi_omega.append(psi_omega_l)
-            psi_omega_u = [el * cmath.exp(1j * math.pi * self.nu_L * t) for el in psi[1]]
+            psi_omega_u = [el * exp_L for el in psi[1]]
             psi_omega.append(psi_omega_u)
 
             # New energy ranges
@@ -197,33 +198,33 @@ class PropagationSolver:
                 self._warning_time_steps(nt_min)
 
             E = phys_base.laser_field(self.E0, t, self.t0, self.sigma)
-            E_full = E * cmath.exp(1j * 2.0 * math.pi * self.nu_L * t)
+            E_full = E * exp_L * exp_L
             psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, self.v, self.akx2, emin, emax, E, eL) # TODO move prop into this class
 
-            # converting back to psi
-            psi[0] = [el * cmath.exp(1j * math.pi * self.nu_L * t) for el in psi_omega[0]]
-            psi[1] = [el * cmath.exp(-1j * math.pi * self.nu_L * t) for el in psi_omega[1]]
-
-            cnorm_l = math_base.cprod(psi[0], psi[0], self.dx, self.np)
-            cnorm_u = math_base.cprod(psi[1], psi[1], self.dx, self.np)
-            orthog_lu = math_base.cprod(psi[0], psi[1], self.dx, self.np)
-            orthog_ul = math_base.cprod(psi[1], psi[0], self.dx, self.np)
+            cnorm_l = math_base.cprod(psi_omega[0], psi_omega[0], self.dx, self.np)
+            cnorm_u = math_base.cprod(psi_omega[1], psi_omega[1], self.dx, self.np)
+            orthog_lu = math_base.cprod(psi_omega[0], psi_omega[1], self.dx, self.np) * exp_L * exp_L
+            orthog_ul = math_base.cprod(psi_omega[1], psi_omega[0], self.dx, self.np) / exp_L / exp_L
 
             # renormalization
             if cnorm_l > 0.0:
-                psi[0] = [el / math.sqrt(abs(cnorm_l)) for el in psi[0]]
+                psi_omega[0] = [el / math.sqrt(abs(cnorm_l)) for el in psi_omega[0]]
             if cnorm_u > 0.0:
-                psi[1] = [el / math.sqrt(abs(cnorm_u)) for el in psi[1]]
+                psi_omega[1] = [el / math.sqrt(abs(cnorm_u)) for el in psi_omega[1]]
 
             # calculating of a current energy
-            phi_l = phys_base.hamil(psi[0], self.v[0][1], self.akx2, self.np)
-            phi_u = phys_base.hamil(psi[1], self.v[1][1], self.akx2, self.np)
+            phi_omega = phys_base.hamil2D(psi_omega, self.v, self.akx2, self.np, E, eL)
+
+            cener_l = math_base.cprod(phi_omega[0], psi_omega[0], self.dx, self.np) - eL + E_full * orthog_ul
+            cener_u = math_base.cprod(phi_omega[1], psi_omega[1], self.dx, self.np) + eL + E_full.conjugate() * orthog_lu
+
+            # converting back to psi
+            psi[0] = [el * exp_L for el in psi_omega[0]]
+            psi[1] = [el / exp_L for el in psi_omega[1]]
 
 #            if l % 100 == 0:
 #                self.plot_test(l, phi[0], phi[1])
 
-            cener_l = math_base.cprod(phi_l, psi[0], self.dx, self.np) - (E_full * orthog_ul)
-            cener_u = math_base.cprod(phi_u, psi[1], self.dx, self.np) - (E_full.conjugate() * orthog_lu)
             overlp = math_base.cprod(self.psi0[0], psi[0], self.dx, self.np)
 
             if l % 10 == 0:
