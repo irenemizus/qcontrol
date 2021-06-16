@@ -1,4 +1,5 @@
 import math
+import numpy
 
 from phys_base import hart_to_cm, dalt_to_au
 
@@ -28,11 +29,13 @@ def pot(x, np, m, De, a):
     v = []
     # Lower morse potential
     Dl = De
-    v.append((0.0, [Dl * (1.0 - math.exp(-a * xi)) * (1.0 - math.exp(-a * xi)) for xi in x]))
+    v_l = numpy.array([Dl * (1.0 - math.exp(-a * xi)) * (1.0 - math.exp(-a * xi)) for xi in x])
+    v.append((0.0, v_l))
 
     # Upper morse potential
     Du = De / 2.0
-    v.append((Dl, [Du * (1.0 - math.exp(-a * xi)) * (1.0 - math.exp(-a * xi)) + Dl for xi in x]))
+    v_u = numpy.array([Du * (1.0 - math.exp(-a * xi)) * (1.0 - math.exp(-a * xi)) + Dl for xi in x])
+    v.append((Dl, v_u))
 
     return v
 
@@ -66,9 +69,11 @@ def psi_init(x, np, x0, p0, m, De, a):
     y = [math.exp(-a * (xi - x0)) / xe for xi in x]
     arg = 1.0 / xe - 1.0
     psi_l = [math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, float(arg / 2.0)) for yi in y]
-    psi.append(psi_l)
+    psi_l_np = numpy.array(psi_l)
+    psi.append(psi_l_np)
 
     psi_u = [0.0] * np
-    psi.append(psi_u)
+    psi_u_np = numpy.array(psi_u)
+    psi.append(psi_u_np)
 
     return psi

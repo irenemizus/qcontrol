@@ -2,6 +2,9 @@ import math
 import cmath
 import sys
 import copy
+import numpy
+
+import datetime
 
 import math_base
 import phys_base
@@ -29,14 +32,14 @@ class PropagationSolver:
             L=5.0,    # a_0   0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
             np=1024,  #       128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
             nch=64,
-            T=60e-15,  # s -- for morse oscillator
-            nt=100000,
+            T=120e-15,  # s -- for morse oscillator
+            nt=400000,
             x0=0,  # TODO: to fix x0 != 0
             p0=0,  # TODO: to fix p0 != 0
             a=1.0, # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
             De=20000.0, # 1/cm
             E0=71.68, # 1/cm
-            t0=25e-15,  # s
+            t0=60e-15,  # s
             sigma=10e-15, # s
             nu_L=0.599586e15, # Hz
             lmin=0):
@@ -118,7 +121,8 @@ class PropagationSolver:
 
         # evaluating of kinetic energy
         self.coef_kin = -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
-        self.akx2 = [ak * self.coef_kin for ak in self.akx2]
+        #self.akx2 = [ak * self.coef_kin for ak in self.akx2]
+        self.akx2 *= self.coef_kin
         #   print(akx2)
 
         #    phi0_kin = diff(psi0, akx2, np)
@@ -152,8 +156,12 @@ class PropagationSolver:
         dt = self.T / (self.nt - 1)
         psi = copy.deepcopy(self.psi0)
 
+        milliseconds_full = 0
+
         # main propagation loop
         for l in range(1, self.nt + 1):
+            time_before = datetime.datetime.now()
+
             # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_l
             emax_l = self.v[0][1][0] + abs(self.akx2[int(self.np / 2 - 1)]) + 2.0
             emin_l = self.v[0][0]
@@ -165,9 +173,11 @@ class PropagationSolver:
             # Here we're transforming the problem to the one for psi_omega
             psi_omega = []
             exp_L = cmath.exp(1j * math.pi * self.nu_L * t)
-            psi_omega_l = [el / exp_L for el in psi[0]]
+            #psi_omega_l = [el / exp_L for el in psi[0]]
+            psi_omega_l = psi[0] / exp_L
             psi_omega.append(psi_omega_l)
-            psi_omega_u = [el * exp_L for el in psi[1]]
+            #psi_omega_u = [el * exp_L for el in psi[1]]
+            psi_omega_u = psi[1] * exp_L
             psi_omega.append(psi_omega_u)
 
             # New energy ranges
@@ -183,19 +193,9 @@ class PropagationSolver:
 
             t_sc = dt * (emax - emin) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
 
-            if l % 10 == 0:
-                print("emax = ", emax)
-                print("emin = ", emin)
-                print("Normalized scaled time interval = ", t_sc)
-
             # calculating the minimum number of collocation points and time steps that are needed for convergence
             nt_min = int(math.ceil((emax - emin) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
             np_min = int(math.ceil(self.L * math.sqrt(2.0 * self.m * (emax - emin) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
-
-            if self.np < np_min and l % 10 == 0:
-                self._warning_collocation_points(np_min)
-            if self.nt < nt_min and l % 10 == 0:
-                self._warning_time_steps(nt_min)
 
             E = phys_base.laser_field(self.E0, t, self.t0, self.sigma)
             E_full = E * exp_L * exp_L
@@ -208,9 +208,11 @@ class PropagationSolver:
 
             # renormalization
             if cnorm_l > 0.0:
-                psi_omega[0] = [el / math.sqrt(abs(cnorm_l)) for el in psi_omega[0]]
+                #psi_omega[0] = [el / math.sqrt(abs(cnorm_l)) for el in psi_omega[0]]
+                psi_omega[0] /= math.sqrt(abs(cnorm_l))
             if cnorm_u > 0.0:
-                psi_omega[1] = [el / math.sqrt(abs(cnorm_u)) for el in psi_omega[1]]
+                #psi_omega[1] = [el / math.sqrt(abs(cnorm_u)) for el in psi_omega[1]]
+                psi_omega[1] /= math.sqrt(abs(cnorm_u))
 
             # calculating of a current energy
             phi_omega = phys_base.hamil2D(psi_omega, self.v, self.akx2, self.np, E, eL)
@@ -219,24 +221,16 @@ class PropagationSolver:
             cener_u = math_base.cprod(phi_omega[1], psi_omega[1], self.dx, self.np) + eL + E_full.conjugate() * orthog_lu
 
             # converting back to psi
-            psi[0] = [el * exp_L for el in psi_omega[0]]
-            psi[1] = [el / exp_L for el in psi_omega[1]]
+            #psi[0] = [el * exp_L for el in psi_omega[0]]
+            #psi[1] = [el / exp_L for el in psi_omega[1]]
+
+            psi[0] = psi_omega[0] * exp_L
+            psi[1] = psi_omega[1] / exp_L
 
 #            if l % 100 == 0:
 #                self.plot_test(l, phi[0], phi[1])
 
             overlp = math_base.cprod(self.psi0[0], psi[0], self.dx, self.np)
-
-            if l % 10 == 0:
-                print("l = ", l)
-                print("t = ", t * 1e15, "fs")
-                print("normalization on the lower state = ", cnorm_l)
-                print("normalization on the upper state = ", cnorm_u)
-                print("orthogonality of the lower and upper wavefunctions (psi_0, psi_1^*) = ", orthog_lu)
-                print("orthogonality of the upper and lower wavefunctions (psi_1, psi_0^*) = ", orthog_ul)
-                print("overlap = ", overlp)
-                print("energy on the lower state = ", cener_l.real)
-                print("energy on the upper state = ", cener_u.real)
 
             # calculating of expectation values
             # for x
@@ -244,23 +238,29 @@ class PropagationSolver:
             momx_u = math_base.cprod2(psi[1], self.x, self.dx, self.np)
 
             # for x^2
-            x2 = [el * el for el in self.x]
+            #x2 = [el * el for el in self.x]
+            x2 = numpy.multiply(self.x, self.x)
 
             momx2_l = math_base.cprod2(psi[0], x2, self.dx, self.np)
             momx2_u = math_base.cprod2(psi[1], x2, self.dx, self.np)
 
             # for p^2
             phi_kin_l = phys_base.diff(psi[0], self.akx2, self.np)
-            phi_p2_l = [el * 2.0 * self.m for el in phi_kin_l]
+            #phi_p2_l = [el * 2.0 * self.m for el in phi_kin_l]
+            phi_p2_l = phi_kin_l * (2.0 * self.m)
             momp2_l = math_base.cprod(psi[0], phi_p2_l, self.dx, self.np)
 
             phi_kin_u = phys_base.diff(psi[1], self.akx2, self.np)
-            phi_p2_u = [el * 2.0 * self.m for el in phi_kin_u]
+#            phi_p2_u = [el * 2.0 * self.m for el in phi_kin_u]
+            phi_p2_u = phi_kin_u * (2.0 * self.m)
             momp2_u = math_base.cprod(psi[1], phi_p2_u, self.dx, self.np)
 
             # for p
             akx = math_base.initak(self.np, self.dx, 1)
-            akx = [el * phys_base.hart_to_cm / (-1j) / phys_base.dalt_to_au for el in akx]
+
+            #akx = [el * phys_base.hart_to_cm / (-1j) / phys_base.dalt_to_au for el in akx]
+            akx_mul = phys_base.hart_to_cm / (-1j) / phys_base.dalt_to_au
+            akx *= akx_mul
 
             phip_l = phys_base.diff(psi[0], akx, self.np)
             momp_l = math_base.cprod(psi[0], phip_l, self.dx, self.np)
@@ -277,3 +277,30 @@ class PropagationSolver:
                 if l >= self.lmin:
                     self.plot_mom(t, momx_l, momx2_l, momp_l, momp2_l, cener_l.real, E_full.real)
                     self.plot_mom_up(t, momx_u, momx2_u, momp_u, momp2_u, cener_u.real, E_full.real)
+
+            time_after = datetime.datetime.now()
+            time_span = time_after - time_before
+            milliseconds_per_step = time_span.microseconds / 1000
+            milliseconds_full += milliseconds_per_step
+
+            if l % 100 == 0:
+                if self.np < np_min:
+                    self._warning_collocation_points(np_min)
+                if self.nt < nt_min:
+                    self._warning_time_steps(nt_min)
+
+                print("l = ", l)
+                print("t = ", t * 1e15, "fs")
+
+                print("emax = ", emax)
+                print("emin = ", emin)
+                print("normalized scaled time interval = ", t_sc)
+                print("normalization on the lower state = ", cnorm_l)
+                print("normalization on the upper state = ", cnorm_u)
+                print("orthogonality of the lower and upper wavefunctions (psi_0, psi_1^*) = ", orthog_lu)
+                print("orthogonality of the upper and lower wavefunctions (psi_1, psi_0^*) = ", orthog_ul)
+                print("overlap = ", overlp)
+                print("energy on the lower state = ", cener_l.real)
+                print("energy on the upper state = ", cener_u.real)
+
+                print("milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(milliseconds_full / l))
