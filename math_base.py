@@ -30,11 +30,6 @@ def cprod(cx1, cx2, dx, np):
     assert cx2.size == np
 
     return numpy.vdot(cx2, cx1) * dx
-    #cnorm = complex(0.0, 0.0)
-    #for i in range(np):
-    #    cnorm += cx1[i] * cx2[i].conjugate()
-
-    #return cnorm * dx
 
 
 def cprod2(cx1, cx, dx, np):
@@ -52,11 +47,6 @@ def cprod2(cx1, cx, dx, np):
 
     cx1cx = numpy.multiply(cx1, cx)
     return numpy.vdot(cx1, cx1cx) * dx
-#    cnorm2 = complex(0.0, 0.0)
-#    for i in range(np):
-#        cnorm2 += cx1[i] * cx1[i].conjugate() * cx[i]
-
-#    return cnorm2 * dx
 
 
 def initak(n, dx, iorder):
@@ -74,9 +64,6 @@ def initak(n, dx, iorder):
 
     dk = 2.0 * math.pi / (n - 1) / dx
 
-    #ak = []
-    #for j in range(n):
-    #    ak.append(0.0 + 0j)
     ak = numpy.zeros(n, numpy.complex)
 
     for i in range(int(n / 2)):

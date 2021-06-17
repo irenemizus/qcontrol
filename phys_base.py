@@ -40,12 +40,10 @@ def diff(psi, akx2, np):
               of kinetic energy phi = P^2/2m psi """
 
     assert psi.size == np
+    assert akx2.size == np
 
     psi_freq = numpy.fft.fft(psi)
 
-    #phi_freq = []
-    #for i in range(np):
-    #    phi_freq.append(psi_freq[i] * akx2[i])
     phi_freq = numpy.multiply(psi_freq, akx2)
 
     phi = numpy.fft.ifft(phi_freq)
@@ -69,9 +67,8 @@ def hamil(psi, v, akx2, np):
 
     # kinetic energy mapping
     phi = diff(psi, akx2, np)
+
     # potential energy mapping and accumulation phi_l = H psi_l
-    #for i in range(np):
-    #    phi[i] += v[i] * psi[i]
     vpsi = numpy.multiply(v, psi)
     numpy.add(phi, vpsi, out=phi)
 
@@ -100,32 +97,22 @@ def hamil2D(psi, v, akx2, np, E, eL):
     # ground state 1D Hamiltonian mapping for the lower state
     phi_dl = hamil(psi[0], v[0][1], akx2, np)
     # adding of the laser field energy shift
-    #for i in range(np):
-    #    phi_dl[i] += eL * psi[0][i]
     psieL_d = psi[0] * eL
     numpy.add(phi_dl, psieL_d, out=phi_dl)
 
     # excited state 1D Hamiltonian mapping for the upper state
     phi_du = hamil(psi[1], v[1][1], akx2, np)
     # adding of the laser field energy shift
-    #for i in range(np):
-    #    phi_du[i] -= eL * psi[1][i]
     psieL_u = psi[1] * eL
     numpy.subtract(phi_du, psieL_u, out=phi_du)
 
     # adding non-diagonal terms
-    #phi_l = []
-    #for i in range(np):
-    #    phi_l.append(phi_dl[i] - E * psi[1][i])
-    psiuE = psi[1] * E
-    phi_l = numpy.subtract(phi_dl, psiuE)
+    psiE_u = psi[1] * E
+    phi_l = numpy.subtract(phi_dl, psiE_u)
     phi.append(phi_l)
 
-    #phi_u = []
-    #for i in range(np):
-    #    phi_u.append(phi_du[i] - E * psi[0][i])
-    psidE = psi[0] * E
-    phi_u = numpy.subtract(phi_du, psidE)
+    psiE_d = psi[0] * E
+    phi_u = numpy.subtract(phi_du, psiE_d)
     phi.append(phi_u)
 
     return phi
@@ -156,10 +143,6 @@ def residum(psi, v, akx2, xp, np, emin, emax, E, eL):
     phi = []
     # changing the range from -2 to 2
     for n in range(len(psi)):
-        #phi_n = []
-        #for i in range(np):
-        #    hpsi[n][i] = 2.0 * (2.0 * hpsi[n][i] / (emax - emin) - (emax + emin) * psi[n][i] / (emax - emin))
-        #    phi_n.append(hpsi[n][i] - xp * psi[n][i])
         coef1 = 4.0 / (emax - emin)
         coef2 = 2.0 * (emax + emin) / (emax - emin)
         hpsi[n] *= coef1
@@ -220,7 +203,6 @@ def prop(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL):
 
     # accumulating first term
     for n in range(len(psi)):
-        #psi[n] = [el * dv[0] for el in psi[n]]
         psi[n] *= dv[0]
 
     # recurrence loop
@@ -230,14 +212,11 @@ def prop(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL):
 
         # accumulation of Newtonian's interpolation
         for n in range(len(psi)):
-            #for i in range(np):
-            #    psi[n][i] += dv[j + 1] * phi[n][i]
-            phi_mul = phi[n] * dv[j + 1]
-            numpy.add(psi[n], phi_mul, out=psi[n])
+            phidv = phi[n] * dv[j + 1]
+            numpy.add(psi[n], phidv, out=psi[n])
 
     coef = cmath.exp(-1j * 2.0 * t_sc * (emax + emin) / (emax - emin))
     for n in range(len(psi)):
-        #psi[n] = [el * cmath.exp(-1j * 2.0 * t_sc * (emax + emin) / (emax - emin)) for el in psi[n]]
         psi[n] *= coef
 
     return psi

@@ -68,12 +68,10 @@ def psi_init(x, np, x0, p0, m, De, a):
     psi = []
     y = [math.exp(-a * (xi - x0)) / xe for xi in x]
     arg = 1.0 / xe - 1.0
-    psi_l = [math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, float(arg / 2.0)) for yi in y]
-    psi_l_np = numpy.array(psi_l)
-    psi.append(psi_l_np)
+    psi_l = numpy.array([math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, float(arg / 2.0)) for yi in y])
+    psi.append(psi_l)
 
-    psi_u = [0.0] * np
-    psi_u_np = numpy.array(psi_u)
-    psi.append(psi_u_np)
+    psi_u = numpy.array([0.0] * np)
+    psi.append(psi_u)
 
     return psi

@@ -102,37 +102,27 @@ class PropagationSolver:
 
         # evaluating of initial wavefunction
         self.psi0 = psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
-        #    abs_psi0 = [abs(i) for i in psi0]
-        #    print(abs_psi0)
 
         # initial normalization check
         self.cnorm0 = math_base.cprod(self.psi0[0], self.psi0[0], self.dx, self.np)
         print("Initial normalization: ", abs(self.cnorm0))
 
-        #    cx1 = []
-        #    for i in range(np):
-        #        cx1.append(complex(1.0, 0.0))
-        #    cnorm00 = cprod2(psi0, cx1, dx, np)
-        #    print(abs(cnorm00))
-
         # evaluating of k vector
         self.akx2 = math_base.initak(self.np, self.dx, 2)
-        #    print(akx2)
 
         # evaluating of kinetic energy
         self.coef_kin = -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
-        #self.akx2 = [ak * self.coef_kin for ak in self.akx2]
         self.akx2 *= self.coef_kin
-        #   print(akx2)
-
-        #    phi0_kin = diff(psi0, akx2, np)
-        #    print(phi0_kin)
 
         # calculating of initial energy
+        # ground state
         self.phi0 = phys_base.hamil(self.psi0[0], self.v[0][1], self.akx2, self.np)
-
         self.cener0 = math_base.cprod(self.phi0, self.psi0[0], self.dx, self.np)
         print("Initial energy: ", abs(self.cener0))
+
+        # excited state
+        self.phi0_u = phys_base.hamil(self.psi0[1], self.v[1][1], self.akx2, self.np)
+        self.cener0_u = math_base.cprod(self.phi0_u, self.psi0[1], self.dx, self.np)
 
         # check if input data are correct in terms of the given problem
         # calculating the initial energy range of the Hamiltonian operator H
@@ -156,6 +146,47 @@ class PropagationSolver:
         dt = self.T / (self.nt - 1)
         psi = copy.deepcopy(self.psi0)
 
+        # initial laser field energy
+        E00 = phys_base.laser_field(self.E0, 0.0, self.t0, self.sigma)
+
+        # calculating of initial expectation values
+        # for x
+        momx_l = math_base.cprod2(psi[0], self.x, self.dx, self.np)
+        momx_u = math_base.cprod2(psi[1], self.x, self.dx, self.np)
+
+        # for x^2
+        x2 = numpy.multiply(self.x, self.x)
+        momx2_l = math_base.cprod2(psi[0], x2, self.dx, self.np)
+        momx2_u = math_base.cprod2(psi[1], x2, self.dx, self.np)
+
+        # for p^2
+        phi_kin_l = phys_base.diff(psi[0], self.akx2, self.np)
+        phi_p2_l = phi_kin_l * (2.0 * self.m)
+        momp2_l = math_base.cprod(psi[0], phi_p2_l, self.dx, self.np)
+
+        phi_kin_u = phys_base.diff(psi[1], self.akx2, self.np)
+        phi_p2_u = phi_kin_u * (2.0 * self.m)
+        momp2_u = math_base.cprod(psi[1], phi_p2_u, self.dx, self.np)
+
+        # for p
+        akx = math_base.initak(self.np, self.dx, 1)
+        akx_mul = phys_base.hart_to_cm / (-1j) / phys_base.dalt_to_au
+        akx *= akx_mul
+
+        phip_l = phys_base.diff(psi[0], akx, self.np)
+        momp_l = math_base.cprod(psi[0], phip_l, self.dx, self.np)
+
+        phip_u = phys_base.diff(psi[1], akx, self.np)
+        momp_u = math_base.cprod(psi[1], phip_u, self.dx, self.np)
+
+        # plotting initial values
+        self.plot(psi[0], 0.0, self.x, self.np)
+        self.plot_up(psi[1], 0.0, self.x, self.np)
+
+        self.plot_mom(0.0, momx_l, momx2_l, momp_l, momp2_l, self.cener0.real, E00.real)
+        self.plot_mom_up(0.0, momx_u, momx2_u, momp_u, momp2_u, self.cener0_u.real, E00.real)
+
+
         milliseconds_full = 0
 
         # main propagation loop
@@ -173,10 +204,8 @@ class PropagationSolver:
             # Here we're transforming the problem to the one for psi_omega
             psi_omega = []
             exp_L = cmath.exp(1j * math.pi * self.nu_L * t)
-            #psi_omega_l = [el / exp_L for el in psi[0]]
             psi_omega_l = psi[0] / exp_L
             psi_omega.append(psi_omega_l)
-            #psi_omega_u = [el * exp_L for el in psi[1]]
             psi_omega_u = psi[1] * exp_L
             psi_omega.append(psi_omega_u)
 
@@ -208,10 +237,8 @@ class PropagationSolver:
 
             # renormalization
             if cnorm_l > 0.0:
-                #psi_omega[0] = [el / math.sqrt(abs(cnorm_l)) for el in psi_omega[0]]
                 psi_omega[0] /= math.sqrt(abs(cnorm_l))
             if cnorm_u > 0.0:
-                #psi_omega[1] = [el / math.sqrt(abs(cnorm_u)) for el in psi_omega[1]]
                 psi_omega[1] /= math.sqrt(abs(cnorm_u))
 
             # calculating of a current energy
@@ -221,9 +248,6 @@ class PropagationSolver:
             cener_u = math_base.cprod(phi_omega[1], psi_omega[1], self.dx, self.np) + eL + E_full.conjugate() * orthog_lu
 
             # converting back to psi
-            #psi[0] = [el * exp_L for el in psi_omega[0]]
-            #psi[1] = [el / exp_L for el in psi_omega[1]]
-
             psi[0] = psi_omega[0] * exp_L
             psi[1] = psi_omega[1] / exp_L
 
@@ -238,30 +262,19 @@ class PropagationSolver:
             momx_u = math_base.cprod2(psi[1], self.x, self.dx, self.np)
 
             # for x^2
-            #x2 = [el * el for el in self.x]
-            x2 = numpy.multiply(self.x, self.x)
-
             momx2_l = math_base.cprod2(psi[0], x2, self.dx, self.np)
             momx2_u = math_base.cprod2(psi[1], x2, self.dx, self.np)
 
             # for p^2
             phi_kin_l = phys_base.diff(psi[0], self.akx2, self.np)
-            #phi_p2_l = [el * 2.0 * self.m for el in phi_kin_l]
             phi_p2_l = phi_kin_l * (2.0 * self.m)
             momp2_l = math_base.cprod(psi[0], phi_p2_l, self.dx, self.np)
 
             phi_kin_u = phys_base.diff(psi[1], self.akx2, self.np)
-#            phi_p2_u = [el * 2.0 * self.m for el in phi_kin_u]
             phi_p2_u = phi_kin_u * (2.0 * self.m)
             momp2_u = math_base.cprod(psi[1], phi_p2_u, self.dx, self.np)
 
             # for p
-            akx = math_base.initak(self.np, self.dx, 1)
-
-            #akx = [el * phys_base.hart_to_cm / (-1j) / phys_base.dalt_to_au for el in akx]
-            akx_mul = phys_base.hart_to_cm / (-1j) / phys_base.dalt_to_au
-            akx *= akx_mul
-
             phip_l = phys_base.diff(psi[0], akx, self.np)
             momp_l = math_base.cprod(psi[0], phip_l, self.dx, self.np)
 

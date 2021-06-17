@@ -1,5 +1,6 @@
 import cmath
 import math
+import numpy
 
 from phys_base import dalt_to_au, hart_to_cm
 
@@ -28,10 +29,12 @@ def pot(x, np, m, De, a):
     print("Theoretical ground energy for the harmonic oscillator = ", e_0)
 
     # Single harmonic potential
-    v_l = (0.0, [k_s * xi * xi / 2.0 for xi in x])
-    v.append(v_l)
+    v_l = numpy.array([k_s * xi * xi / 2.0 for xi in x])
+    v.append((0.0, v_l))
 
-    v_u = (0.0, [0.0] * np)
+    v_u = numpy.array([0.0] * np)
+    v.append((0.0, v_u))
+
     v.append(v_u)
 
     return v
@@ -63,10 +66,10 @@ def psi_init(x, np, x0, p0, m, De, a):
     psi = []
     # scaling factor for dimensional case
 #    a = math.sqrt(hart_to_cm / m / omega_0 / dalt_to_au)
-    psi_l = [cmath.exp(-(xi - x0) * (xi - x0) / 2.0 / a / a + 1j * p0 * xi) / pow(math.pi, 0.25) / math.sqrt(a) for xi in x]
+    psi_l = numpy.array([cmath.exp(-(xi - x0) * (xi - x0) / 2.0 / a / a + 1j * p0 * xi) / pow(math.pi, 0.25) / math.sqrt(a) for xi in x])
     psi.append(psi_l)
 
-    psi_u = [0.0] * np
+    psi_u = numpy.array([0.0] * np)
     psi.append(psi_u)
 
     return psi
