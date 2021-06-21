@@ -92,12 +92,22 @@ def fold(src):
     return res
 
 
+# All the possible values of reorder() function
+# are gonna be kept in this dictionary in order
+# to avoid repeating calculation
+reorder_CACHE = {}
+
+
 def reorder(nch):
     """ Shuffles the order of points in the Chebyshev interpolation scheme
         INPUT
         nch   number of interpolation points (must be a power of 2)
         OUTPUT
         jj    integer vector of length nch containing order of interpolation points """
+
+    # Checking the cache
+    if nch in reorder_CACHE.keys():
+        return reorder_CACHE[nch]
 
     assert (nch & (nch - 1) == 0) and nch > 0  # nch is a positive power of two
     folds_count = int(math.log2(nch))
@@ -114,6 +124,9 @@ def reorder(nch):
     res = []
     for i in range(nch):
         res.append(int(jj[i]))
+
+    # Putting the result into cache
+    reorder_CACHE[nch] = res
 
     return res
 
@@ -132,15 +145,15 @@ def points(nch, t, func):
     jj = reorder(nch)
 
     # calculating of the Chebyshev interpolation points
-    xp = []
+    xp = numpy.zeros(nch, numpy.float)
     for i in range(nch):
         phase = float(2 * jj[i] + 1) / float(2 * nch) * math.pi
-        xp.append(2.0 * math.cos(phase))
+        xp[i] = 2.0 * math.cos(phase)
 
-    dv = []
+    dv = numpy.zeros(nch, numpy.complex)
     # calculating the first two terms of the divided difference
-    dv.append(func(xp[0], t))
-    dv.append((func(xp[1], t) - dv[0]) / (xp[1] - xp[0]))
+    dv[0] = func(xp[0], t)
+    dv[1] = (func(xp[1], t) - dv[0]) / (xp[1] - xp[0])
 
     # recursion for the divided difference
     for i in range(2, nch):
@@ -150,6 +163,6 @@ def points(nch, t, func):
             res *= (xp[i] - xp[j])
             sum += dv[j + 1] * res
         res *= (xp[i] - xp[i - 1])
-        dv.append((func(xp[i], t) - dv[0] - sum) / res)
+        dv[i] = (func(xp[i], t) - dv[0] - sum) / res
 
     return xp, dv

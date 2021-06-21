@@ -28,21 +28,8 @@ class PropagationSolver:
             plot_test,
             plot_up,
             plot_mom_up,
-            m=0.5,    # Dalton
-            L=5.0,    # a_0   0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
-            np=1024,  #       128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
-            nch=64,
-            T=120e-15,  # s -- for morse oscillator
-            nt=400000,
-            x0=0,  # TODO: to fix x0 != 0
-            p0=0,  # TODO: to fix p0 != 0
-            a=1.0, # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
-            De=20000.0, # 1/cm
-            E0=71.68, # 1/cm
-            t0=60e-15,  # s
-            sigma=10e-15, # s
-            nu_L=0.599586e15, # Hz
-            lmin=0):
+            m, L, np, nch, T, nt, x0, p0, a, De, E0,
+            t0, sigma, nu_L, lmin):
 
         self.pot = pot
         self.psi_init = psi_init
@@ -85,7 +72,7 @@ class PropagationSolver:
             raise ValueError("The value of a reduced mass 'm/mass', of a scaling factor 'a'"
                              "and of a dissociation energy 'De' must be positive")
 
-        if not E0 >= 0.0 or not sigma > 0.0 or not nu_L > 0.0:
+        if not E0 >= 0.0 or not sigma > 0.0 or not nu_L >= 0.0:
             raise ValueError("The value of an amplitude value of the laser field energy envelope 'E0',"
                              "of a scaling parameter of the laser field envelope 'sigma'"
                              "and of a basic frequency of the laser field 'nu_L' must be positive")
@@ -98,14 +85,18 @@ class PropagationSolver:
 
         # evaluating of potential(s)
         self.v = pot(self.x, self.np, self.m, self.De, self.a)
-        #    print(v)
 
         # evaluating of initial wavefunction
         self.psi0 = psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
 
         # initial normalization check
         self.cnorm0 = math_base.cprod(self.psi0[0], self.psi0[0], self.dx, self.np)
-        print("Initial normalization: ", abs(self.cnorm0))
+
+        # evaluating of the final goal -- upper state wavefunction
+        self.psif = psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De / 2.0, self.a)
+
+        # final normalization check
+        self.cnormf = math_base.cprod(self.psif[0], self.psif[0], self.dx, self.np)
 
         # evaluating of k vector
         self.akx2 = math_base.initak(self.np, self.dx, 2)
@@ -118,7 +109,6 @@ class PropagationSolver:
         # ground state
         self.phi0 = phys_base.hamil(self.psi0[0], self.v[0][1], self.akx2, self.np)
         self.cener0 = math_base.cprod(self.phi0, self.psi0[0], self.dx, self.np)
-        print("Initial energy: ", abs(self.cener0))
 
         # excited state
         self.phi0_u = phys_base.hamil(self.psi0[1], self.v[1][1], self.akx2, self.np)
@@ -127,8 +117,14 @@ class PropagationSolver:
         # check if input data are correct in terms of the given problem
         # calculating the initial energy range of the Hamiltonian operator H
         self.emax0 = self.v[0][1][0] + abs(self.akx2[int(self.np / 2 - 1)]) + 2.0
-        print("Initial emax = ", self.emax0)
         self.emin0 = self.v[0][0]
+
+        print(" Initial state features: ")
+        print("Initial normalization: ", abs(self.cnorm0))
+        print(" Final goal features: ")
+        print("Final goal normalization: ", abs(self.cnormf))
+        print(" Initial energy: ", abs(self.cener0))
+        print(" Initial emax = ", self.emax0)
 
         # calculating the initial minimum number of collocation points that is needed for convergence
         self.np_min0 = int(
@@ -148,6 +144,10 @@ class PropagationSolver:
 
         # initial laser field energy
         E00 = phys_base.laser_field(self.E0, 0.0, self.t0, self.sigma)
+
+        # initial population
+        overlp00 = math_base.cprod(self.psi0[0], psi[0], self.dx, self.np)
+        overlpf0 = math_base.cprod(self.psif[0], psi[1], self.dx, self.np)
 
         # calculating of initial expectation values
         # for x
@@ -183,8 +183,8 @@ class PropagationSolver:
         self.plot(psi[0], 0.0, self.x, self.np)
         self.plot_up(psi[1], 0.0, self.x, self.np)
 
-        self.plot_mom(0.0, momx_l, momx2_l, momp_l, momp2_l, self.cener0.real, E00.real)
-        self.plot_mom_up(0.0, momx_u, momx2_u, momp_u, momp2_u, self.cener0_u.real, E00.real)
+        self.plot_mom(0.0, momx_l, momx2_l, momp_l, momp2_l, self.cener0.real, E00.real, overlp00)
+        self.plot_mom_up(0.0, momx_u, momx2_u, momp_u, momp2_u, self.cener0_u.real, E00.real, overlpf0)
 
 
         milliseconds_full = 0
@@ -254,7 +254,8 @@ class PropagationSolver:
 #            if l % 100 == 0:
 #                self.plot_test(l, phi[0], phi[1])
 
-            overlp = math_base.cprod(self.psi0[0], psi[0], self.dx, self.np)
+            overlp0 = math_base.cprod(self.psi0[0], psi[0], self.dx, self.np)
+            overlpf = math_base.cprod(self.psif[0], psi[1], self.dx, self.np)
 
             # calculating of expectation values
             # for x
@@ -282,14 +283,14 @@ class PropagationSolver:
             momp_u = math_base.cprod(psi[1], phip_u, self.dx, self.np)
 
             # plotting the result
-            if l % 10 == 0:
+            if l % 100 == 0:
                 if l >= self.lmin:
                     self.plot(psi[0], t, self.x, self.np)
                     self.plot_up(psi[1], t, self.x, self.np)
 
                 if l >= self.lmin:
-                    self.plot_mom(t, momx_l, momx2_l, momp_l, momp2_l, cener_l.real, E_full.real)
-                    self.plot_mom_up(t, momx_u, momx2_u, momp_u, momp2_u, cener_u.real, E_full.real)
+                    self.plot_mom(t, momx_l, momx2_l, momp_l, momp2_l, cener_l.real, E_full.real, overlp0)
+                    self.plot_mom_up(t, momx_u, momx2_u, momp_u, momp2_u, cener_u.real, E_full.real, overlpf)
 
             time_after = datetime.datetime.now()
             time_span = time_after - time_before
@@ -312,7 +313,8 @@ class PropagationSolver:
                 print("normalization on the upper state = ", cnorm_u)
                 print("orthogonality of the lower and upper wavefunctions (psi_0, psi_1^*) = ", orthog_lu)
                 print("orthogonality of the upper and lower wavefunctions (psi_1, psi_0^*) = ", orthog_ul)
-                print("overlap = ", overlp)
+                print("overlap with initial wavefunction = ", overlp0)
+                print("overlap with final goal wavefunction = ", overlpf)
                 print("energy on the lower state = ", cener_l.real)
                 print("energy on the upper state = ", cener_u.real)
 

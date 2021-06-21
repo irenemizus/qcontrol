@@ -78,7 +78,6 @@ __license__ = "Python"
 
 
 import harmonic
-import single_morse
 import double_morse
 
 OUT_PATH="output"
@@ -103,9 +102,9 @@ def plot_file(psi, t, x, np, f_abs, f_real):
         f_real.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], psi[i].real))
 
 
-def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, file_mom):
+def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, file_mom):
     """ Plots expectation values of the current x, x*x, p and p*p """
-    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E))
+    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, abs(overlp)))
 
 
 def plot_test_file(l, phi_l, phi_u, f):
@@ -118,11 +117,15 @@ def plot_test_file(l, phi_l, phi_u, f):
         f.write("{0}\n".format(phi_u[i]))
 
 def main(argv):
+    import ctypes;
+    mkl_rt = ctypes.CDLL('libmkl_rt.so');
+    print(mkl_rt.mkl_get_max_threads())
+
     """ The main() function """
     # analyze cmdline:
     try:
         options, arguments = getopt.getopt(argv, 'hm:L:a:T:', ['help', 'mass=', '', '', '', 'np=', 'nch=', 'nt=', 'x0=', 'p0=', \
-                                          'De=', 'E0=', 't0=', 'sigma=', 'nu_L', 'lmin=', 'file_abs=', 'file_real=', 'file_mom='])
+                                          'De=', 'E0=', 't0=', 'sigma=', 'nu_L=', 'lmin=', 'file_abs=', 'file_real=', 'file_mom='])
     except getopt.GetoptError:
         print("\tThere are unrecognized options!", sys.stderr)
         print("\tRun this script with '-h' option to see the usage info and available options.", sys.stderr)
@@ -133,6 +136,23 @@ def main(argv):
     file_real = "fort.22"
     file_mom = "fort.23"
 
+    # Default argument values
+    m = 0.5  # Dalton
+    L = 5.0  # a_0   0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
+    np = 1024  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
+    nch = 64
+    T = 120e-15  # s -- for morse oscillator
+    nt = 400000
+    x0 = 0  # TODO: to fix x0 != 0
+    p0 = 0  # TODO: to fix p0 != 0
+    a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
+    De = 20000.0  # 1/cm
+    E0 = 71.68  # 1/cm
+    t0 = 60e-15  # s
+    sigma = 10e-15  # s
+    nu_L = 0.5879558e15  # 0.5859603e15, #0.599586e15, # Hz
+    lmin = 0
+
     # analyze provided options and their values (if any):
     for opt, val in options:
         if opt in ("-h", "--help"):
@@ -140,39 +160,39 @@ def main(argv):
             sys.exit()
         elif opt in ("-m", "--mass"):
             m = float(val)
-        elif opt == "L":
+        elif opt == "-L":
             L = float(val)
-        elif opt == "np":
+        elif opt == "--np":
             np = int(val)
-        elif opt == "nch":
+        elif opt == "--nch":
             nch = int(val)
-        elif opt == "T":
+        elif opt == "-T":
             T = float(val)
-        elif opt == "a":
+        elif opt == "-a":
             a = float(val)
-        elif opt == "nt":
+        elif opt == "--nt":
             nt = int(val)
-        elif opt == "x0":
+        elif opt == "--x0":
             x0 = float(val)
-        elif opt == "p0":
+        elif opt == "--p0":
             p0 = float(val)
-        elif opt == "De":
+        elif opt == "--De":
             De = float(val)
-        elif opt == "E0":
+        elif opt == "--E0":
             E0 = float(val)
-        elif opt == "t0":
+        elif opt == "--t0":
             t0 = float(val)
-        elif opt == "sigma":
+        elif opt == "--sigma":
             sigma = float(val)
-        elif opt == "nu_L":
+        elif opt == "--nu_L":
             nu_L = float(val)
-        elif opt == "lmin":
+        elif opt == "--lmin":
             lmin = int(val)
-        elif opt == "file_abs":
+        elif opt == "--file_abs":
             file_abs = val
-        elif opt == "file_real":
+        elif opt == "--file_real":
             file_real = val
-        elif opt == "file_mom":
+        elif opt == "--file_mom":
             file_mom = val
 
     psi_init = double_morse.psi_init
@@ -190,19 +210,22 @@ def main(argv):
         def plot(psi, t, x, np):
             plot_file(psi, t, x, np, f_abs, f_real)
 
-        def plot_mom(t, momx, momx2, momp, momp2, ener, E):
-            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, f_mom)
+        def plot_mom(t, momx, momx2, momp, momp2, ener, E, overlp):
+            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, f_mom)
 
         def plot_up(psi, t, x, np):
             plot_file(psi, t, x, np, f_abs_up, f_real_up)
 
-        def plot_mom_up(t, momx, momx2, momp, momp2, ener, E):
-            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, f_mom_up)
+        def plot_mom_up(t, momx, momx2, momp, momp2, ener, E, overlp):
+            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, f_mom_up)
 
         def plot_test(l, phi_l, phi_u):
             plot_test_file(l, phi_l, phi_u, f)
 
-        solver = propagation.PropagationSolver(psi_init, pot, plot, plot_mom, plot_test, plot_up, plot_mom_up)
+        solver = propagation.PropagationSolver(
+            psi_init, pot, plot, plot_mom, plot_test, plot_up, plot_mom_up,
+            m=m, L=L, np=np, nch=nch, T=T, nt=nt, x0=x0, p0=p0, a=a, De=De, E0=E0,
+            t0=t0, sigma=sigma, nu_L=nu_L, lmin=lmin)
         solver.time_propagation()
 
 
