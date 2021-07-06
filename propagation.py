@@ -105,16 +105,17 @@ class PropagationSolver:
         self.coef_kin = -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
         self.akx2 *= self.coef_kin
 
-        # calculating of initial energy
-        # ground state
+        # calculating of initial ground energy
         self.phi0 = phys_base.hamil(self.psi0[0], self.v[0][1], self.akx2, self.np)
         self.cener0 = math_base.cprod(self.phi0, self.psi0[0], self.dx, self.np)
 
-        # excited state
-        #self.phi0_u = phys_base.hamil(self.psi0[1], self.v[1][1], self.akx2, self.np)
-        #self.cener0_u = math_base.cprod(self.phi0_u, self.psi0[1], self.dx, self.np)
-        self.phi0_u = phys_base.hamil(self.psif[0], self.v[1][1], self.akx2, self.np)
-        self.cener0_u = math_base.cprod(self.phi0_u, self.psif[0], self.dx, self.np)
+        # calculating of final excited energy
+        self.phif = phys_base.hamil(self.psif[0], self.v[1][1], self.akx2, self.np)
+        self.cenerf = math_base.cprod(self.phif, self.psif[0], self.dx, self.np)
+
+        # initial excited energy
+        self.phi0_u = phys_base.hamil(self.psi0[1], self.v[1][1], self.akx2, self.np)
+        self.cener0_u = math_base.cprod(self.phi0_u, self.psi0[1], self.dx, self.np)
         self.cener0_tot = self.cener0 + self.cener0_u
 
         # check if input data are correct in terms of the given problem
@@ -124,10 +125,12 @@ class PropagationSolver:
 
         print(" Initial state features: ")
         print("Initial normalization: ", abs(self.cnorm0))
+        print("Initial energy: ", abs(self.cener0))
+        print("Initial emax = ", self.emax0)
         print(" Final goal features: ")
         print("Final goal normalization: ", abs(self.cnormf))
-        print(" Initial energy: ", abs(self.cener0))
-        print(" Initial emax = ", self.emax0)
+        print("Final goal energy: ", abs(self.cenerf))
+
 
         # calculating the initial minimum number of collocation points that is needed for convergence
         self.np_min0 = int(
@@ -234,9 +237,6 @@ class PropagationSolver:
 
             cnorm_l = math_base.cprod(psi_omega[0], psi_omega[0], self.dx, self.np)
             cnorm_u = math_base.cprod(psi_omega[1], psi_omega[1], self.dx, self.np)
-            orthog_lu = math_base.cprod(psi_omega[0], psi_omega[1], self.dx, self.np) * exp_L * exp_L
-            orthog_ul = math_base.cprod(psi_omega[1], psi_omega[0], self.dx, self.np) / exp_L / exp_L
-
             cnorm = cnorm_l + cnorm_u
 
             # renormalization
@@ -244,16 +244,26 @@ class PropagationSolver:
                 psi_omega[0] /= math.sqrt(abs(cnorm))
                 psi_omega[1] /= math.sqrt(abs(cnorm))
 
-            # calculating of a current energy
-            phi_omega = phys_base.hamil2D(psi_omega, self.v, self.akx2, self.np, E, eL)
+            orthog_lu = math_base.cprod(psi_omega[0], psi_omega[1], self.dx, self.np) * exp_L * exp_L
+            orthog_ul = math_base.cprod(psi_omega[1], psi_omega[0], self.dx, self.np) / exp_L / exp_L
 
-            cener_l = math_base.cprod(phi_omega[0], psi_omega[0], self.dx, self.np)# + E_full * orthog_ul
-            cener_u = math_base.cprod(phi_omega[1], psi_omega[1], self.dx, self.np)# + E_full.conjugate() * orthog_lu
-            cener = cener_l + cener_u
+            # calculating of a current energy
+            #phi_omega = phys_base.hamil2D(psi_omega, self.v, self.akx2, self.np, E, eL)
+
+            #cener_l = math_base.cprod(phi_omega[0], psi_omega[0], self.dx, self.np)# + E_full * orthog_ul
+            #cener_u = math_base.cprod(phi_omega[1], psi_omega[1], self.dx, self.np)# + E_full.conjugate() * orthog_lu
+            #cener = cener_l + cener_u
 
             # converting back to psi
             psi[0] = psi_omega[0] * exp_L
             psi[1] = psi_omega[1] / exp_L
+
+            # calculating of a current energy
+            phi = phys_base.hamil2D_orig(psi, self.v, self.akx2, self.np, E_full)
+
+            cener_l = math_base.cprod(phi[0], psi[0], self.dx, self.np)
+            cener_u = math_base.cprod(phi[1], psi[1], self.dx, self.np)
+            cener = cener_l + cener_u
 
 #            if l % 100 == 0:
 #                self.plot_test(l, phi[0], phi[1])

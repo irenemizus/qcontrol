@@ -74,6 +74,41 @@ def hamil(psi, v, akx2, np):
 
     return phi
 
+def hamil2D_orig(psi, v, akx2, np, E_full):
+    """ Calculates two-dimensional Hamiltonian mapping of vector psi (without energy shifting)
+        INPUT
+        psi    list of complex vectors of length np
+        v      list of potential energy real vectors of length np
+        akx2   complex kinetic energy vector of length np, = k^2/2m
+        np     number of grid points
+        E_full a real value of external laser field
+        OUTPUT
+        phi = H psi list of complex vectors of length np """
+
+    for i in range(len(psi)):
+        assert psi[i].size == np
+        assert v[i][1].size == np
+    assert akx2.size == np
+
+    phi = []
+    # diagonal terms
+    # ground state 1D Hamiltonian mapping for the lower state
+    phi_dl = hamil(psi[0], v[0][1], akx2, np)
+
+    # excited state 1D Hamiltonian mapping for the upper state
+    phi_du = hamil(psi[1], v[1][1], akx2, np)
+
+    # adding non-diagonal terms
+    psiE_u = psi[1] * E_full
+    phi_l = numpy.subtract(phi_dl, psiE_u)
+    phi.append(phi_l)
+
+    psiE_d = psi[0] * E_full.conjugate()
+    phi_u = numpy.subtract(phi_du, psiE_d)
+    phi.append(phi_u)
+
+    return phi
+
 
 def hamil2D(psi, v, akx2, np, E, eL):
     """ Calculates two-dimensional Hamiltonian mapping of vector psi
@@ -82,7 +117,7 @@ def hamil2D(psi, v, akx2, np, E, eL):
         v     list of potential energy real vectors of length np
         akx2  complex kinetic energy vector of length np, = k^2/2m
         np    number of grid points
-        E     a complex value of external laser field
+        E     a real value of external laser field
         eL    a laser field energy shift
         OUTPUT
         phi = H psi list of complex vectors of length np """

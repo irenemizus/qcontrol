@@ -150,7 +150,7 @@ def main(argv):
     E0 = 71.68  # 1/cm
     t0 = 140e-15  # s
     sigma = 50e-15  # s
-    nu_L = 0.293e15#0.5879558e15  # 0.5859603e15, #0.599586e15, # Hz
+    nu_L = 0.293e15 #0.5879558e15  # 0.5859603e15 - calculated difference b/w excited and ground energies !!, #0.599586e15, # Hz
     lmin = 0
 
     # analyze provided options and their values (if any):
