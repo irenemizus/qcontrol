@@ -111,8 +111,11 @@ class PropagationSolver:
         self.cener0 = math_base.cprod(self.phi0, self.psi0[0], self.dx, self.np)
 
         # excited state
-        self.phi0_u = phys_base.hamil(self.psi0[1], self.v[1][1], self.akx2, self.np)
-        self.cener0_u = math_base.cprod(self.phi0_u, self.psi0[1], self.dx, self.np)
+        #self.phi0_u = phys_base.hamil(self.psi0[1], self.v[1][1], self.akx2, self.np)
+        #self.cener0_u = math_base.cprod(self.phi0_u, self.psi0[1], self.dx, self.np)
+        self.phi0_u = phys_base.hamil(self.psif[0], self.v[1][1], self.akx2, self.np)
+        self.cener0_u = math_base.cprod(self.phi0_u, self.psif[0], self.dx, self.np)
+        self.cener0_tot = self.cener0 + self.cener0_u
 
         # check if input data are correct in terms of the given problem
         # calculating the initial energy range of the Hamiltonian operator H
@@ -183,9 +186,8 @@ class PropagationSolver:
         self.plot(psi[0], 0.0, self.x, self.np)
         self.plot_up(psi[1], 0.0, self.x, self.np)
 
-        self.plot_mom(0.0, momx_l, momx2_l, momp_l, momp2_l, self.cener0.real, E00.real, overlp00)
-        self.plot_mom_up(0.0, momx_u, momx2_u, momp_u, momp2_u, self.cener0_u.real, E00.real, overlpf0)
-
+        #self.plot_mom(0.0, momx_l, momx2_l, momp_l, momp2_l, self.cener0.real, E00.real, overlp00, self.cener0_tot.real)
+        #self.plot_mom_up(0.0, momx_u, momx2_u, momp_u, momp2_u, self.cener0_u.real, E00.real, overlpf0, self.cener0_tot.real)
 
         milliseconds_full = 0
 
@@ -235,17 +237,19 @@ class PropagationSolver:
             orthog_lu = math_base.cprod(psi_omega[0], psi_omega[1], self.dx, self.np) * exp_L * exp_L
             orthog_ul = math_base.cprod(psi_omega[1], psi_omega[0], self.dx, self.np) / exp_L / exp_L
 
+            cnorm = cnorm_l + cnorm_u
+
             # renormalization
-            if cnorm_l > 0.0:
-                psi_omega[0] /= math.sqrt(abs(cnorm_l))
-            if cnorm_u > 0.0:
-                psi_omega[1] /= math.sqrt(abs(cnorm_u))
+            if cnorm > 0.0:
+                psi_omega[0] /= math.sqrt(abs(cnorm))
+                psi_omega[1] /= math.sqrt(abs(cnorm))
 
             # calculating of a current energy
             phi_omega = phys_base.hamil2D(psi_omega, self.v, self.akx2, self.np, E, eL)
 
-            cener_l = math_base.cprod(phi_omega[0], psi_omega[0], self.dx, self.np) - eL + E_full * orthog_ul
-            cener_u = math_base.cprod(phi_omega[1], psi_omega[1], self.dx, self.np) + eL + E_full.conjugate() * orthog_lu
+            cener_l = math_base.cprod(phi_omega[0], psi_omega[0], self.dx, self.np)# + E_full * orthog_ul
+            cener_u = math_base.cprod(phi_omega[1], psi_omega[1], self.dx, self.np)# + E_full.conjugate() * orthog_lu
+            cener = cener_l + cener_u
 
             # converting back to psi
             psi[0] = psi_omega[0] * exp_L
@@ -289,15 +293,15 @@ class PropagationSolver:
                     self.plot_up(psi[1], t, self.x, self.np)
 
                 if l >= self.lmin:
-                    self.plot_mom(t, momx_l, momx2_l, momp_l, momp2_l, cener_l.real, E_full.real, overlp0)
-                    self.plot_mom_up(t, momx_u, momx2_u, momp_u, momp2_u, cener_u.real, E_full.real, overlpf)
+                    self.plot_mom(t, momx_l, momx2_l, momp_l, momp2_l, cener_l.real, E_full.real, overlp0, cener.real)
+                    self.plot_mom_up(t, momx_u, momx2_u, momp_u, momp2_u, cener_u.real, E_full.real, overlpf, cener.real)
 
             time_after = datetime.datetime.now()
             time_span = time_after - time_before
             milliseconds_per_step = time_span.microseconds / 1000
             milliseconds_full += milliseconds_per_step
 
-            if l % 100 == 0:
+            if l % 500 == 0:
                 if self.np < np_min:
                     self._warning_collocation_points(np_min)
                 if self.nt < nt_min:

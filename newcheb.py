@@ -102,9 +102,9 @@ def plot_file(psi, t, x, np, f_abs, f_real):
         f_real.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], psi[i].real))
 
 
-def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, file_mom):
+def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, ener_tot, file_mom):
     """ Plots expectation values of the current x, x*x, p and p*p """
-    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, abs(overlp)))
+    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, abs(overlp), ener_tot))
 
 
 def plot_test_file(l, phi_l, phi_u, f):
@@ -141,16 +141,16 @@ def main(argv):
     L = 5.0  # a_0   0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
     np = 1024  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
     nch = 64
-    T = 120e-15  # s -- for morse oscillator
-    nt = 400000
+    T = 280e-15  # s -- for morse oscillator
+    nt = 200000
     x0 = 0  # TODO: to fix x0 != 0
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
     De = 20000.0  # 1/cm
     E0 = 71.68  # 1/cm
-    t0 = 60e-15  # s
-    sigma = 10e-15  # s
-    nu_L = 0.5879558e15  # 0.5859603e15, #0.599586e15, # Hz
+    t0 = 140e-15  # s
+    sigma = 50e-15  # s
+    nu_L = 0.293e15#0.5879558e15  # 0.5859603e15, #0.599586e15, # Hz
     lmin = 0
 
     # analyze provided options and their values (if any):
@@ -210,14 +210,14 @@ def main(argv):
         def plot(psi, t, x, np):
             plot_file(psi, t, x, np, f_abs, f_real)
 
-        def plot_mom(t, momx, momx2, momp, momp2, ener, E, overlp):
-            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, f_mom)
+        def plot_mom(t, momx, momx2, momp, momp2, ener, E, overlp, ener_tot):
+            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, ener_tot, f_mom)
 
         def plot_up(psi, t, x, np):
             plot_file(psi, t, x, np, f_abs_up, f_real_up)
 
-        def plot_mom_up(t, momx, momx2, momp, momp2, ener, E, overlp):
-            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, f_mom_up)
+        def plot_mom_up(t, momx, momx2, momp, momp2, ener, E, overlp, ener_tot):
+            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, ener_tot, f_mom_up)
 
         def plot_test(l, phi_l, phi_u):
             plot_test_file(l, phi_l, phi_u, f)
