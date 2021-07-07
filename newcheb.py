@@ -17,13 +17,13 @@ Options:
                     is equal to 15 for dimensionless problem
     --np
         number of collocation points; must be a power of 2
-        by default, is equal to 2048
+        by default, is equal to 1024
     --nch
         number of Chebyshev interpolation points; must be a power of 2
         by default, is equal to 64
     --T
         time range of the problem in femtosec or in pi (half periods) units
-        by default, is equal to 60.0 fs for dimensional problem
+        by default, is equal to 280.0 fs for dimensional problem
                     is equal to 0.1 for dimensionless problem
     --nt
         number of time grid points
@@ -45,17 +45,23 @@ Options:
         by default, is equal to 71.68 1 / cm
     --t0
         initial time, when the laser field is switched on, in femtosec
-        by default, is equal to 25 fs
+        by default, is equal to 140 fs
     --sigma
         scaling parameter of the laser field envelope in femtosec
-        by default, is equal to 10 fs
+        by default, is equal to 50 fs
     --nu_L
         basic frequency of the laser field in PHz
-        by default, is equal to 0.599586 PHz
+        by default, is equal to 0.293 PHz
     --lmin
         number of a time step, from which the result should be written to a file.
         A negative value will be considered as 0
         by default, is equal to 0
+    --mod_stdout
+        step of output to stdout (to write to stdout each <val>-th time step).
+        By default, is equal to 500
+    --mod_fileout
+        step of writing in file (to write in file each <val>-th time step).
+        By default, is equal to 100
     --file_abs
         output file name, to which absolute values of wavefunctions should be written
         by default, is equal to "fort.21"
@@ -77,7 +83,6 @@ __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
 
-import harmonic
 import double_morse
 
 OUT_PATH="output"
@@ -125,7 +130,8 @@ def main(argv):
     # analyze cmdline:
     try:
         options, arguments = getopt.getopt(argv, 'hm:L:a:T:', ['help', 'mass=', '', '', '', 'np=', 'nch=', 'nt=', 'x0=', 'p0=', \
-                                          'De=', 'E0=', 't0=', 'sigma=', 'nu_L=', 'lmin=', 'file_abs=', 'file_real=', 'file_mom='])
+                                          'De=', 'E0=', 't0=', 'sigma=', 'nu_L=', 'lmin=', 'mod_stdout=', 'mod_fileout', \
+                                          'file_abs=', 'file_real=', 'file_mom='])
     except getopt.GetoptError:
         print("\tThere are unrecognized options!", sys.stderr)
         print("\tRun this script with '-h' option to see the usage info and available options.", sys.stderr)
@@ -139,10 +145,10 @@ def main(argv):
     # Default argument values
     m = 0.5  # Dalton
     L = 5.0  # a_0   0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
-    np = 1024  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
+    np = 2048  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
     nch = 64
     T = 280e-15  # s -- for morse oscillator
-    nt = 200000
+    nt = 100000
     x0 = 0  # TODO: to fix x0 != 0
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
@@ -152,6 +158,8 @@ def main(argv):
     sigma = 50e-15  # s
     nu_L = 0.293e15 #0.5879558e15  # 0.5859603e15 - calculated difference b/w excited and ground energies !!, #0.599586e15, # Hz
     lmin = 0
+    mod_stdout = 500
+    mod_fileout = 100
 
     # analyze provided options and their values (if any):
     for opt, val in options:
@@ -188,6 +196,10 @@ def main(argv):
             nu_L = float(val)
         elif opt == "--lmin":
             lmin = int(val)
+        elif opt == "--mod_stdout":
+            mod_stdout = int(val)
+        elif opt == "--mod_fileout":
+            mod_fileout = int(val)
         elif opt == "--file_abs":
             file_abs = val
         elif opt == "--file_real":
@@ -225,8 +237,9 @@ def main(argv):
         solver = propagation.PropagationSolver(
             psi_init, pot, plot, plot_mom, plot_test, plot_up, plot_mom_up,
             m=m, L=L, np=np, nch=nch, T=T, nt=nt, x0=x0, p0=p0, a=a, De=De, E0=E0,
-            t0=t0, sigma=sigma, nu_L=nu_L, lmin=lmin)
+            t0=t0, sigma=sigma, nu_L=nu_L, lmin=lmin, mod_stdout=mod_stdout, mod_fileout=mod_fileout)
         solver.time_propagation()
+        #solver.filtering()
 
 
 if __name__ == "__main__":

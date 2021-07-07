@@ -1,7 +1,7 @@
 #!/bin/bash
-declare -a nu_L_list=("2.9275e14" "2.9325e14" "2.915e14" "2.945e14")
-declare -a E0_list=("71.68")
-declare nt=200000
+declare -a nu_L_list=("2.89e14" "2.90e14" "2.91e14" "2.915e14" "2.92e14" "2.925e14" "2.9275e14" "2.93e14" "2.935e14" "2.9325e14" "2.935e14" "2.94e14" "2.945e14" "2.95e14" "2.97e14")
+declare -a E0_list=("300")
+declare nt=100000
 for E0 in "${E0_list[@]}"
 do
 for nu_L in "${nu_L_list[@]}"

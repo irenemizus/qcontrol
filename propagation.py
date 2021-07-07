@@ -8,6 +8,7 @@ import datetime
 
 import math_base
 import phys_base
+import harmonic
 
 
 class PropagationSolver:
@@ -29,7 +30,7 @@ class PropagationSolver:
             plot_up,
             plot_mom_up,
             m, L, np, nch, T, nt, x0, p0, a, De, E0,
-            t0, sigma, nu_L, lmin):
+            t0, sigma, nu_L, lmin, mod_stdout, mod_fileout):
 
         self.pot = pot
         self.psi_init = psi_init
@@ -54,15 +55,18 @@ class PropagationSolver:
         self.sigma = sigma
         self.nu_L = nu_L
         self.lmin = lmin
+        self.mod_stdout = mod_stdout
+        self.mod_fileout = mod_fileout
 
         # analyze provided arguments
         if not math.log2(np).is_integer() or not math.log2(nch).is_integer():
             raise ValueError("The number of collocation points 'np' and of Chebyshev "
                   "interpolation points 'nch' must be positive integers and powers of 2")
 
-        if lmin < 0:
+        if lmin < 0 or mod_fileout < 0 or mod_stdout < 0:
             raise ValueError("The number 'lmin' of time iteration, from which the result"
-                             "should be written to a file, should be positive or 0")
+                             "should be written to a file, as well as steps of output "
+                             "'mod_stdout' and 'mod_fileout' should be positive or 0")
 
         if not L > 0.0 or not T > 0.0:
             raise ValueError("The value of spatial range 'L' and of time range 'T' of the problem"
@@ -86,18 +90,6 @@ class PropagationSolver:
         # evaluating of potential(s)
         self.v = pot(self.x, self.np, self.m, self.De, self.a)
 
-        # evaluating of initial wavefunction
-        self.psi0 = psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
-
-        # initial normalization check
-        self.cnorm0 = math_base.cprod(self.psi0[0], self.psi0[0], self.dx, self.np)
-
-        # evaluating of the final goal -- upper state wavefunction
-        self.psif = psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De / 2.0, self.a)
-
-        # final normalization check
-        self.cnormf = math_base.cprod(self.psif[0], self.psif[0], self.dx, self.np)
-
         # evaluating of k vector
         self.akx2 = math_base.initak(self.np, self.dx, 2)
 
@@ -105,32 +97,12 @@ class PropagationSolver:
         self.coef_kin = -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
         self.akx2 *= self.coef_kin
 
-        # calculating of initial ground energy
-        self.phi0 = phys_base.hamil(self.psi0[0], self.v[0][1], self.akx2, self.np)
-        self.cener0 = math_base.cprod(self.phi0, self.psi0[0], self.dx, self.np)
-
-        # calculating of final excited energy
-        self.phif = phys_base.hamil(self.psif[0], self.v[1][1], self.akx2, self.np)
-        self.cenerf = math_base.cprod(self.phif, self.psif[0], self.dx, self.np)
-
-        # initial excited energy
-        self.phi0_u = phys_base.hamil(self.psi0[1], self.v[1][1], self.akx2, self.np)
-        self.cener0_u = math_base.cprod(self.phi0_u, self.psi0[1], self.dx, self.np)
-        self.cener0_tot = self.cener0 + self.cener0_u
-
         # check if input data are correct in terms of the given problem
         # calculating the initial energy range of the Hamiltonian operator H
         self.emax0 = self.v[0][1][0] + abs(self.akx2[int(self.np / 2 - 1)]) + 2.0
         self.emin0 = self.v[0][0]
 
-        print(" Initial state features: ")
-        print("Initial normalization: ", abs(self.cnorm0))
-        print("Initial energy: ", abs(self.cener0))
         print("Initial emax = ", self.emax0)
-        print(" Final goal features: ")
-        print("Final goal normalization: ", abs(self.cnormf))
-        print("Final goal energy: ", abs(self.cenerf))
-
 
         # calculating the initial minimum number of collocation points that is needed for convergence
         self.np_min0 = int(
@@ -140,20 +112,62 @@ class PropagationSolver:
             )
         )
 
+        # calculating the initial minimum number of time steps that is needed for convergence
+        self.nt_min0 = int(
+            math.ceil((self.emax0 - self.emin0) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h
+            )
+        )
+
         if self.np < self.np_min0:
             self._warning_collocation_points(self.np_min0)
+        if self.nt < self.nt_min0:
+            self._warning_time_steps(self.nt_min0)
 
     def time_propagation(self):
+        # evaluating of initial wavefunction
+        psi0 = self.psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
+
+        # initial normalization check
+        cnorm0 = math_base.cprod(psi0[0], psi0[0], self.dx, self.np)
+
+        # calculating of initial ground energy
+        phi0 = phys_base.hamil(psi0[0], self.v[0][1], self.akx2, self.np)
+        cener0 = math_base.cprod(phi0, psi0[0], self.dx, self.np)
+
+        # initial excited energy
+        phi0_u = phys_base.hamil(psi0[1], self.v[1][1], self.akx2, self.np)
+        cener0_u = math_base.cprod(phi0_u, psi0[1], self.dx, self.np)
+        cener0_tot = cener0 + cener0_u
+
+        # evaluating of the final goal -- upper state wavefunction
+        psif = self.psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De / 2.0, self.a)
+
+        # final normalization check
+        cnormf = math_base.cprod(psif[0], psif[0], self.dx, self.np)
+
+        # calculating of final excited energy
+        phif = phys_base.hamil(psif[0], self.v[1][1], self.akx2, self.np)
+        cenerf = math_base.cprod(phif, psif[0], self.dx, self.np)
+
+        print(" Initial state features: ")
+        print("Initial normalization: ", abs(cnorm0))
+        print("Initial energy: ", abs(cener0))
+
+        print(" Final goal features: ")
+        print("Final goal normalization: ", abs(cnormf))
+        print("Final goal energy: ", abs(cenerf))
+
+
         # time propagation
         dt = self.T / (self.nt - 1)
-        psi = copy.deepcopy(self.psi0)
+        psi = copy.deepcopy(psi0)
 
         # initial laser field energy
         E00 = phys_base.laser_field(self.E0, 0.0, self.t0, self.sigma)
 
         # initial population
-        overlp00 = math_base.cprod(self.psi0[0], psi[0], self.dx, self.np)
-        overlpf0 = math_base.cprod(self.psif[0], psi[1], self.dx, self.np)
+        overlp00 = math_base.cprod(psi0[0], psi[0], self.dx, self.np)
+        overlpf0 = math_base.cprod(psif[0], psi[1], self.dx, self.np)
 
         # calculating of initial expectation values
         # for x
@@ -268,8 +282,8 @@ class PropagationSolver:
 #            if l % 100 == 0:
 #                self.plot_test(l, phi[0], phi[1])
 
-            overlp0 = math_base.cprod(self.psi0[0], psi[0], self.dx, self.np)
-            overlpf = math_base.cprod(self.psif[0], psi[1], self.dx, self.np)
+            overlp0 = math_base.cprod(psi0[0], psi[0], self.dx, self.np)
+            overlpf = math_base.cprod(psif[0], psi[1], self.dx, self.np)
 
             # calculating of expectation values
             # for x
@@ -297,7 +311,7 @@ class PropagationSolver:
             momp_u = math_base.cprod(psi[1], phip_u, self.dx, self.np)
 
             # plotting the result
-            if l % 100 == 0:
+            if l % self.mod_fileout == 0:
                 if l >= self.lmin:
                     self.plot(psi[0], t, self.x, self.np)
                     self.plot_up(psi[1], t, self.x, self.np)
@@ -311,7 +325,7 @@ class PropagationSolver:
             milliseconds_per_step = time_span.microseconds / 1000
             milliseconds_full += milliseconds_per_step
 
-            if l % 500 == 0:
+            if l % self.mod_stdout == 0:
                 if self.np < np_min:
                     self._warning_collocation_points(np_min)
                 if self.nt < nt_min:
@@ -333,3 +347,83 @@ class PropagationSolver:
                 print("energy on the upper state = ", cener_u.real)
 
                 print("milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(milliseconds_full / l))
+
+
+    def filtering(self):
+        # filtering task for obtaining of an initial wavefunction in the given potential
+        dt = self.T / (self.nt - 1)
+        psi_init = harmonic.psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
+        psi = copy.deepcopy(psi_init)
+
+        # plotting initial values
+        self.plot(psi[0], 0.0, self.x, self.np)
+
+        # initial normalization check
+        cnorm0 = math_base.cprod(psi[0], psi[0], self.dx, self.np)
+
+        # calculating of initial energy
+        phi0 = phys_base.hamil(psi[0], self.v[0][1], self.akx2, self.np)
+        cener0 = math_base.cprod(phi0, psi[0], self.dx, self.np)
+
+        print(" Initial state features: ")
+        print("Initial normalization: ", abs(cnorm0))
+        print("Initial energy: ", abs(cener0))
+
+        milliseconds_full = 0
+
+        # main propagation loop
+        for l in range(1, self.nt + 1):
+            time_before = datetime.datetime.now()
+
+            t = dt * l
+            t_sc = dt * (self.emax0 - self.emin0) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
+
+            psi = phys_base.prop(psi, t_sc, self.nch, self.np, self.v, self.akx2, self.emin0, self.emax0, 0.0, 0.0)
+
+            cnorm = math_base.cprod(psi[0], psi[0], self.dx, self.np)
+
+            # renormalization
+            if cnorm > 0.0:
+                psi[0] /= math.sqrt(abs(cnorm))
+
+            phi = phys_base.hamil(psi[0], self.v[0][1], self.akx2, self.np)
+
+            cener = math_base.cprod(phi, psi[0], self.dx, self.np)
+            overlp0 = math_base.cprod(psi_init[0], psi[0], self.dx, self.np)
+
+            # plotting the result
+            if l % self.mod_fileout == 0:
+                if l >= self.lmin:
+                    self.plot(psi[0], t, self.x, self.np)
+
+                if l >= self.lmin:
+                    self.plot_mom(t, 0.0, 0.0, 0.0, 0.0, cener.real, 0.0, overlp0, cener.real)
+
+
+            time_after = datetime.datetime.now()
+            time_span = time_after - time_before
+            milliseconds_per_step = time_span.microseconds / 1000
+            milliseconds_full += milliseconds_per_step
+
+            if l % self.mod_stdout == 0:
+                print("l = ", l)
+                print("t = ", t * 1e15, "fs")
+
+                print("normalized scaled time interval = ", t_sc)
+                print("normalization on the lower state = ", cnorm)
+                print("overlap with initial wavefunction = ", overlp0)
+                print("energy on the lower state = ", cener.real)
+
+                print("milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(milliseconds_full / l))
+
+
+
+
+
+
+
+
+
+
+
+

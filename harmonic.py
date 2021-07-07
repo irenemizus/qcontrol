@@ -69,7 +69,7 @@ def psi_init(x, np, x0, p0, m, De, a):
     psi_l = numpy.array([cmath.exp(-(xi - x0) * (xi - x0) / 2.0 / a / a + 1j * p0 * xi) / pow(math.pi, 0.25) / math.sqrt(a) for xi in x])
     psi.append(psi_l)
 
-    psi_u = numpy.array([0.0] * np)
+    psi_u = numpy.array([0.0] * np).astype(complex)
     psi.append(psi_u)
 
     return psi
