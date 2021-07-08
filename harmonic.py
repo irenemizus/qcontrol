@@ -5,7 +5,7 @@ import numpy
 from phys_base import dalt_to_au, hart_to_cm
 
 
-def pot(x, np, m, De, a):
+def pot(x, np, m, De, a, x0p):
     """ Potential energy vector
         INPUT
         x       vector of length np defining positions of grid points
@@ -13,6 +13,7 @@ def pot(x, np, m, De, a):
         a       scaling factor
         De      dissociation energy (dummy variable)
         m       reduced mass of the system
+        x0p     partial shift value of the upper potential corresponding to the ground one (dummy variable)
         OUTPUT
         v       real vector of length np describing the dimensionless potential V(X) """
 

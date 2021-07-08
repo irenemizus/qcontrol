@@ -4,7 +4,7 @@ import numpy
 from phys_base import hart_to_cm, dalt_to_au
 
 
-def pot(x, np, m, De, a):
+def pot(x, np, m, De, a, x0p):
     """ Potential energy vectors
         INPUT
         x       vector of length np defining positions of grid points
@@ -12,6 +12,7 @@ def pot(x, np, m, De, a):
         a       scaling factor
         De      dissociation energy
         m       reduced mass of the system
+        x0p     partial shift value of the upper potential corresponding to the ground one
         OUTPUT
         v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
 
@@ -34,7 +35,7 @@ def pot(x, np, m, De, a):
 
     # Upper morse potential
     Du = De / 2.0
-    v_u = numpy.array([Du * (1.0 - math.exp(-a * xi)) * (1.0 - math.exp(-a * xi)) + Dl for xi in x])
+    v_u = numpy.array([Du * (1.0 - math.exp(-a * (xi - x0p))) * (1.0 - math.exp(-a * (xi - x0p))) + Dl for xi in x])
     v.append((Dl, v_u))
 
     return v

@@ -29,8 +29,8 @@ class PropagationSolver:
             plot_test,
             plot_up,
             plot_mom_up,
-            m, L, np, nch, T, nt, x0, p0, a, De, E0,
-            t0, sigma, nu_L, lmin, mod_stdout, mod_fileout):
+            m, L, np, nch, T, nt, x0, p0, a, De, x0p, E0,
+            t0, sigma, nu_L, delay, lmin, mod_stdout, mod_fileout):
 
         self.pot = pot
         self.psi_init = psi_init
@@ -50,10 +50,12 @@ class PropagationSolver:
         self.p0 = p0
         self.a = a
         self.De = De
+        self.x0p = x0p
         self.E0 = E0
         self.t0 = t0
         self.sigma = sigma
         self.nu_L = nu_L
+        self.delay = delay
         self.lmin = lmin
         self.mod_stdout = mod_stdout
         self.mod_fileout = mod_fileout
@@ -88,7 +90,7 @@ class PropagationSolver:
         self.x = math_base.coord_grid(self.dx, self.np)
 
         # evaluating of potential(s)
-        self.v = pot(self.x, self.np, self.m, self.De, self.a)
+        self.v = pot(self.x, self.np, self.m, self.De, self.a, self.x0p)
 
         # evaluating of k vector
         self.akx2 = math_base.initak(self.np, self.dx, 2)
@@ -140,7 +142,7 @@ class PropagationSolver:
         cener0_tot = cener0 + cener0_u
 
         # evaluating of the final goal -- upper state wavefunction
-        psif = self.psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De / 2.0, self.a)
+        psif = self.psi_init(self.x, self.np, self.x0p, self.p0, self.m, self.De / 2.0, self.a)
 
         # final normalization check
         cnormf = math_base.cprod(psif[0], psif[0], self.dx, self.np)

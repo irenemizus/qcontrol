@@ -130,8 +130,8 @@ def main(argv):
     # analyze cmdline:
     try:
         options, arguments = getopt.getopt(argv, 'hm:L:a:T:', ['help', 'mass=', '', '', '', 'np=', 'nch=', 'nt=', 'x0=', 'p0=', \
-                                          'De=', 'E0=', 't0=', 'sigma=', 'nu_L=', 'lmin=', 'mod_stdout=', 'mod_fileout', \
-                                          'file_abs=', 'file_real=', 'file_mom='])
+                                          'x0p=', 'De=', 'E0=', 't0=', 'sigma=', 'nu_L=', 'delay=', 'lmin=', 'mod_stdout=', \
+                                          'mod_fileout', 'file_abs=', 'file_real=', 'file_mom='])
     except getopt.GetoptError:
         print("\tThere are unrecognized options!", sys.stderr)
         print("\tRun this script with '-h' option to see the usage info and available options.", sys.stderr)
@@ -153,10 +153,12 @@ def main(argv):
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
     De = 20000.0  # 1/cm
+    x0p = 1.0 # a_0
     E0 = 71.68  # 1/cm
     t0 = 140e-15  # s
     sigma = 50e-15  # s
     nu_L = 0.293e15 #0.5879558e15  # 0.5859603e15 - calculated difference b/w excited and ground energies !!, #0.599586e15, # Hz
+    delay = 300e-15 #s
     lmin = 0
     mod_stdout = 500
     mod_fileout = 100
@@ -186,6 +188,8 @@ def main(argv):
             p0 = float(val)
         elif opt == "--De":
             De = float(val)
+        elif opt == "--x0p":
+            x0p = float(val)
         elif opt == "--E0":
             E0 = float(val)
         elif opt == "--t0":
@@ -194,6 +198,8 @@ def main(argv):
             sigma = float(val)
         elif opt == "--nu_L":
             nu_L = float(val)
+        elif opt == "--delay":
+            delay = float(val)
         elif opt == "--lmin":
             lmin = int(val)
         elif opt == "--mod_stdout":
@@ -236,8 +242,8 @@ def main(argv):
 
         solver = propagation.PropagationSolver(
             psi_init, pot, plot, plot_mom, plot_test, plot_up, plot_mom_up,
-            m=m, L=L, np=np, nch=nch, T=T, nt=nt, x0=x0, p0=p0, a=a, De=De, E0=E0,
-            t0=t0, sigma=sigma, nu_L=nu_L, lmin=lmin, mod_stdout=mod_stdout, mod_fileout=mod_fileout)
+            m=m, L=L, np=np, nch=nch, T=T, nt=nt, x0=x0, p0=p0, a=a, De=De, x0p=x0p, E0=E0,
+            t0=t0, sigma=sigma, nu_L=nu_L, delay=delay, lmin=lmin, mod_stdout=mod_stdout, mod_fileout=mod_fileout)
         solver.time_propagation()
         #solver.filtering()
 
