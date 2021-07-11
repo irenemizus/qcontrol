@@ -145,19 +145,19 @@ def main(argv):
     # Default argument values
     m = 0.5  # Dalton
     L = 5.0  # a_0   0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
-    np = 2048  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
+    np = 1024  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
     nch = 64
     T = 280e-15  # s -- for morse oscillator
-    nt = 100000
+    nt = 200000
     x0 = 0  # TODO: to fix x0 != 0
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
     De = 20000.0  # 1/cm
-    x0p = 1.0 # a_0
-    E0 = 71.68  # 1/cm
+    x0p = -0.17 # a_0
+    E0 = 71.54  # 1/cm
     t0 = 140e-15  # s
     sigma = 50e-15  # s
-    nu_L = 0.293e15 #0.5879558e15  # 0.5859603e15 - calculated difference b/w excited and ground energies !!, #0.599586e15, # Hz
+    nu_L = 0.29297e15 #0.5879558e15  # 0.5859603e15 - calculated difference b/w excited and ground energies !!, #0.599586e15, # Hz
     delay = 300e-15 #s
     lmin = 0
     mod_stdout = 500
