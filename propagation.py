@@ -2,7 +2,6 @@ import math
 import cmath
 import sys
 import copy
-import numpy
 
 import datetime
 
@@ -220,7 +219,9 @@ class PropagationSolver:
             nt_min = int(math.ceil((emax - emin) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
             np_min = int(math.ceil(self.L * math.sqrt(2.0 * self.m * (emax - emin) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
 
-            E = phys_base.laser_field(self.E0, t, self.t0, self.sigma)
+            E1 = phys_base.laser_field(self.E0, t, self.t0, self.sigma)
+            E2 = phys_base.laser_field(self.E0, t, self.t0 + self.delay, self.sigma)
+            E = E1 + E2
             E_full = E * exp_L * exp_L
             psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, self.v, self.akx2, emin, emax, E, eL) # TODO move prop into this class
 

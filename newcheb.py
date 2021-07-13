@@ -122,10 +122,6 @@ def plot_test_file(l, phi_l, phi_u, f):
         f.write("{0}\n".format(phi_u[i]))
 
 def main(argv):
-    import ctypes;
-    mkl_rt = ctypes.CDLL('libmkl_rt.so');
-    print(mkl_rt.mkl_get_max_threads())
-
     """ The main() function """
     # analyze cmdline:
     try:
@@ -145,10 +141,10 @@ def main(argv):
     # Default argument values
     m = 0.5  # Dalton
     L = 5.0  # a_0  # 5.0 a_0 -- for the working transition between PECs; # 0.2 -- for a model harmonic oscillator with a = 1.0; # 4.0 a_0 -- for morse oscillator; # 6.0 a_0 -- for dimensional harmonic oscillator
-    np = 2048  # 1024 -- for the working transition between PECs; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator; # 512 -- for dimensional harmonic oscillator
+    np = 1024  # 1024 -- for the working transition between PECs; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality); # 512 -- for dimensional harmonic oscillator
     nch = 64
-    T = 2240e-15  # s  # 280 fs -- for the working transition between PECs
-    nt = 900000  # 200000 -- for the working transition between PECs
+    T = 1000e-15  # s  # 280 fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
+    nt = 700000  # 200000 -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
     x0 = 0  # TODO: to fix x0 != 0
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
@@ -244,8 +240,8 @@ def main(argv):
             psi_init, pot, plot, plot_mom, plot_test, plot_up, plot_mom_up,
             m=m, L=L, np=np, nch=nch, T=T, nt=nt, x0=x0, p0=p0, a=a, De=De, x0p=x0p, E0=E0,
             t0=t0, sigma=sigma, nu_L=nu_L, delay=delay, lmin=lmin, mod_stdout=mod_stdout, mod_fileout=mod_fileout)
-        #solver.time_propagation()
-        solver.filtering()
+        solver.time_propagation()
+        #solver.filtering()
 
 
 if __name__ == "__main__":
