@@ -4,7 +4,7 @@ import math
 import numpy
 import copy
 
-from math_base import points
+import math_base
 
 hart_to_cm = 219474.6313708 # 1 / cm / hartree
 cm_to_erg = 1.98644568e-16 # erg * cm
@@ -231,7 +231,7 @@ def prop(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL):
     assert akx2.size == np
 
     # interpolation points and divided difference coefficients
-    xp, dv = points(nch, t_sc, func)
+    xp, dv = math_base.points(nch, t_sc, func)
 
     # auxiliary vector used for recurrence
     phi = copy.deepcopy(psi)
@@ -255,3 +255,50 @@ def prop(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL):
         psi[n] *= coef
 
     return psi
+
+
+def exp_vals_calc(psi, x, akx2, dx, np, m):
+    """ Calculation of expectation values <x>, <x^2>, <p>, <p^2>
+        INPUT
+        psi     list of complex vectors of length np describing wavefunctions
+        x       vector of length np defining positions of grid points
+        akx2    kinetic energy vector of length np
+        dx      coordinate step of the problem
+        np      number of grid points (must be a power of 2)
+        m       reduced mass of the system
+        OUTPUT
+        moms  list of complex vectors of length np """
+
+    # for x
+    momx_l = math_base.cprod2(psi[0], x, dx, np)
+    momx_u = math_base.cprod2(psi[1], x, dx, np)
+
+    # for x^2
+    x2 = numpy.multiply(x, x)
+    momx2_l = math_base.cprod2(psi[0], x2, dx, np)
+    momx2_u = math_base.cprod2(psi[1], x2, dx, np)
+
+    # for p^2
+    phi_kin_l = diff(psi[0], akx2, np)
+    phi_p2_l = phi_kin_l * (2.0 * m)
+    momp2_l = math_base.cprod(psi[0], phi_p2_l, dx, np)
+
+    phi_kin_u = diff(psi[1], akx2, np)
+    phi_p2_u = phi_kin_u * (2.0 * m)
+    momp2_u = math_base.cprod(psi[1], phi_p2_u, dx, np)
+
+    # for p
+    akx = math_base.initak(np, dx, 1)
+    akx_mul = hart_to_cm / (-1j) / dalt_to_au
+    akx *= akx_mul
+
+    phip_l = diff(psi[0], akx, np)
+    momp_l = math_base.cprod(psi[0], phip_l, dx, np)
+
+    phip_u = diff(psi[1], akx, np)
+    momp_u = math_base.cprod(psi[1], phip_u, dx, np)
+
+    moms = [momx_l, momx_u, momx2_l, momx2_u, momp_l, momp_u, momp2_l, momp2_u]
+
+    return moms
+

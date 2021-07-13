@@ -125,6 +125,7 @@ class PropagationSolver:
         if self.nt < self.nt_min0:
             self._warning_time_steps(self.nt_min0)
 
+
     def time_propagation(self):
         # evaluating of initial wavefunction
         psi0 = self.psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
@@ -159,10 +160,13 @@ class PropagationSolver:
         print("Final goal normalization: ", abs(cnormf))
         print("Final goal energy: ", abs(cenerf))
 
-
         # time propagation
         dt = self.T / (self.nt - 1)
         psi = copy.deepcopy(psi0)
+
+        # plotting initial values
+        self.plot(psi[0], 0.0, self.x, self.np)
+        self.plot_up(psi[1], 0.0, self.x, self.np)
 
         # initial laser field energy
         E00 = phys_base.laser_field(self.E0, 0.0, self.t0, self.sigma)
@@ -172,41 +176,10 @@ class PropagationSolver:
         overlpf0 = math_base.cprod(psif[0], psi[1], self.dx, self.np)
 
         # calculating of initial expectation values
-        # for x
-        momx_l = math_base.cprod2(psi[0], self.x, self.dx, self.np)
-        momx_u = math_base.cprod2(psi[1], self.x, self.dx, self.np)
+        moms0 = phys_base.exp_vals_calc(psi, self.x, self.akx2, self.dx, self.np, self.m)
 
-        # for x^2
-        x2 = numpy.multiply(self.x, self.x)
-        momx2_l = math_base.cprod2(psi[0], x2, self.dx, self.np)
-        momx2_u = math_base.cprod2(psi[1], x2, self.dx, self.np)
-
-        # for p^2
-        phi_kin_l = phys_base.diff(psi[0], self.akx2, self.np)
-        phi_p2_l = phi_kin_l * (2.0 * self.m)
-        momp2_l = math_base.cprod(psi[0], phi_p2_l, self.dx, self.np)
-
-        phi_kin_u = phys_base.diff(psi[1], self.akx2, self.np)
-        phi_p2_u = phi_kin_u * (2.0 * self.m)
-        momp2_u = math_base.cprod(psi[1], phi_p2_u, self.dx, self.np)
-
-        # for p
-        akx = math_base.initak(self.np, self.dx, 1)
-        akx_mul = phys_base.hart_to_cm / (-1j) / phys_base.dalt_to_au
-        akx *= akx_mul
-
-        phip_l = phys_base.diff(psi[0], akx, self.np)
-        momp_l = math_base.cprod(psi[0], phip_l, self.dx, self.np)
-
-        phip_u = phys_base.diff(psi[1], akx, self.np)
-        momp_u = math_base.cprod(psi[1], phip_u, self.dx, self.np)
-
-        # plotting initial values
-        self.plot(psi[0], 0.0, self.x, self.np)
-        self.plot_up(psi[1], 0.0, self.x, self.np)
-
-        #self.plot_mom(0.0, momx_l, momx2_l, momp_l, momp2_l, self.cener0.real, E00.real, overlp00, self.cener0_tot.real)
-        #self.plot_mom_up(0.0, momx_u, momx2_u, momp_u, momp2_u, self.cener0_u.real, E00.real, overlpf0, self.cener0_tot.real)
+        self.plot_mom(0.0, moms0[0], moms0[2], moms0[4], moms0[6], cener0.real, E00.real, overlp00, cener0_tot.real)
+        self.plot_mom_up(0.0, moms0[1], moms0[3], moms0[5], moms0[7], cener0_u.real, E00.real, overlpf0, cener0_tot.real)
 
         milliseconds_full = 0
 
@@ -260,8 +233,8 @@ class PropagationSolver:
                 psi_omega[0] /= math.sqrt(abs(cnorm))
                 psi_omega[1] /= math.sqrt(abs(cnorm))
 
-            orthog_lu = math_base.cprod(psi_omega[0], psi_omega[1], self.dx, self.np) * exp_L * exp_L
-            orthog_ul = math_base.cprod(psi_omega[1], psi_omega[0], self.dx, self.np) / exp_L / exp_L
+            #orthog_lu = math_base.cprod(psi_omega[0], psi_omega[1], self.dx, self.np) * exp_L * exp_L
+            #orthog_ul = math_base.cprod(psi_omega[1], psi_omega[0], self.dx, self.np) / exp_L / exp_L
 
             # calculating of a current energy
             #phi_omega = phys_base.hamil2D(psi_omega, self.v, self.akx2, self.np, E, eL)
@@ -288,29 +261,7 @@ class PropagationSolver:
             overlpf = math_base.cprod(psif[0], psi[1], self.dx, self.np)
 
             # calculating of expectation values
-            # for x
-            momx_l = math_base.cprod2(psi[0], self.x, self.dx, self.np)
-            momx_u = math_base.cprod2(psi[1], self.x, self.dx, self.np)
-
-            # for x^2
-            momx2_l = math_base.cprod2(psi[0], x2, self.dx, self.np)
-            momx2_u = math_base.cprod2(psi[1], x2, self.dx, self.np)
-
-            # for p^2
-            phi_kin_l = phys_base.diff(psi[0], self.akx2, self.np)
-            phi_p2_l = phi_kin_l * (2.0 * self.m)
-            momp2_l = math_base.cprod(psi[0], phi_p2_l, self.dx, self.np)
-
-            phi_kin_u = phys_base.diff(psi[1], self.akx2, self.np)
-            phi_p2_u = phi_kin_u * (2.0 * self.m)
-            momp2_u = math_base.cprod(psi[1], phi_p2_u, self.dx, self.np)
-
-            # for p
-            phip_l = phys_base.diff(psi[0], akx, self.np)
-            momp_l = math_base.cprod(psi[0], phip_l, self.dx, self.np)
-
-            phip_u = phys_base.diff(psi[1], akx, self.np)
-            momp_u = math_base.cprod(psi[1], phip_u, self.dx, self.np)
+            moms = phys_base.exp_vals_calc(psi, self.x, self.akx2, self.dx, self.np, self.m)
 
             # plotting the result
             if l % self.mod_fileout == 0:
@@ -319,8 +270,8 @@ class PropagationSolver:
                     self.plot_up(psi[1], t, self.x, self.np)
 
                 if l >= self.lmin:
-                    self.plot_mom(t, momx_l, momx2_l, momp_l, momp2_l, cener_l.real, E_full.real, overlp0, cener.real)
-                    self.plot_mom_up(t, momx_u, momx2_u, momp_u, momp2_u, cener_u.real, E_full.real, overlpf, cener.real)
+                    self.plot_mom(t, moms[0], moms[2], moms[4], moms[6], cener_l.real, E_full.real, overlp0, cener.real)
+                    self.plot_mom_up(t, moms[1], moms[3], moms[5], moms[7], cener_u.real, E_full.real, overlpf, cener.real)
 
             time_after = datetime.datetime.now()
             time_span = time_after - time_before
@@ -341,8 +292,8 @@ class PropagationSolver:
                 print("normalized scaled time interval = ", t_sc)
                 print("normalization on the lower state = ", cnorm_l)
                 print("normalization on the upper state = ", cnorm_u)
-                print("orthogonality of the lower and upper wavefunctions (psi_0, psi_1^*) = ", orthog_lu)
-                print("orthogonality of the upper and lower wavefunctions (psi_1, psi_0^*) = ", orthog_ul)
+                #print("orthogonality of the lower and upper wavefunctions (psi_0, psi_1^*) = ", orthog_lu)
+                #print("orthogonality of the upper and lower wavefunctions (psi_1, psi_0^*) = ", orthog_ul)
                 print("overlap with initial wavefunction = ", overlp0)
                 print("overlap with final goal wavefunction = ", overlpf)
                 print("energy on the lower state = ", cener_l.real)
@@ -355,6 +306,7 @@ class PropagationSolver:
         # filtering task for obtaining of an initial wavefunction in the given potential
         dt = self.T / (self.nt - 1)
         psi_init = harmonic.psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
+        psi_goal = self.psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
         psi = copy.deepcopy(psi_init)
 
         # plotting initial values
@@ -392,6 +344,7 @@ class PropagationSolver:
 
             cener = math_base.cprod(phi, psi[0], self.dx, self.np)
             overlp0 = math_base.cprod(psi_init[0], psi[0], self.dx, self.np)
+            overlpg = math_base.cprod(psi_goal[0], psi[0], self.dx, self.np)
 
             # plotting the result
             if l % self.mod_fileout == 0:
@@ -413,7 +366,8 @@ class PropagationSolver:
 
                 print("normalized scaled time interval = ", t_sc)
                 print("normalization on the lower state = ", cnorm)
-                print("overlap with initial wavefunction = ", overlp0)
+                print("overlap with initial wavefunction = ", abs(overlp0))
+                print("overlap with the target wavefunction = ", abs(overlpg))
                 print("energy on the lower state = ", cener.real)
 
                 print("milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(milliseconds_full / l))

@@ -144,21 +144,21 @@ def main(argv):
 
     # Default argument values
     m = 0.5  # Dalton
-    L = 5.0  # a_0   0.2 -- for a model harmonic oscillator with a = 1.0 # 4.0 a_0 -- for morse oscillator # 6.0 a_0 -- for dimensional harmonic oscillator
-    np = 1024  # 128 -- for a model harmonic oscillator with a = 1.0 # 2048 -- for morse oscillator # 512 -- for dimensional harmonic oscillator
+    L = 5.0  # a_0  # 5.0 a_0 -- for the working transition between PECs; # 0.2 -- for a model harmonic oscillator with a = 1.0; # 4.0 a_0 -- for morse oscillator; # 6.0 a_0 -- for dimensional harmonic oscillator
+    np = 2048  # 1024 -- for the working transition between PECs; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator; # 512 -- for dimensional harmonic oscillator
     nch = 64
-    T = 280e-15  # s -- for morse oscillator
-    nt = 200000
+    T = 2240e-15  # s  # 280 fs -- for the working transition between PECs
+    nt = 900000  # 200000 -- for the working transition between PECs
     x0 = 0  # TODO: to fix x0 != 0
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
     De = 20000.0  # 1/cm
-    x0p = -0.17 # a_0
+    x0p = -0.17  # a_0
     E0 = 71.54  # 1/cm
     t0 = 140e-15  # s
     sigma = 50e-15  # s
-    nu_L = 0.29297e15 #0.5879558e15  # 0.5859603e15 - calculated difference b/w excited and ground energies !!, #0.599586e15, # Hz
-    delay = 300e-15 #s
+    nu_L = 0.29297e15  # Hz  # 0.29297e15 -- for the working transition between PECs; # 0.5879558e15 -- analytical difference b/w excited and ground energies; # 0.5859603e15 -- calculated difference b/w excited and ground energies !!; # 0.599586e15 = 20000 1/cm
+    delay = 300e-15  #s
     lmin = 0
     mod_stdout = 500
     mod_fileout = 100
@@ -244,8 +244,8 @@ def main(argv):
             psi_init, pot, plot, plot_mom, plot_test, plot_up, plot_mom_up,
             m=m, L=L, np=np, nch=nch, T=T, nt=nt, x0=x0, p0=p0, a=a, De=De, x0p=x0p, E0=E0,
             t0=t0, sigma=sigma, nu_L=nu_L, delay=delay, lmin=lmin, mod_stdout=mod_stdout, mod_fileout=mod_fileout)
-        solver.time_propagation()
-        #solver.filtering()
+        #solver.time_propagation()
+        solver.filtering()
 
 
 if __name__ == "__main__":
