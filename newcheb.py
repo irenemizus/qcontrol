@@ -82,6 +82,7 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
+import math
 
 import double_morse
 
@@ -92,6 +93,7 @@ import os.path
 import sys
 import getopt
 import propagation
+import phys_base
 
 
 def usage():
@@ -105,11 +107,14 @@ def plot_file(psi, t, x, np, f_abs, f_real):
     for i in range(np):
         f_abs.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], abs(psi[i])))
         f_real.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], psi[i].real))
+        f_abs.flush()
+        f_real.flush()
 
 
-def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, ener_tot, file_mom):
+def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, tot, file_mom):
     """ Plots expectation values of the current x, x*x, p and p*p """
-    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, abs(overlp), ener_tot))
+    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, abs(overlp), tot))
+    file_mom.flush()
 
 
 def plot_test_file(l, phi_l, phi_u, f):
@@ -120,6 +125,7 @@ def plot_test_file(l, phi_l, phi_u, f):
     f.write("Upper state wavefunction:")
     for i in range(len(phi_u)):
         f.write("{0}\n".format(phi_u[i]))
+
 
 def main(argv):
     """ The main() function """
@@ -141,20 +147,20 @@ def main(argv):
     # Default argument values
     m = 0.5  # Dalton
     L = 5.0  # a_0  # 5.0 a_0 -- for the working transition between PECs; # 0.2 -- for a model harmonic oscillator with a = 1.0; # 4.0 a_0 -- for morse oscillator; # 6.0 a_0 -- for dimensional harmonic oscillator
-    np = 1024  # 1024 -- for the working transition between PECs; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality); # 512 -- for dimensional harmonic oscillator
+    np = 1024  # 1024 -- for the working transition between PECs and two laser pulses; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality); # 512 -- for dimensional harmonic oscillator
     nch = 64
-    T = 1000e-15  # s  # 280 fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
-    nt = 700000  # 200000 -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
+    T = 1200e-15  # s # 1200 fs -- for two laser pulses; # 280 fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
+    nt = 840000  # 840000 -- for two laser pulses; 200000 -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
     x0 = 0  # TODO: to fix x0 != 0
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
     De = 20000.0  # 1/cm
     x0p = -0.17  # a_0
     E0 = 71.54  # 1/cm
-    t0 = 140e-15  # s
+    t0 = 300e-15  # s
     sigma = 50e-15  # s
     nu_L = 0.29297e15  # Hz  # 0.29297e15 -- for the working transition between PECs; # 0.5879558e15 -- analytical difference b/w excited and ground energies; # 0.5859603e15 -- calculated difference b/w excited and ground energies !!; # 0.599586e15 = 20000 1/cm
-    delay = 300e-15  #s
+    delay = 641e-15  #s
     lmin = 0
     mod_stdout = 500
     mod_fileout = 100
@@ -209,6 +215,29 @@ def main(argv):
         elif opt == "--file_mom":
             file_mom = val
 
+    # analyze provided arguments
+    if not math.log2(np).is_integer() or not math.log2(nch).is_integer():
+        raise ValueError("The number of collocation points 'np' and of Chebyshev "
+                         "interpolation points 'nch' must be positive integers and powers of 2")
+
+    if lmin < 0 or mod_fileout < 0 or mod_stdout < 0:
+        raise ValueError("The number 'lmin' of time iteration, from which the result"
+                         "should be written to a file, as well as steps of output "
+                         "'mod_stdout' and 'mod_fileout' should be positive or 0")
+
+    if not L > 0.0 or not T > 0.0:
+        raise ValueError("The value of spatial range 'L' and of time range 'T' of the problem"
+                         "must be positive")
+
+    if not m > 0.0 or not a > 0.0 or not De > 0.0:
+        raise ValueError("The value of a reduced mass 'm/mass', of a scaling factor 'a'"
+                         "and of a dissociation energy 'De' must be positive")
+
+    if not E0 >= 0.0 or not sigma > 0.0 or not nu_L >= 0.0:
+        raise ValueError("The value of an amplitude value of the laser field energy envelope 'E0',"
+                         "of a scaling parameter of the laser field envelope 'sigma'"
+                         "and of a basic frequency of the laser field 'nu_L' must be positive")
+
     psi_init = double_morse.psi_init
     pot = double_morse.pot
 
@@ -224,22 +253,75 @@ def main(argv):
         def plot(psi, t, x, np):
             plot_file(psi, t, x, np, f_abs, f_real)
 
-        def plot_mom(t, momx, momx2, momp, momp2, ener, E, overlp, ener_tot):
-            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, ener_tot, f_mom)
+        def plot_mom(t, moms: phys_base.ExpectationValues, ener, E, overlp, ener_tot):
+            plot_mom_file(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, E, overlp, ener_tot, f_mom)
 
         def plot_up(psi, t, x, np):
             plot_file(psi, t, x, np, f_abs_up, f_real_up)
 
-        def plot_mom_up(t, momx, momx2, momp, momp2, ener, E, overlp, ener_tot):
-            plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, ener_tot, f_mom_up)
+        def plot_mom_up(t, moms, ener, E, overlp, overlp_tot):
+            plot_mom_file(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, E, overlp, overlp_tot, f_mom_up)
 
         def plot_test(l, phi_l, phi_u):
             plot_test_file(l, phi_l, phi_u, f)
 
+        milliseconds_full = 0
+        def on_after_solver_step(solver: propagation.PropagationSolver,
+                                 init: propagation.PropagationSolver.StepInit,
+                                 state: propagation.PropagationSolver.StepState):
+            t = init.dt * init.l
+
+            # calculating the minimum number of collocation points and time steps that are needed for convergence
+            nt_min = int(math.ceil((state.emax - state.emin) * solver.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
+            np_min = int(math.ceil(
+                solver.L * math.sqrt(
+                    2.0 * solver.m * (state.emax - state.emin) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
+
+            cener = state.cener_l + state.cener_u
+            overlp_abs = abs(state.overlp0) + abs(state.overlpf)
+
+            time_span = state.time_after - state.time_before
+            milliseconds_per_step = time_span.microseconds / 1000
+            nonlocal milliseconds_full
+            milliseconds_full += milliseconds_per_step
+
+            # plotting the result
+            if init.l % mod_fileout == 0:
+                if init.l >= lmin:
+                    solver.plot(init.psi[0], t, solver.x, solver.np)
+                    solver.plot_up(init.psi[1], t, solver.x, solver.np)
+
+                if init.l >= lmin:
+                    solver.plot_mom(t, state.moms, state.cener_l.real, state.E_full.real, state.overlp0, cener.real)
+                    solver.plot_mom_up(t, state.moms, state.cener_u.real, state.E_full.real, state.overlpf, overlp_abs)
+
+            if init.l % mod_stdout == 0:
+                if solver.np < np_min:
+                    solver._warning_collocation_points(np_min)
+                if solver.nt < nt_min:
+                    solver._warning_time_steps(nt_min)
+
+                print("l = ", init.l)
+                print("t = ", t * 1e15, "fs")
+
+                print("emax = ", state.emax)
+                print("emin = ", state.emin)
+                print("normalized scaled time interval = ", state.t_sc)
+                print("normalization on the lower state = ", state.cnorm_l)
+                print("normalization on the upper state = ", state.cnorm_u)
+                print("overlap with initial wavefunction = ", state.overlp0)
+                print("overlap with final goal wavefunction = ", state.overlpf)
+                print("energy on the lower state = ", state.cener_l.real)
+                print("energy on the upper state = ", state.cener_u.real)
+
+                print(
+                    "milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(
+                        milliseconds_full / init.l))
+
         solver = propagation.PropagationSolver(
-            psi_init, pot, plot, plot_mom, plot_test, plot_up, plot_mom_up,
+            psi_init, pot, plot, plot_mom, plot_test, plot_up, plot_mom_up, on_after_step=on_after_solver_step,
             m=m, L=L, np=np, nch=nch, T=T, nt=nt, x0=x0, p0=p0, a=a, De=De, x0p=x0p, E0=E0,
-            t0=t0, sigma=sigma, nu_L=nu_L, delay=delay, lmin=lmin, mod_stdout=mod_stdout, mod_fileout=mod_fileout)
+            t0=t0, sigma=sigma, nu_L=nu_L, delay=delay)
         solver.time_propagation()
         #solver.filtering()
 

@@ -257,6 +257,18 @@ def prop(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL):
     return psi
 
 
+class ExpectationValues():
+    def __init__(self, x_l, x_u, x2_l, x2_u, p_l, p_u, p2_l, p2_u):
+        self.x_l = x_l
+        self.x_u = x_u
+        self.x2_l = x2_l
+        self.x2_u = x2_u
+        self.p_l = p_l
+        self.p_u = p_u
+        self.p2_l = p2_l
+        self.p2_u = p2_u
+
+
 def exp_vals_calc(psi, x, akx2, dx, np, m):
     """ Calculation of expectation values <x>, <x^2>, <p>, <p^2>
         INPUT
@@ -298,7 +310,5 @@ def exp_vals_calc(psi, x, akx2, dx, np, m):
     phip_u = diff(psi[1], akx, np)
     momp_u = math_base.cprod(psi[1], phip_u, dx, np)
 
-    moms = [momx_l, momx_u, momx2_l, momx2_u, momp_l, momp_u, momp2_l, momp2_u]
-
-    return moms
+    return ExpectationValues(momx_l, momx_u, momx2_l, momx2_u, momp_l, momp_u, momp2_l, momp2_u)
 
