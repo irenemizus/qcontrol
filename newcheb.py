@@ -111,6 +111,16 @@ def plot_file(psi, t, x, np, f_abs, f_real):
         f_real.flush()
 
 
+def _warning_collocation_points(np, np_min):
+    print("WARNING: The number of collocation points np = {} should be more than an estimated initial value {}. "
+          "You've got a divergence!".format(np, np_min), file=sys.stderr)
+
+
+def _warning_time_steps(nt, nt_min):
+    print("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
+          "You've got a divergence!".format(nt, nt_min), file=sys.stderr)
+
+
 def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, tot, file_mom):
     """ Plots expectation values of the current x, x*x, p and p*p """
     file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, abs(overlp), tot))
@@ -150,7 +160,7 @@ def main(argv):
     np = 1024  # 1024 -- for the working transition between PECs and two laser pulses; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality); # 512 -- for dimensional harmonic oscillator
     nch = 64
     T = 1200e-15  # s # 1200 fs -- for two laser pulses; # 280 fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
-    nt = 840000  # 840000 -- for two laser pulses; 200000 -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
+    nt = 1500000  # 840000 -- for two laser pulses; 200000 -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
     x0 = 0  # TODO: to fix x0 != 0
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
@@ -265,6 +275,55 @@ def main(argv):
         def plot_test(l, phi_l, phi_u):
             plot_test_file(l, phi_l, phi_u, f)
 
+        def on_after_init(solver: propagation.PropagationSolver,
+                          state: propagation.PropagationSolver.InitState):
+
+            # check if input data are correct in terms of the given problem
+            # calculating the initial energy range of the Hamiltonian operator H
+            emax0 = solver.v[0][1][0] + abs(solver.akx2[int(np / 2 - 1)]) + 2.0
+            emin0 = solver.v[0][0]
+
+            # calculating the initial minimum number of collocation points that is needed for convergence
+            np_min0 = int(
+                math.ceil(L *
+                          math.sqrt(
+                              2.0 * m * (emax0 - emin0) * phys_base.dalt_to_au / phys_base.hart_to_cm) /
+                          math.pi
+                          )
+            )
+
+            # calculating the initial minimum number of time steps that is needed for convergence
+            nt_min0 = int(
+                math.ceil((emax0 - emin0) * T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h
+                          )
+            )
+
+            if np < np_min0:
+                _warning_collocation_points(np, np_min0)
+            if nt < nt_min0:
+                _warning_time_steps(nt, nt_min0)
+
+            cener0_tot = state.cener0 + state.cener0_u
+            overlp0_abs = abs(state.overlp00) + abs(state.overlpf0)
+
+            # plotting initial values
+            plot(state.psi[0], 0.0, solver.x, np)
+            plot_up(state.psi[1], 0.0, solver.x, np)
+
+            plot_mom(0.0, state.moms0, state.cener0.real, state.E00.real, state.overlp00, cener0_tot.real)
+            plot_mom_up(0.0, state.moms0, state.cener0_u.real, state.E00.real, state.overlpf0, overlp0_abs)
+
+            print("Initial emax = ", emax0)
+
+            print(" Initial state features: ")
+            print("Initial normalization: ", abs(state.cnorm0))
+            print("Initial energy: ", abs(state.cener0))
+
+            print(" Final goal features: ")
+            print("Final goal normalization: ", abs(state.cnormf))
+            print("Final goal energy: ", abs(state.cenerf))
+
+
         milliseconds_full = 0
         def on_after_solver_step(solver: propagation.PropagationSolver,
                                  init: propagation.PropagationSolver.StepInit,
@@ -288,18 +347,18 @@ def main(argv):
             # plotting the result
             if init.l % mod_fileout == 0:
                 if init.l >= lmin:
-                    solver.plot(init.psi[0], t, solver.x, solver.np)
-                    solver.plot_up(init.psi[1], t, solver.x, solver.np)
+                    plot(init.psi[0], t, solver.x, solver.np)
+                    plot_up(init.psi[1], t, solver.x, solver.np)
 
                 if init.l >= lmin:
-                    solver.plot_mom(t, state.moms, state.cener_l.real, state.E_full.real, state.overlp0, cener.real)
-                    solver.plot_mom_up(t, state.moms, state.cener_u.real, state.E_full.real, state.overlpf, overlp_abs)
+                    plot_mom(t, state.moms, state.cener_l.real, state.E_full.real, state.overlp0, cener.real)
+                    plot_mom_up(t, state.moms, state.cener_u.real, state.E_full.real, state.overlpf, overlp_abs)
 
             if init.l % mod_stdout == 0:
                 if solver.np < np_min:
-                    solver._warning_collocation_points(np_min)
+                    _warning_collocation_points(np, np_min)
                 if solver.nt < nt_min:
-                    solver._warning_time_steps(nt_min)
+                    _warning_time_steps(nt, nt_min)
 
                 print("l = ", init.l)
                 print("t = ", t * 1e15, "fs")
@@ -319,7 +378,7 @@ def main(argv):
                         milliseconds_full / init.l))
 
         solver = propagation.PropagationSolver(
-            psi_init, pot, plot, plot_mom, plot_test, plot_up, plot_mom_up, on_after_step=on_after_solver_step,
+            psi_init, pot, on_after_step=on_after_solver_step, on_after_init=on_after_init,
             m=m, L=L, np=np, nch=nch, T=T, nt=nt, x0=x0, p0=p0, a=a, De=De, x0p=x0p, E0=E0,
             t0=t0, sigma=sigma, nu_L=nu_L, delay=delay)
         solver.time_propagation()

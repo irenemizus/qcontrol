@@ -11,34 +11,18 @@ import harmonic
 
 
 class PropagationSolver:
-    def _warning_collocation_points(self, np_min):
-        print("WARNING: The number of collocation points np = {} should be more than an estimated initial value {}. "
-              "You've got a divergence!".format(self.np, np_min), file=sys.stderr)
-
-    def _warning_time_steps(self, nt_min):
-        print("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
-              "You've got a divergence!".format(self.nt, nt_min), file=sys.stderr)
-
     def __init__(
             self,
             psi_init,
             pot,
-            plot,
-            plot_mom,
-            plot_test,
-            plot_up,
-            plot_mom_up,
+            on_after_init,
             on_after_step,
             m, L, np, nch, T, nt, x0, p0, a, De, x0p, E0,
             t0, sigma, nu_L, delay):
 
         self.pot = pot
         self.psi_init = psi_init
-        self.plot = plot
-        self.plot_mom = plot_mom
-        self.plot_up = plot_up
-        self.plot_mom_up = plot_mom_up
-        self.plot_test = plot_test
+        self.on_after_init = on_after_init
         self.on_after_step = on_after_step
 
         self.m = m
@@ -59,47 +43,20 @@ class PropagationSolver:
         self.delay = delay
 
 
-        # calculating coordinate step of the problem
-        self.dx = self.L / (self.np - 1)
+    class InitState:
+        def __init__(self, psi, moms0: phys_base.ExpectationValues, cnorm0, cnormf,
+                     cener0, cener0_u, cenerf, E00, overlp00, overlpf0):
+            self.psi = psi
+            self.moms0 = moms0
+            self.cnorm0 = cnorm0
+            self.cnormf = cnormf
+            self.cener0 = cener0
+            self.cener0_u = cener0_u
+            self.cenerf = cenerf
+            self.E00 = E00
+            self.overlp00 = overlp00
+            self.overlpf0 = overlpf0
 
-        # setting the coordinate grid
-        self.x = math_base.coord_grid(self.dx, self.np)
-
-        # evaluating of potential(s)
-        self.v = pot(self.x, self.np, self.m, self.De, self.a, self.x0p)
-
-        # evaluating of k vector
-        self.akx2 = math_base.initak(self.np, self.dx, 2)
-
-        # evaluating of kinetic energy
-        self.coef_kin = -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
-        self.akx2 *= self.coef_kin
-
-        # check if input data are correct in terms of the given problem
-        # calculating the initial energy range of the Hamiltonian operator H
-        self.emax0 = self.v[0][1][0] + abs(self.akx2[int(self.np / 2 - 1)]) + 2.0
-        self.emin0 = self.v[0][0]
-
-        print("Initial emax = ", self.emax0)
-
-        # calculating the initial minimum number of collocation points that is needed for convergence
-        self.np_min0 = int(
-            math.ceil(self.L *
-                      math.sqrt(2.0 * self.m * (self.emax0 - self.emin0) * phys_base.dalt_to_au / phys_base.hart_to_cm) /
-                      math.pi
-            )
-        )
-
-        # calculating the initial minimum number of time steps that is needed for convergence
-        self.nt_min0 = int(
-            math.ceil((self.emax0 - self.emin0) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h
-            )
-        )
-
-        if self.np < self.np_min0:
-            self._warning_collocation_points(self.np_min0)
-        if self.nt < self.nt_min0:
-            self._warning_time_steps(self.nt_min0)
 
     class StepInit:
         def __init__(self, l, dt, psi, psi0, psif):
@@ -126,6 +83,7 @@ class PropagationSolver:
             self.t_sc = t_sc
             self.time_before = time_before
             self.time_after = time_after
+
 
     def step(self, init: StepInit):
         time_before = datetime.datetime.now()
@@ -200,6 +158,22 @@ class PropagationSolver:
 
 
     def time_propagation(self):
+        # calculating coordinate step of the problem
+        self.dx = self.L / (self.np - 1)
+
+        # setting the coordinate grid
+        self.x = math_base.coord_grid(self.dx, self.np)
+
+        # evaluating of potential(s)
+        self.v = self.pot(self.x, self.np, self.m, self.De, self.a, self.x0p)
+
+        # evaluating of k vector
+        self.akx2 = math_base.initak(self.np, self.dx, 2)
+
+        # evaluating of kinetic energy
+        self.coef_kin = -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
+        self.akx2 *= self.coef_kin
+
         # evaluating of initial wavefunction
         psi0 = self.psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
 
@@ -213,7 +187,6 @@ class PropagationSolver:
         # initial excited energy
         phi0_u = phys_base.hamil(psi0[1], self.v[1][1], self.akx2, self.np)
         cener0_u = math_base.cprod(phi0_u, psi0[1], self.dx, self.np)
-        cener0_tot = cener0 + cener0_u
 
         # evaluating of the final goal -- upper state wavefunction
         psif = self.psi_init(self.x, self.np, self.x0p, self.p0, self.m, self.De / 2.0, self.a)
@@ -225,21 +198,9 @@ class PropagationSolver:
         phif = phys_base.hamil(psif[0], self.v[1][1], self.akx2, self.np)
         cenerf = math_base.cprod(phif, psif[0], self.dx, self.np)
 
-        print(" Initial state features: ")
-        print("Initial normalization: ", abs(cnorm0))
-        print("Initial energy: ", abs(cener0))
-
-        print(" Final goal features: ")
-        print("Final goal normalization: ", abs(cnormf))
-        print("Final goal energy: ", abs(cenerf))
-
         # time propagation
         dt = self.T / (self.nt - 1)
         psi = copy.deepcopy(psi0)
-
-        # plotting initial values
-        self.plot(psi[0], 0.0, self.x, self.np)
-        self.plot_up(psi[1], 0.0, self.x, self.np)
 
         # initial laser field energy
         E00 = phys_base.laser_field(self.E0, 0.0, self.t0, self.sigma)
@@ -251,8 +212,9 @@ class PropagationSolver:
         # calculating of initial expectation values
         moms0 = phys_base.exp_vals_calc(psi, self.x, self.akx2, self.dx, self.np, self.m)
 
-        self.plot_mom(0.0, moms0, cener0.real, E00.real, overlp00, cener0_tot.real)
-        self.plot_mom_up(0.0, moms0, cener0_u.real, E00.real, overlpf0, abs(overlp00) + abs(overlpf0))
+        # plotting initial values
+        self.on_after_init(self, PropagationSolver.InitState(psi, moms0, cnorm0, cnormf,
+                                                             cener0, cener0_u, cenerf, E00, overlp00, overlpf0))
 
         # main propagation loop
         for l in range(1, self.nt + 1):
