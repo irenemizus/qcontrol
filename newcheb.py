@@ -159,8 +159,8 @@ def main(argv):
     L = 5.0  # a_0  # 5.0 a_0 -- for the working transition between PECs; # 0.2 -- for a model harmonic oscillator with a = 1.0; # 4.0 a_0 -- for morse oscillator; # 6.0 a_0 -- for dimensional harmonic oscillator
     np = 1024  # 1024 -- for the working transition between PECs and two laser pulses; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality); # 512 -- for dimensional harmonic oscillator
     nch = 64
-    T = 1200e-15  # s # 1200 fs -- for two laser pulses; # 280 fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
-    nt = 1500000  # 840000 -- for two laser pulses; 200000 -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
+    T = 280e-15  # s # 1200 fs -- for two laser pulses; # 280 fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
+    nt = 200000  # 840000 -- for two laser pulses; 200000 -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
     x0 = 0  # TODO: to fix x0 != 0
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
@@ -170,7 +170,7 @@ def main(argv):
     t0 = 300e-15  # s
     sigma = 50e-15  # s
     nu_L = 0.29297e15  # Hz  # 0.29297e15 -- for the working transition between PECs; # 0.5879558e15 -- analytical difference b/w excited and ground energies; # 0.5859603e15 -- calculated difference b/w excited and ground energies !!; # 0.599586e15 = 20000 1/cm
-    delay = 641e-15  #s
+    delay = 600e-15  #s
     lmin = 0
     mod_stdout = 500
     mod_fileout = 100
@@ -275,13 +275,16 @@ def main(argv):
         def plot_test(l, phi_l, phi_u):
             plot_test_file(l, phi_l, phi_u, f)
 
-        def on_after_init(solver: propagation.PropagationSolver,
-                          state: propagation.PropagationSolver.InitState):
+        dt = 0
+        stat_saved = propagation.PropagationSolver.StaticState()
+        def report_static(stat: propagation.PropagationSolver.StaticState):
+            nonlocal stat_saved
+            stat_saved = stat
 
             # check if input data are correct in terms of the given problem
             # calculating the initial energy range of the Hamiltonian operator H
-            emax0 = solver.v[0][1][0] + abs(solver.akx2[int(np / 2 - 1)]) + 2.0
-            emin0 = solver.v[0][0]
+            emax0 = stat.v[0][1][0] + abs(stat.akx2[int(np / 2 - 1)]) + 2.0
+            emin0 = stat.v[0][0]
 
             # calculating the initial minimum number of collocation points that is needed for convergence
             np_min0 = int(
@@ -303,84 +306,100 @@ def main(argv):
             if nt < nt_min0:
                 _warning_time_steps(nt, nt_min0)
 
-            cener0_tot = state.cener0 + state.cener0_u
-            overlp0_abs = abs(state.overlp00) + abs(state.overlpf0)
+            cener0_tot = stat.cener0 + stat.cener0_u
+            overlp0_abs = abs(stat.overlp00) + abs(stat.overlpf0)
 
             # plotting initial values
-            plot(state.psi[0], 0.0, solver.x, np)
-            plot_up(state.psi[1], 0.0, solver.x, np)
+            plot(stat.psi0[0], 0.0, stat.x, np)
+            plot_up(stat.psi0[1], 0.0, stat.x, np)
 
-            plot_mom(0.0, state.moms0, state.cener0.real, state.E00.real, state.overlp00, cener0_tot.real)
-            plot_mom_up(0.0, state.moms0, state.cener0_u.real, state.E00.real, state.overlpf0, overlp0_abs)
+            plot_mom(0.0, stat.moms0, stat.cener0.real, stat.E00.real, stat.overlp00, cener0_tot.real)
+            plot_mom_up(0.0, stat.moms0, stat.cener0_u.real, stat.E00.real, stat.overlpf0, overlp0_abs)
 
             print("Initial emax = ", emax0)
 
             print(" Initial state features: ")
-            print("Initial normalization: ", abs(state.cnorm0))
-            print("Initial energy: ", abs(state.cener0))
+            print("Initial normalization: ", abs(stat.cnorm0))
+            print("Initial energy: ", abs(stat.cener0))
 
             print(" Final goal features: ")
-            print("Final goal normalization: ", abs(state.cnormf))
-            print("Final goal energy: ", abs(state.cenerf))
+            print("Final goal normalization: ", abs(stat.cnormf))
+            print("Final goal energy: ", abs(stat.cenerf))
 
+        dyn_saved = propagation.PropagationSolver.DynamicState()
+        def report_dynamic(dyn: propagation.PropagationSolver.DynamicState):
+            nonlocal dyn_saved
+            dyn_saved = dyn
 
         milliseconds_full = 0
-        def on_after_solver_step(solver: propagation.PropagationSolver,
-                                 init: propagation.PropagationSolver.StepInit,
-                                 state: propagation.PropagationSolver.StepState):
-            t = init.dt * init.l
+        def process_instrumentation(instr: propagation.PropagationSolver.InstrumentationOutputData):
+            t = dt * dyn_saved.l
 
             # calculating the minimum number of collocation points and time steps that are needed for convergence
-            nt_min = int(math.ceil((state.emax - state.emin) * solver.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
+            nt_min = int(math.ceil((instr.emax - instr.emin) * T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
             np_min = int(math.ceil(
-                solver.L * math.sqrt(
-                    2.0 * solver.m * (state.emax - state.emin) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
+                L * math.sqrt(
+                    2.0 * m * (instr.emax - instr.emin) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
 
-            cener = state.cener_l + state.cener_u
-            overlp_abs = abs(state.overlp0) + abs(state.overlpf)
+            cener = instr.cener_l + instr.cener_u
+            overlp_abs = abs(instr.overlp0) + abs(instr.overlpf)
 
-            time_span = state.time_after - state.time_before
+            time_span = instr.time_after - instr.time_before
             milliseconds_per_step = time_span.microseconds / 1000
             nonlocal milliseconds_full
             milliseconds_full += milliseconds_per_step
 
+            # local control algorithm
+            #dAdt = (instr.E_full * instr.psigc_psie).imag
+            #if dAdt >= 0.0:
+            #    res = propagation.PropagationSolver.StepReaction.OK
+            #else:
+            #    res = propagation.PropagationSolver.StepReaction.REPEAT
+            res = propagation.PropagationSolver.StepReaction.OK
+
             # plotting the result
-            if init.l % mod_fileout == 0:
-                if init.l >= lmin:
-                    plot(init.psi[0], t, solver.x, solver.np)
-                    plot_up(init.psi[1], t, solver.x, solver.np)
+            if dyn_saved.l % mod_fileout == 0:
+                if dyn_saved.l >= lmin:
+                    plot(dyn_saved.psi[0], t, stat_saved.x, solver.np)
+                    plot_up(dyn_saved.psi[1], t, stat_saved.x, solver.np)
 
-                if init.l >= lmin:
-                    plot_mom(t, state.moms, state.cener_l.real, state.E_full.real, state.overlp0, cener.real)
-                    plot_mom_up(t, state.moms, state.cener_u.real, state.E_full.real, state.overlpf, overlp_abs)
+                if dyn_saved.l >= lmin:
+                    plot_mom(t, instr.moms, instr.cener_l.real, instr.E_full.real, instr.overlp0, cener.real)
+                    plot_mom_up(t, instr.moms, instr.cener_u.real, instr.E_full.real, instr.overlpf, overlp_abs)
 
-            if init.l % mod_stdout == 0:
+            if dyn_saved.l % mod_stdout == 0:
                 if solver.np < np_min:
                     _warning_collocation_points(np, np_min)
                 if solver.nt < nt_min:
                     _warning_time_steps(nt, nt_min)
 
-                print("l = ", init.l)
+                print("l = ", dyn_saved.l)
                 print("t = ", t * 1e15, "fs")
 
-                print("emax = ", state.emax)
-                print("emin = ", state.emin)
-                print("normalized scaled time interval = ", state.t_sc)
-                print("normalization on the lower state = ", state.cnorm_l)
-                print("normalization on the upper state = ", state.cnorm_u)
-                print("overlap with initial wavefunction = ", state.overlp0)
-                print("overlap with final goal wavefunction = ", state.overlpf)
-                print("energy on the lower state = ", state.cener_l.real)
-                print("energy on the upper state = ", state.cener_u.real)
+                print("emax = ", instr.emax)
+                print("emin = ", instr.emin)
+                print("normalized scaled time interval = ", instr.t_sc)
+                print("normalization on the lower state = ", instr.cnorm_l)
+                print("normalization on the upper state = ", instr.cnorm_u)
+                print("overlap with initial wavefunction = ", instr.overlp0)
+                print("overlap with final goal wavefunction = ", instr.overlpf)
+                print("energy on the lower state = ", instr.cener_l.real)
+                print("energy on the upper state = ", instr.cener_u.real)
 
                 print(
                     "milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(
-                        milliseconds_full / init.l))
+                        milliseconds_full / dyn_saved.l))
+
+            return res
 
         solver = propagation.PropagationSolver(
-            psi_init, pot, on_after_step=on_after_solver_step, on_after_init=on_after_init,
+            psi_init, pot,
+            report_static=report_static,
+            report_dynamic=report_dynamic,
+            process_instrumentation=process_instrumentation,
             m=m, L=L, np=np, nch=nch, T=T, nt=nt, x0=x0, p0=p0, a=a, De=De, x0p=x0p, E0=E0,
             t0=t0, sigma=sigma, nu_L=nu_L, delay=delay)
+
         solver.time_propagation()
         #solver.filtering()
 
