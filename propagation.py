@@ -49,11 +49,11 @@ class PropagationSolver:
     # These values are calculated once and forever
     # They should NEVER change
     class StaticState:
-        def __init__(self, psi0 = None, psif = None, moms0: phys_base.ExpectationValues = None,
-                     cnorm0 = None, cnormf = None,
-                     cener0 = None, cener0_u = None, cenerf = None,
-                     E00 = 0, overlp00 = None, overlpf0 = None,
-                     dt = 0, dx = 0, x = None, v = None, akx2 = None):
+        def __init__(self, psi0=None, psif=None, moms0: phys_base.ExpectationValues = None,
+                     cnorm0=None, cnormf=None,
+                     cener0=None, cener0_u=None, cenerf=None,
+                     E00=0.0, overlp00=None, overlpf0=None,
+                     dt=0.0, dx=0.0, x=None, v=None, akx2=None):
             self.psi0 = psi0
             self.psif = psif
             self.moms0 = moms0
@@ -74,7 +74,7 @@ class PropagationSolver:
 
     # These parameters are updated on each calculation step
     class DynamicState:
-        def __init__(self, l = 0, psi = None):
+        def __init__(self, l=0, psi=None):
             self.l = l
             self.psi = psi
 
@@ -100,7 +100,7 @@ class PropagationSolver:
             self.time_after = time_after
 
 
-    # The user's decision to repeat or not to repeat
+    # The user's decision to repeat or not to repeat a step
     class StepReaction(Enum):
         OK = 0
         REPEAT = 1
@@ -212,8 +212,7 @@ class PropagationSolver:
             #E2 = phys_base.laser_field(self.E0, t, self.t0 + self.delay, self.sigma)
             #E = E1 + E2
             E_full = E * exp_L * exp_L
-            psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, stat.v, stat.akx2, emin, emax, E,
-                                       eL)  # TODO move prop into this class
+            psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, stat.v, stat.akx2, emin, emax, E, eL)  # TODO move prop into this class
 
             cnorm_l = math_base.cprod(psi_omega[0], psi_omega[0], stat.dx, self.np)
             cnorm_u = math_base.cprod(psi_omega[1], psi_omega[1], stat.dx, self.np)

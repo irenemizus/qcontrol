@@ -102,15 +102,6 @@ def usage():
     print (__doc__)
 
 
-def plot_file(psi, t, x, np, f_abs, f_real):
-    """ Plots absolute and real values of the current wavefunction """
-    for i in range(np):
-        f_abs.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], abs(psi[i])))
-        f_real.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], psi[i].real))
-        f_abs.flush()
-        f_real.flush()
-
-
 def _warning_collocation_points(np, np_min):
     print("WARNING: The number of collocation points np = {} should be more than an estimated initial value {}. "
           "You've got a divergence!".format(np, np_min), file=sys.stderr)
@@ -119,6 +110,15 @@ def _warning_collocation_points(np, np_min):
 def _warning_time_steps(nt, nt_min):
     print("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
           "You've got a divergence!".format(nt, nt_min), file=sys.stderr)
+
+
+def plot_file(psi, t, x, np, f_abs, f_real):
+    """ Plots absolute and real values of the current wavefunction """
+    for i in range(np):
+        f_abs.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], abs(psi[i])))
+        f_real.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], psi[i].real))
+        f_abs.flush()
+        f_real.flush()
 
 
 def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, tot, file_mom):
@@ -260,26 +260,35 @@ def main(argv):
          open(os.path.join(OUT_PATH, file_mom + "_exc"), 'w') as f_mom_up, \
          open("test", 'w') as f:
 
+
         def plot(psi, t, x, np):
             plot_file(psi, t, x, np, f_abs, f_real)
+
 
         def plot_mom(t, moms: phys_base.ExpectationValues, ener, E, overlp, ener_tot):
             plot_mom_file(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, E, overlp, ener_tot, f_mom)
 
+
         def plot_up(psi, t, x, np):
             plot_file(psi, t, x, np, f_abs_up, f_real_up)
+
 
         def plot_mom_up(t, moms, ener, E, overlp, overlp_tot):
             plot_mom_file(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, E, overlp, overlp_tot, f_mom_up)
 
+
         def plot_test(l, phi_l, phi_u):
             plot_test_file(l, phi_l, phi_u, f)
+
 
         dt = 0
         stat_saved = propagation.PropagationSolver.StaticState()
         def report_static(stat: propagation.PropagationSolver.StaticState):
             nonlocal stat_saved
             stat_saved = stat
+
+            nonlocal dt
+            dt = stat.dt
 
             # check if input data are correct in terms of the given problem
             # calculating the initial energy range of the Hamiltonian operator H
@@ -326,10 +335,12 @@ def main(argv):
             print("Final goal normalization: ", abs(stat.cnormf))
             print("Final goal energy: ", abs(stat.cenerf))
 
+
         dyn_saved = propagation.PropagationSolver.DynamicState()
         def report_dynamic(dyn: propagation.PropagationSolver.DynamicState):
             nonlocal dyn_saved
             dyn_saved = dyn
+
 
         milliseconds_full = 0
         def process_instrumentation(instr: propagation.PropagationSolver.InstrumentationOutputData):
@@ -360,17 +371,17 @@ def main(argv):
             # plotting the result
             if dyn_saved.l % mod_fileout == 0:
                 if dyn_saved.l >= lmin:
-                    plot(dyn_saved.psi[0], t, stat_saved.x, solver.np)
-                    plot_up(dyn_saved.psi[1], t, stat_saved.x, solver.np)
+                    plot(dyn_saved.psi[0], t, stat_saved.x, np)
+                    plot_up(dyn_saved.psi[1], t, stat_saved.x, np)
 
                 if dyn_saved.l >= lmin:
                     plot_mom(t, instr.moms, instr.cener_l.real, instr.E_full.real, instr.overlp0, cener.real)
                     plot_mom_up(t, instr.moms, instr.cener_u.real, instr.E_full.real, instr.overlpf, overlp_abs)
 
             if dyn_saved.l % mod_stdout == 0:
-                if solver.np < np_min:
+                if np < np_min:
                     _warning_collocation_points(np, np_min)
-                if solver.nt < nt_min:
+                if nt < nt_min:
                     _warning_time_steps(nt, nt_min)
 
                 print("l = ", dyn_saved.l)
