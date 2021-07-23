@@ -121,9 +121,10 @@ def plot_file(psi, t, x, np, f_abs, f_real):
         f_real.flush()
 
 
-def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, tot, file_mom):
+def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, tot, abs_psi_max, real_psi_max, file_mom):
     """ Plots expectation values of the current x, x*x, p and p*p """
-    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, abs(overlp), tot))
+    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(
+                    t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, abs(overlp), tot, abs_psi_max, real_psi_max))
     file_mom.flush()
 
 
@@ -167,7 +168,7 @@ def main(argv):
     De = 20000.0  # 1/cm
     x0p = -0.17  # a_0
     E0 = 71.54  # 1/cm
-    t0 = 300e-15  # s
+    t0 = 140e-15  # s
     sigma = 50e-15  # s
     nu_L = 0.29297e15  # Hz  # 0.29297e15 -- for the working transition between PECs; # 0.5879558e15 -- analytical difference b/w excited and ground energies; # 0.5859603e15 -- calculated difference b/w excited and ground energies !!; # 0.599586e15 = 20000 1/cm
     delay = 600e-15  #s
@@ -265,16 +266,18 @@ def main(argv):
             plot_file(psi, t, x, np, f_abs, f_real)
 
 
-        def plot_mom(t, moms: phys_base.ExpectationValues, ener, E, overlp, ener_tot):
-            plot_mom_file(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, E, overlp, ener_tot, f_mom)
+        def plot_mom(t, moms: phys_base.ExpectationValues, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
+            plot_mom_file(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, E, overlp, ener_tot,
+                          abs_psi_max, real_psi_max, f_mom)
 
 
         def plot_up(psi, t, x, np):
             plot_file(psi, t, x, np, f_abs_up, f_real_up)
 
 
-        def plot_mom_up(t, moms, ener, E, overlp, overlp_tot):
-            plot_mom_file(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, E, overlp, overlp_tot, f_mom_up)
+        def plot_mom_up(t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
+            plot_mom_file(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, E, overlp, overlp_tot,
+                          abs_psi_max, real_psi_max, f_mom_up)
 
 
         def plot_test(l, phi_l, phi_u):
@@ -322,8 +325,10 @@ def main(argv):
             plot(stat.psi0[0], 0.0, stat.x, np)
             plot_up(stat.psi0[1], 0.0, stat.x, np)
 
-            plot_mom(0.0, stat.moms0, stat.cener0.real, stat.E00.real, stat.overlp00, cener0_tot.real)
-            plot_mom_up(0.0, stat.moms0, stat.cener0_u.real, stat.E00.real, stat.overlpf0, overlp0_abs)
+            plot_mom(0.0, stat.moms0, stat.cener0.real, stat.E00.real, stat.overlp00, cener0_tot.real,
+                     abs(stat.psi0[0][520]), stat.psi0[0][520].real)
+            plot_mom_up(0.0, stat.moms0, stat.cener0_u.real, stat.E00.real, stat.overlpf0, overlp0_abs,
+                     abs(stat.psi0[1][520]), stat.psi0[1][520].real)
 
             print("Initial emax = ", emax0)
 
@@ -375,8 +380,10 @@ def main(argv):
                     plot_up(dyn_saved.psi[1], t, stat_saved.x, np)
 
                 if dyn_saved.l >= lmin:
-                    plot_mom(t, instr.moms, instr.cener_l.real, instr.E_full.real, instr.overlp0, cener.real)
-                    plot_mom_up(t, instr.moms, instr.cener_u.real, instr.E_full.real, instr.overlpf, overlp_abs)
+                    plot_mom(t, instr.moms, instr.cener_l.real, instr.E_full.real, instr.overlp0, cener.real,
+                             abs(dyn_saved.psi[0][520]), dyn_saved.psi[0][520].real)
+                    plot_mom_up(t, instr.moms, instr.cener_u.real, instr.E_full.real, instr.overlpf, overlp_abs,
+                                abs(dyn_saved.psi[1][520]), dyn_saved.psi[1][520].real)
 
             if dyn_saved.l % mod_stdout == 0:
                 if np < np_min:
