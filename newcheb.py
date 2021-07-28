@@ -160,21 +160,23 @@ def main(argv):
     L = 5.0  # a_0  # 5.0 a_0 -- for the working transition between PECs; # 0.2 -- for a model harmonic oscillator with a = 1.0; # 4.0 a_0 -- for morse oscillator; # 6.0 a_0 -- for dimensional harmonic oscillator
     np = 1024  # 1024 -- for the working transition between PECs and two laser pulses; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality); # 512 -- for dimensional harmonic oscillator
     nch = 64
-    T = 280e-15  # s # 1200 fs -- for two laser pulses; # 280 fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
-    nt = 200000  # 840000 -- for two laser pulses; 200000 -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
+    T = 600e-15  # s # 1200 fs -- for two laser pulses; # 280 fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
+    nt = 420000  # 840000 -- for two laser pulses; 200000 -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
     x0 = 0  # TODO: to fix x0 != 0
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
     De = 20000.0  # 1/cm
     x0p = -0.17  # a_0
     E0 = 71.54  # 1/cm
-    t0 = 140e-15  # s
+    t0 = 300e-15  # s
     sigma = 50e-15  # s
     nu_L = 0.29297e15  # Hz  # 0.29297e15 -- for the working transition between PECs; # 0.5879558e15 -- analytical difference b/w excited and ground energies; # 0.5859603e15 -- calculated difference b/w excited and ground energies !!; # 0.599586e15 = 20000 1/cm
     delay = 600e-15  #s
     lmin = 0
     mod_stdout = 500
     mod_fileout = 100
+
+    very_low_frequency = nu_L * 1e-35  # Hz
 
     # analyze provided options and their values (if any):
     for opt, val in options:
@@ -286,6 +288,12 @@ def main(argv):
 
         dt = 0
         stat_saved = propagation.PropagationSolver.StaticState()
+        dyn_ref = propagation.PropagationSolver.DynamicState()
+        milliseconds_full = 0
+        res_saved = propagation.PropagationSolver.StepReaction.OK
+        E_patched = 0.0
+        dAdt_happy = 0.0
+
         def report_static(stat: propagation.PropagationSolver.StaticState):
             nonlocal stat_saved
             stat_saved = stat
@@ -341,15 +349,13 @@ def main(argv):
             print("Final goal energy: ", abs(stat.cenerf))
 
 
-        dyn_saved = propagation.PropagationSolver.DynamicState()
         def report_dynamic(dyn: propagation.PropagationSolver.DynamicState):
-            nonlocal dyn_saved
-            dyn_saved = dyn
+            nonlocal dyn_ref
+            dyn_ref = dyn
 
 
-        milliseconds_full = 0
         def process_instrumentation(instr: propagation.PropagationSolver.InstrumentationOutputData):
-            t = dt * dyn_saved.l
+            t = dt * dyn_ref.l
 
             # calculating the minimum number of collocation points and time steps that are needed for convergence
             nt_min = int(math.ceil((instr.emax - instr.emin) * T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
@@ -366,32 +372,46 @@ def main(argv):
             milliseconds_full += milliseconds_per_step
 
             # local control algorithm
-            #dAdt = (instr.E_full * instr.psigc_psie).imag
-            #if dAdt >= 0.0:
-            #    res = propagation.PropagationSolver.StepReaction.OK
-            #else:
-            #    res = propagation.PropagationSolver.StepReaction.REPEAT
-            res = propagation.PropagationSolver.StepReaction.OK
+            coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
+            E_c = instr.E_full / dyn_ref.E
+
+            dAdt = dyn_ref.E * (E_c * instr.psigc_psie).imag * coef
+
+            nonlocal dAdt_happy
+            nonlocal E_patched
+            nonlocal very_low_frequency
+
+            if dAdt >= 0.0:
+                res = propagation.PropagationSolver.StepReaction.OK
+                dAdt_happy = dAdt
+            else:
+                if abs((E_c * instr.psigc_psie).imag) < 1e-20:
+                    E_patched = -dAdt_happy / ((E_c * instr.psigc_psie).imag * coef)
+                else:
+                    epsilon = 1e-5
+                    E_patched = dAdt_happy / (epsilon * coef)
+                res = propagation.PropagationSolver.StepReaction.REPEAT
+            #res = propagation.PropagationSolver.StepReaction.OK
 
             # plotting the result
-            if dyn_saved.l % mod_fileout == 0:
-                if dyn_saved.l >= lmin:
-                    plot(dyn_saved.psi[0], t, stat_saved.x, np)
-                    plot_up(dyn_saved.psi[1], t, stat_saved.x, np)
+            if dyn_ref.l % mod_fileout == 0 and res == propagation.PropagationSolver.StepReaction.OK:
+                if dyn_ref.l >= lmin:
+                    plot(dyn_ref.psi[0], t, stat_saved.x, np)
+                    plot_up(dyn_ref.psi[1], t, stat_saved.x, np)
 
-                if dyn_saved.l >= lmin:
+                if dyn_ref.l >= lmin:
                     plot_mom(t, instr.moms, instr.cener_l.real, instr.E_full.real, instr.overlp0, cener.real,
-                             abs(dyn_saved.psi[0][520]), dyn_saved.psi[0][520].real)
+                             abs(dyn_ref.psi[0][520]), dyn_ref.psi[0][520].real)
                     plot_mom_up(t, instr.moms, instr.cener_u.real, instr.E_full.real, instr.overlpf, overlp_abs,
-                                abs(dyn_saved.psi[1][520]), dyn_saved.psi[1][520].real)
+                                abs(dyn_ref.psi[1][520]), dyn_ref.psi[1][520].real)
 
-            if dyn_saved.l % mod_stdout == 0:
+            if dyn_ref.l % mod_stdout == 0:
                 if np < np_min:
                     _warning_collocation_points(np, np_min)
                 if nt < nt_min:
                     _warning_time_steps(nt, nt_min)
 
-                print("l = ", dyn_saved.l)
+                print("l = ", dyn_ref.l)
                 print("t = ", t * 1e15, "fs")
 
                 print("emax = ", instr.emax)
@@ -403,18 +423,43 @@ def main(argv):
                 print("overlap with final goal wavefunction = ", instr.overlpf)
                 print("energy on the lower state = ", instr.cener_l.real)
                 print("energy on the upper state = ", instr.cener_u.real)
+                print("Time derivation of the expectation value from the goal operator A = ", dAdt)
 
                 print(
                     "milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(
-                        milliseconds_full / dyn_saved.l))
+                        milliseconds_full / dyn_ref.l))
 
+                if res !=  propagation.PropagationSolver.StepReaction.OK:
+                    print("REPEATNG THE ITERATION")
+
+            nonlocal res_saved
+            res_saved = res
             return res
+
+
+        # Calculating envelope of the laser field energy at the given time value
+        def LaserFieldEnvelope(stat: propagation.PropagationSolver.StaticState,
+                               dyn: propagation.PropagationSolver.DynamicState):
+            if res_saved == propagation.PropagationSolver.StepReaction.OK:
+                t = stat.dt * dyn.l
+                E = phys_base.laser_field(E0, t, t0, sigma)
+                #E2 = phys_base.laser_field(E0, t, t0 + delay, sigma)
+                #E = E1 + E2
+            elif res_saved == propagation.PropagationSolver.StepReaction.REPEAT:
+                nonlocal E_patched
+                E = E_patched
+            else:
+                raise RuntimeError("Impossible case")
+
+            return E
+
 
         solver = propagation.PropagationSolver(
             psi_init, pot,
             report_static=report_static,
             report_dynamic=report_dynamic,
             process_instrumentation=process_instrumentation,
+            laser_field_envelope=LaserFieldEnvelope,
             m=m, L=L, np=np, nch=nch, T=T, nt=nt, x0=x0, p0=p0, a=a, De=De, x0p=x0p, E0=E0,
             t0=t0, sigma=sigma, nu_L=nu_L, delay=delay)
 

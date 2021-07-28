@@ -19,6 +19,7 @@ class PropagationSolver:
             report_static,
             report_dynamic,
             process_instrumentation,
+            laser_field_envelope,
             m, L, np, nch, T, nt, x0, p0, a, De, x0p, E0,
             t0, sigma, nu_L, delay):
 
@@ -27,6 +28,7 @@ class PropagationSolver:
         self.report_static = report_static
         self.report_dynamic = report_dynamic
         self.process_instrumentation = process_instrumentation
+        self.laser_field_envelope = laser_field_envelope
 
         self.m = m
         self.L = L
@@ -74,9 +76,10 @@ class PropagationSolver:
 
     # These parameters are updated on each calculation step
     class DynamicState:
-        def __init__(self, l=0, psi=None):
+        def __init__(self, l=0, psi=None, E=0.0):
             self.l = l
             self.psi = psi
+            self.E = E
 
 
     # These parameters are recalculated from scratch on each step,
@@ -164,7 +167,7 @@ class PropagationSolver:
                      cener0, cener0_u, cenerf, E00, overlp00, overlpf0, dt, dx, x, v, akx2)
         self.report_static(stat)
 
-        dyn = PropagationSolver.DynamicState(0, psi)
+        dyn = PropagationSolver.DynamicState(0, psi, 0.0)
         self.report_dynamic(dyn)
 
 
@@ -208,11 +211,10 @@ class PropagationSolver:
 
             t_sc = stat.dt * (emax - emin) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
 
-            E = phys_base.laser_field(self.E0, t, self.t0, self.sigma)
-            #E2 = phys_base.laser_field(self.E0, t, self.t0 + self.delay, self.sigma)
-            #E = E1 + E2
-            E_full = E * exp_L * exp_L
-            psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, stat.v, stat.akx2, emin, emax, E, eL)  # TODO move prop into this class
+            dyn.E = self.laser_field_envelope(stat, dyn)
+            E_full = dyn.E * exp_L * exp_L
+
+            psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, stat.v, stat.akx2, emin, emax, dyn.E, eL)  # TODO move prop into this class
 
             cnorm_l = math_base.cprod(psi_omega[0], psi_omega[0], stat.dx, self.np)
             cnorm_u = math_base.cprod(psi_omega[1], psi_omega[1], stat.dx, self.np)
@@ -251,11 +253,11 @@ class PropagationSolver:
                 take_back = False
             elif res == PropagationSolver.StepReaction.REPEAT:
                 take_back = True
+                dyn = dyn_bu
             else:
                 raise RuntimeError("Impossible case")
 
-            if not take_back:
-                self.report_dynamic(dyn)
+            self.report_dynamic(dyn)
 
 
 
