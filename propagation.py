@@ -170,10 +170,11 @@ class PropagationSolver:
         dyn = PropagationSolver.DynamicState(0, psi, 0.0)
         self.report_dynamic(dyn)
 
-
         # main propagation loop
         for dyn.l in range(1, self.nt + 1):
+            if dyn.l % 100 == 0: print("Starting step: ", dyn.l)
             self.step(stat, dyn)
+
 
     def step(self, stat: StaticState, dyn: DynamicState):
         dyn_bu = copy.deepcopy(dyn)
@@ -225,6 +226,8 @@ class PropagationSolver:
                 psi_omega[0] /= math.sqrt(abs(cnorm))
                 psi_omega[1] /= math.sqrt(abs(cnorm))
 
+            psigc_psie = math_base.cprod(psi_omega[1], psi_omega[0], stat.dx, self.np)
+
             # converting back to psi
             dyn.psi[0] = psi_omega[0] * exp_L
             dyn.psi[1] = psi_omega[1] / exp_L
@@ -237,8 +240,6 @@ class PropagationSolver:
 
             overlp0 = math_base.cprod(stat.psi0[0], dyn.psi[0], stat.dx, self.np)
             overlpf = math_base.cprod(stat.psif[0], dyn.psi[1], stat.dx, self.np)
-
-            psigc_psie = math_base.cprod(dyn.psi[1], dyn.psi[0], stat.dx, self.np)
 
             # calculating of expectation values
             moms = phys_base.exp_vals_calc(dyn.psi, stat.x, stat.akx2, stat.dx, self.np, self.m)
@@ -253,7 +254,7 @@ class PropagationSolver:
                 take_back = False
             elif res == PropagationSolver.StepReaction.REPEAT:
                 take_back = True
-                dyn = dyn_bu
+                dyn.__dict__ = dyn_bu.__dict__.copy()
             else:
                 raise RuntimeError("Impossible case")
 

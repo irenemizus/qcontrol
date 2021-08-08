@@ -85,6 +85,7 @@ __license__ = "Python"
 import math
 
 import double_morse
+import harmonic
 
 OUT_PATH="output"
 
@@ -158,25 +159,25 @@ def main(argv):
     # Default argument values
     m = 0.5  # Dalton
     L = 5.0  # a_0  # 5.0 a_0 -- for the working transition between PECs; # 0.2 -- for a model harmonic oscillator with a = 1.0; # 4.0 a_0 -- for morse oscillator; # 6.0 a_0 -- for dimensional harmonic oscillator
-    np = 1024  # 1024 -- for the working transition between PECs and two laser pulses; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality); # 512 -- for dimensional harmonic oscillator
+    np = 2048  # 1024 -- for the working transition between PECs and two laser pulses; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality); # 512 -- for dimensional harmonic oscillator
     nch = 64
-    T = 600e-15  # s # 1200 fs -- for two laser pulses; # 280 fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
-    nt = 420000  # 840000 -- for two laser pulses; 200000 -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
+    T = 2240e-15  # s # 1200 fs -- for two laser pulses; # 280 (600) fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
+    nt = 900000  # 840000 -- for two laser pulses; 200000 (420000) -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
     x0 = 0  # TODO: to fix x0 != 0
     p0 = 0  # TODO: to fix p0 != 0
     a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
     De = 20000.0  # 1/cm
     x0p = -0.17  # a_0
-    E0 = 71.54  # 1/cm
+    E0 = 0.0 #71.54  # 1/cm
     t0 = 300e-15  # s
     sigma = 50e-15  # s
-    nu_L = 0.29297e15  # Hz  # 0.29297e15 -- for the working transition between PECs; # 0.5879558e15 -- analytical difference b/w excited and ground energies; # 0.5859603e15 -- calculated difference b/w excited and ground energies !!; # 0.599586e15 = 20000 1/cm
+    nu_L = 0.0 #0.29297e15  # Hz  # 0.29297e15 -- for the working transition between PECs; # 0.5879558e15 -- analytical difference b/w excited and ground energies; # 0.5859603e15 -- calculated difference b/w excited and ground energies !!; # 0.599586e15 = 20000 1/cm
     delay = 600e-15  #s
     lmin = 0
     mod_stdout = 500
     mod_fileout = 100
 
-    very_low_frequency = nu_L * 1e-35  # Hz
+    epsilon = 1e-15
 
     # analyze provided options and their values (if any):
     for opt, val in options:
@@ -251,7 +252,7 @@ def main(argv):
                          "of a scaling parameter of the laser field envelope 'sigma'"
                          "and of a basic frequency of the laser field 'nu_L' must be positive")
 
-    psi_init = double_morse.psi_init
+    psi_init = harmonic.psi_init
     pot = double_morse.pot
 
     # main propagation loop
@@ -373,25 +374,23 @@ def main(argv):
 
             # local control algorithm
             coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
-            E_c = instr.E_full / dyn_ref.E
-
-            dAdt = dyn_ref.E * (E_c * instr.psigc_psie).imag * coef
+            dAdt = dyn_ref.E * instr.psigc_psie.imag * coef
 
             nonlocal dAdt_happy
             nonlocal E_patched
-            nonlocal very_low_frequency
+            nonlocal epsilon
 
-            if dAdt >= 0.0:
-                res = propagation.PropagationSolver.StepReaction.OK
-                dAdt_happy = dAdt
-            else:
-                if abs((E_c * instr.psigc_psie).imag) < 1e-20:
-                    E_patched = -dAdt_happy / ((E_c * instr.psigc_psie).imag * coef)
-                else:
-                    epsilon = 1e-5
-                    E_patched = dAdt_happy / (epsilon * coef)
-                res = propagation.PropagationSolver.StepReaction.REPEAT
-            #res = propagation.PropagationSolver.StepReaction.OK
+            #if dAdt >= 0.0:
+            #    res = propagation.PropagationSolver.StepReaction.OK
+            #    dAdt_happy = dAdt
+            #else:
+            #    if abs(instr.psigc_psie.imag) > epsilon:
+            #        E_patched = -dAdt_happy / (instr.psigc_psie.imag * coef)
+            #    else:
+            #        print("Image part in dA/dt is too small and has been replaces by epsilon")
+            #        E_patched = dAdt_happy / (epsilon * coef)
+            #    res = propagation.PropagationSolver.StepReaction.REPEAT
+            res = propagation.PropagationSolver.StepReaction.OK
 
             # plotting the result
             if dyn_ref.l % mod_fileout == 0 and res == propagation.PropagationSolver.StepReaction.OK:
@@ -400,7 +399,7 @@ def main(argv):
                     plot_up(dyn_ref.psi[1], t, stat_saved.x, np)
 
                 if dyn_ref.l >= lmin:
-                    plot_mom(t, instr.moms, instr.cener_l.real, instr.E_full.real, instr.overlp0, cener.real,
+                    plot_mom(t, instr.moms, instr.cener_l.real, dyn_ref.E, instr.overlp0, cener.real,
                              abs(dyn_ref.psi[0][520]), dyn_ref.psi[0][520].real)
                     plot_mom_up(t, instr.moms, instr.cener_u.real, instr.E_full.real, instr.overlpf, overlp_abs,
                                 abs(dyn_ref.psi[1][520]), dyn_ref.psi[1][520].real)
