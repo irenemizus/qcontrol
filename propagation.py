@@ -1,6 +1,5 @@
 import math
 import cmath
-import sys
 import copy
 from enum import Enum
 
@@ -8,7 +7,6 @@ import datetime
 
 import math_base
 import phys_base
-import harmonic
 
 
 class PropagationSolver:
@@ -172,7 +170,6 @@ class PropagationSolver:
 
         # main propagation loop
         for dyn.l in range(1, self.nt + 1):
-            if dyn.l % 100 == 0: print("Starting step: ", dyn.l)
             self.step(stat, dyn)
 
 
@@ -256,7 +253,7 @@ class PropagationSolver:
                 take_back = True
                 dyn.__dict__ = dyn_bu.__dict__.copy()
             else:
-                raise RuntimeError("Impossible case")
+                raise RuntimeError("Impossible case in the StepReaction class")
 
             self.report_dynamic(dyn)
 

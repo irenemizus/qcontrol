@@ -7,92 +7,155 @@ Usage: python newcheb.py [options]
 Options:
     -h, --help
         print this usage info and exit
-    -m, --mass
+    -f, --jsonfile
+        input json file name, in which all the following data should be provided
+        if something is not provided in the file or this option is missing at all,
+        the following default values will be used
+
+
+    Content of the json file
+
+    in key "phys_syst_pars":
+    m
         reduced mass value of the considered system
-        by default, is equal to 0.5 Dalton for dimensional problem
-                    is equal to 1.0 for dimensionless problem
-    -L
+        for dimensionless problem, should be equal to 1.0
+        by default, is equal to 0.5 Dalton
+
+    in key "potential_pars":
+    pot_type
+        type of the potentials ("morse" or "harmonic")
+        by default, the "morse" type is used
+    a
+        scaling coefficient for dimensional problem
+        by default, is equal to 1.0 1/a_0 -- for "morse" potential,
+                                    a_0 -- for "harmonic" potential
+    De
+        dissociation energy value for dimensional problem
+        by default, is equal to 20000.0 1/cm for "morse" potential
+                    is a dummy variable for "harmonic" potential
+    x0p
+        shift of the upper potential relative to the ground one
+        by default, is equal to -0.17 a_0
+
+    in key "laser_field_pars":
+    impulses_number
+        number of laser pulses in the "intuitive_control" task type
+        the values more than 1 are applicable for the task_type = "intuitive_control", only.
+        In this case if a value less than 2 provided, it will be replaced by 2
+        for the task_type = "filtering" it will be replaced by 0
+        for the task_type = "trans_wo_control" or "local_control" it will be replaced by 1
+        by default, is equal to 1
+    E0
+        amplitude value of the laser field energy envelope in 1 / cm
+        by default, is equal to 71.54 1 / cm
+    t0
+        initial time, when the laser field reaches its maximum value, in sec
+        by default, is equal to 300e-15 s
+    sigma
+        scaling parameter of the laser field envelope in sec
+        by default, is equal to 50e-15 s
+    nu_L
+        basic frequency of the laser field in Hz
+        by default, is equal to 0.29297e15 Hz
+    delay
+        time delay between the laser pulses in sec
+        is a dummy variable for impulses_number less than 2
+        by default, is equal to 600e-15
+
+    in key "phys_calc_pars":
+    task_type
+        type of the calculation task:
+        "trans_wo_control"  - calculation of transition from the ground state
+                              to the excited one under the influence of external
+                              non-controlled laser field with gaussian envelope and a constant
+                              chirp (by default)
+        "filtering"         - filtering task
+                              in this case E0 and nu_L are zeroing mandatory
+        "intuitive_control" - calculation of transitions from the ground state
+                              to the excited state and back to the ground one
+                              under the influence of a sequence of equal laser pulses
+                              with gaussian envelopes and a constant chirps
+        "local_control"     - calculation of transition from the ground state
+                              to the excited one under the influence of external
+                              laser field with controlled envelope form (by the local control
+                              algorithm) and a constant chirp
+    wf_type
+        type of the wavefunctions ("morse" or "harmonic")
+        by default, the "morse" type is used
+    L
         spatial range of the problem (in a_0 if applicable)
-        by default, is equal to 5 a_0 for dimensional problem
-                    is equal to 15 for dimensionless problem
-    --np
+        for dimensionless problem, should be equal to 15.0
+        by default, is equal to 5.0 a_0
+    T
+        time range of the problem in sec or in pi (half periods) units
+        for dimensionless problem, should be equal to 0.1
+        by default, is equal to 600e15 s
+
+    in key "alg_calc_pars":
+    np
         number of collocation points; must be a power of 2
         by default, is equal to 1024
-    --nch
+    nch
         number of Chebyshev interpolation points; must be a power of 2
         by default, is equal to 64
-    --T
-        time range of the problem in femtosec or in pi (half periods) units
-        by default, is equal to 280.0 fs for dimensional problem
-                    is equal to 0.1 for dimensionless problem
-    --nt
+    nt
         number of time grid points
-        by default, is equal to 100000
-    --x0
+        by default, is equal to 420000
+    epsilon
+        small parameter for cutting of an imaginary part in dA/dt.
+        Applicable for the task_type = "local_control", only. For all other cases is a dummy variable
+        by default, is equal to 1e-15
+
+    in key "init_conditions":
+    x0
         coordinate initial conditions for dimensionless problem
-        by default, is equal to 0
-    --p0
+        by default, is equal to 0.0
+    p0
         momentum initial conditions for dimensionless problem
-        by default, is equal to 0
-    -a
-        scaling coefficient for dimensional problem
-        by default, is equal to 1.0 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
-    --De
-        dissociation energy value for dimensional problem
-        by default, is equal to 20000.0 1 / cm
-    --E0
-        amplitude value of the laser field energy envelope in 1 / cm
-        by default, is equal to 71.68 1 / cm
-    --t0
-        initial time, when the laser field is switched on, in femtosec
-        by default, is equal to 140 fs
-    --sigma
-        scaling parameter of the laser field envelope in femtosec
-        by default, is equal to 50 fs
-    --nu_L
-        basic frequency of the laser field in PHz
-        by default, is equal to 0.293 PHz
-    --lmin
+        by default, is equal to 0.0
+
+    in key "print_pars":
+    lmin
         number of a time step, from which the result should be written to a file.
         A negative value will be considered as 0
         by default, is equal to 0
-    --mod_stdout
+    mod_stdout
         step of output to stdout (to write to stdout each <val>-th time step).
         By default, is equal to 500
-    --mod_fileout
+    mod_fileout
         step of writing in file (to write in file each <val>-th time step).
         By default, is equal to 100
-    --file_abs
+    file_abs
         output file name, to which absolute values of wavefunctions should be written
         by default, is equal to "fort.21"
-    --file_real
+    file_real
         output file name, to which real parts of wavefunctions should be written
         by default, is equal to "fort.22"
-    --file_mom
+    file_mom
         output file name, to which expectation values of x, x*x, p, p*p should be written
         by default, is equal to "fort.23"
 
 Examples:
-    python newcheb.py  --file_abs "res_abs" -L 30
-            perform a propagation task using spatial range of the dimensionless problem equal to 30,
-            the name "res_abs" for the absolute wavefunctions values output file, and
-            default values for other parameters
+    python newcheb.py --jsonfile "input.json"
+            perform a propagation task using the parameter values specified in the json file
+            "input.json" or the default ones if something wasn't provided in the file
 """
 
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
-import math
-
-import double_morse
-import harmonic
 
 OUT_PATH="output"
 
-import os
 import os.path
 import sys
 import getopt
+import json
+import math
+from enum import Enum
+
+import double_morse
+import harmonic
 import propagation
 import phys_base
 
@@ -139,103 +202,161 @@ def plot_test_file(l, phi_l, phi_u, f):
         f.write("{0}\n".format(phi_u[i]))
 
 
+class PotentialType(Enum):
+    MORSE = 0
+    HARMONIC = 1
+
+
+class WaveFuncType(Enum):
+    MORSE = 0
+    HARMONIC = 1
+
+
+class TaskType(Enum):
+    TRANS_WO_CONTROL = 0
+    FILTERING = 1
+    INTUITIVE_CONTROL = 2
+    LOCAL_CONTROL = 3
+
+
 def main(argv):
     """ The main() function """
     # analyze cmdline:
     try:
-        options, arguments = getopt.getopt(argv, 'hm:L:a:T:', ['help', 'mass=', '', '', '', 'np=', 'nch=', 'nt=', 'x0=', 'p0=', \
-                                          'x0p=', 'De=', 'E0=', 't0=', 'sigma=', 'nu_L=', 'delay=', 'lmin=', 'mod_stdout=', \
-                                          'mod_fileout', 'file_abs=', 'file_real=', 'file_mom='])
+        options, arguments = getopt.getopt(argv, 'hf:', ['help', 'jsonfile='])
     except getopt.GetoptError:
         print("\tThere are unrecognized options!", sys.stderr)
         print("\tRun this script with '-h' option to see the usage info and available options.", sys.stderr)
         sys.exit(2)
 
-    # default filenames
-    file_abs = "fort.21"
-    file_real = "fort.22"
-    file_mom = "fort.23"
-
-    # Default argument values
-    m = 0.5  # Dalton
-    L = 5.0  # a_0  # 5.0 a_0 -- for the working transition between PECs; # 0.2 -- for a model harmonic oscillator with a = 1.0; # 4.0 a_0 -- for morse oscillator; # 6.0 a_0 -- for dimensional harmonic oscillator
-    np = 2048  # 1024 -- for the working transition between PECs and two laser pulses; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality); # 512 -- for dimensional harmonic oscillator
-    nch = 64
-    T = 2240e-15  # s # 1200 fs -- for two laser pulses; # 280 (600) fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
-    nt = 900000  # 840000 -- for two laser pulses; 200000 (420000) -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
-    x0 = 0  # TODO: to fix x0 != 0
-    p0 = 0  # TODO: to fix p0 != 0
-    a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
-    De = 20000.0  # 1/cm
-    x0p = -0.17  # a_0
-    E0 = 0.0 #71.54  # 1/cm
-    t0 = 300e-15  # s
-    sigma = 50e-15  # s
-    nu_L = 0.0 #0.29297e15  # Hz  # 0.29297e15 -- for the working transition between PECs; # 0.5879558e15 -- analytical difference b/w excited and ground energies; # 0.5859603e15 -- calculated difference b/w excited and ground energies !!; # 0.599586e15 = 20000 1/cm
-    delay = 600e-15  #s
-    lmin = 0
-    mod_stdout = 500
-    mod_fileout = 100
-
-    epsilon = 1e-15
-
+    file_json = None
     # analyze provided options and their values (if any):
     for opt, val in options:
         if opt in ("-h", "--help"):
             usage()
             sys.exit()
-        elif opt in ("-m", "--mass"):
-            m = float(val)
-        elif opt == "-L":
-            L = float(val)
-        elif opt == "--np":
-            np = int(val)
-        elif opt == "--nch":
-            nch = int(val)
-        elif opt == "-T":
-            T = float(val)
-        elif opt == "-a":
-            a = float(val)
-        elif opt == "--nt":
-            nt = int(val)
-        elif opt == "--x0":
-            x0 = float(val)
-        elif opt == "--p0":
-            p0 = float(val)
-        elif opt == "--De":
-            De = float(val)
-        elif opt == "--x0p":
-            x0p = float(val)
-        elif opt == "--E0":
-            E0 = float(val)
-        elif opt == "--t0":
-            t0 = float(val)
-        elif opt == "--sigma":
-            sigma = float(val)
-        elif opt == "--nu_L":
-            nu_L = float(val)
-        elif opt == "--delay":
-            delay = float(val)
-        elif opt == "--lmin":
-            lmin = int(val)
-        elif opt == "--mod_stdout":
-            mod_stdout = int(val)
-        elif opt == "--mod_fileout":
-            mod_fileout = int(val)
-        elif opt == "--file_abs":
-            file_abs = val
-        elif opt == "--file_real":
-            file_real = val
-        elif opt == "--file_mom":
-            file_mom = val
+        elif opt in ("-f", "--jsonfile"):
+            file_json = val
 
-    # analyze provided arguments
+    # Default json data values
+    m = 0.5  # Dalton
+    L = 5.0  # a_0
+    # 5.0 a_0 -- for the working transition between PECs; # 0.2 -- for a model harmonic oscillator with a = 1.0; # 4.0 a_0 -- for morse oscillator; # 6.0 a_0 -- for dimensional harmonic oscillator
+    np = 1024
+    # 1024 -- for the working transition between PECs and two laser pulses; # 128 -- for a model harmonic oscillator with a = 1.0; # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality); # 512 -- for dimensional harmonic oscillator
+    nch = 64
+    T = 600e-15  # s
+    # 1200 fs -- for two laser pulses; # 280 (600) fs -- for the working transition between PECs; # 2240 fs -- for filtering on the ground PEC (99.16% quality)
+    nt = 420000
+    # 840000 -- for two laser pulses; 200000 (420000) -- for the working transition between PECs; # 900000 -- for filtering on the ground PEC (99.16% quality)
+    x0 = 0  # TODO: to fix x0 != 0
+    p0 = 0  # TODO: to fix p0 != 0
+    a = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
+    De = 20000.0  # 1/cm
+    x0p = -0.17  # a_0
+    E0 = 71.54  # 1/cm
+    t0 = 300e-15  # s
+    sigma = 50e-15  # s
+    nu_L = 0.29297e15  # Hz
+    # 0.29297e15 -- for the working transition between PECs; # 0.5879558e15 -- analytical difference b/w excited and ground energies; # 0.5859603e15 -- calculated difference b/w excited and ground energies !!; # 0.599586e15 = 20000 1/cm
+    delay = 600e-15  # s
+    impulses_number = 1
+    lmin = 0
+    mod_stdout = 500
+    mod_fileout = 100
+    epsilon = 1e-15
+
+    file_abs = "fort.21"
+    file_real = "fort.22"
+    file_mom = "fort.23"
+
+    pot_type = PotentialType.MORSE
+    wf_type = WaveFuncType.MORSE
+    task = TaskType.TRANS_WO_CONTROL
+
+    if 'file_json' not in locals():
+        print("\tNo input json file was provided. The default values of calculation parameters will be used")
+    else:
+        with open(file_json, "r") as read_file:
+            json_data = {}
+            data = json.load(read_file)
+
+        # analyze provided input json file
+        if "phys_syst_pars" in data:
+            if "m" in data["phys_syst_pars"]: m = float(data["phys_syst_pars"]["m"])
+        else:
+            print("Section 'phys_syst_pars' wasn't provided in the input json file. The default values of calculation parameters will be used")
+        if "phys_calc_pars" in data:
+            if "L" in data["phys_calc_pars"]: L = float(data["phys_calc_pars"]["L"])
+            if "T" in data["phys_calc_pars"]: T = float(data["phys_calc_pars"]["T"])
+            if "wf_type" in data["phys_calc_pars"]: wf_type = WaveFuncType[data["phys_calc_pars"]["wf_type"].upper()]
+            if "task_type" in data["phys_calc_pars"]: task = TaskType[data["phys_calc_pars"]["task_type"].upper()]
+        else:
+            print("Section 'phys_calc_pars' wasn't provided in the input json file. The default values of calculation parameters will be used")
+        if "alg_calc_pars" in data:
+            if "np" in data["alg_calc_pars"]: np = int(data["alg_calc_pars"]["np"])
+            if "nch" in data["alg_calc_pars"]: nch = int(data["alg_calc_pars"]["nch"])
+            if "nt" in data["alg_calc_pars"]: nt = int(data["alg_calc_pars"]["nt"])
+            if "epsilon" in data["alg_calc_pars"]: epsilon = float(data["alg_calc_pars"]["epsilon"])
+        else:
+            print("Section 'alg_calc_pars' wasn't provided in the input json file. The default values of calculation parameters will be used")
+        if "init_conditions" in data:
+            if "x0" in data["init_conditions"]: x0 = float(data["init_conditions"]["x0"])
+            if "p0" in data["init_conditions"]: p0 = float(data["init_conditions"]["p0"])
+        else:
+            print("Section 'init_conditions' wasn't provided in the input json file. The default values of calculation parameters will be used")
+        if "potential_pars" in data:
+            if "a" in data["potential_pars"]: a = float(data["potential_pars"]["a"])
+            if "De" in data["potential_pars"]: De = float(data["potential_pars"]["De"])
+            if "x0p" in data["potential_pars"]: x0p = float(data["potential_pars"]["x0p"])
+            if "pot_type" in data["potential_pars"]: pot_type = PotentialType[data["potential_pars"]["pot_type"].upper()]
+        else:
+            print("Section 'potential_pars' wasn't provided in the input json file. The default values of calculation parameters will be used")
+        if "laser_field_pars" in data:
+            if "E0" in data["laser_field_pars"]: E0 = float(data["laser_field_pars"]["E0"])
+            if "t0" in data["laser_field_pars"]: t0 = float(data["laser_field_pars"]["t0"])
+            if "sigma" in data["laser_field_pars"]: sigma = float(data["laser_field_pars"]["sigma"])
+            if "nu_L" in data["laser_field_pars"]: nu_L = float(data["laser_field_pars"]["nu_L"])
+            if "delay" in data["laser_field_pars"]: delay = float(data["laser_field_pars"]["delay"])
+            if "impulses_number" in data["laser_field_pars"]: impulses_number = int(data["laser_field_pars"]["impulses_number"])
+        else:
+            print("Section 'laser_field_pars' wasn't provided in the input json file. The default values of calculation parameters will be used")
+        if "print_pars" in data:
+            if "lmin" in data["print_pars"]: lmin = int(data["print_pars"]["lmin"])
+            if "mod_stdout" in data["print_pars"]: mod_stdout = int(data["print_pars"]["mod_stdout"])
+            if "mod_fileout" in data["print_pars"]: mod_fileout = int(data["print_pars"]["mod_fileout"])
+            if "file_abs" in data["print_pars"]: file_abs = data["print_pars"]["file_abs"]
+            if "file_real" in data["print_pars"]: file_real = data["print_pars"]["file_real"]
+            if "file_mom" in data["print_pars"]: file_mom = data["print_pars"]["file_mom"]
+        else:
+            print("Section 'print_pars' wasn't provided in the input json file. The default values of calculation parameters will be used")
+
+    # analyze provided json data
+    if pot_type == PotentialType.MORSE:
+        print("Morse potentials are used")
+        pot = double_morse.pot
+    elif pot_type == PotentialType.HARMONIC:
+        print("Harmonic potentials are used")
+        pot = harmonic.pot
+    else:
+        raise RuntimeError("Impossible case in the PotentialType class")
+
+    if wf_type == WaveFuncType.MORSE:
+        print("Morse wavefunctions are used")
+        psi_init = double_morse.psi_init
+    elif wf_type == WaveFuncType.HARMONIC:
+        print("Harmonic wavefunctions are used")
+        psi_init = harmonic.psi_init
+    else:
+        raise RuntimeError("Impossible case in the WaveFuncType class")
+
     if not math.log2(np).is_integer() or not math.log2(nch).is_integer():
         raise ValueError("The number of collocation points 'np' and of Chebyshev "
                          "interpolation points 'nch' must be positive integers and powers of 2")
 
-    if lmin < 0 or mod_fileout < 0 or mod_stdout < 0:
-        raise ValueError("The number 'lmin' of time iteration, from which the result"
+    if lmin < 0 or mod_fileout < 0 or mod_stdout < 0 or impulses_number < 0:
+        raise ValueError("The number of laser pulses 'impulses_number', "
+                         "the number 'lmin' of time iteration, from which the result"
                          "should be written to a file, as well as steps of output "
                          "'mod_stdout' and 'mod_fileout' should be positive or 0")
 
@@ -252,8 +373,31 @@ def main(argv):
                          "of a scaling parameter of the laser field envelope 'sigma'"
                          "and of a basic frequency of the laser field 'nu_L' must be positive")
 
-    psi_init = harmonic.psi_init
-    pot = double_morse.pot
+    if task == TaskType.FILTERING:
+        print("A filtering task begins. E0 ans nu_L values are zeroed...")
+        E0 = 0.0
+        nu_L = 0.0
+        if impulses_number != 0:
+            print("For the task_type = 'filtering' the impulses_number value will be replaced by zero")
+            impulses_number = 0
+    elif task == TaskType.TRANS_WO_CONTROL:
+        print("An ordinary transition task begins...")
+        if impulses_number != 1:
+            print("For the task_type = 'trans_wo_control' the impulses_number value will be replaced by 1")
+            impulses_number = 1
+    elif task == TaskType.INTUITIVE_CONTROL:
+        print("An intuitive control task begins...")
+        if impulses_number < 2:
+            print("For the task_type = 'intuitive_control' the impulses_number value will be replaced by 2")
+            impulses_number = 2
+    elif task == TaskType.LOCAL_CONTROL:
+        print("A local control task begins...")
+        if impulses_number != 1:
+            print("For the task_type = 'local_control' the impulses_number value will be replaced by 1")
+            impulses_number = 1
+    else:
+        raise RuntimeError("Impossible case in the TaskType class")
+
 
     # main propagation loop
     with open(os.path.join(OUT_PATH, file_abs), 'w') as f_abs, \
@@ -380,17 +524,19 @@ def main(argv):
             nonlocal E_patched
             nonlocal epsilon
 
-            #if dAdt >= 0.0:
-            #    res = propagation.PropagationSolver.StepReaction.OK
-            #    dAdt_happy = dAdt
-            #else:
-            #    if abs(instr.psigc_psie.imag) > epsilon:
-            #        E_patched = -dAdt_happy / (instr.psigc_psie.imag * coef)
-            #    else:
-            #        print("Image part in dA/dt is too small and has been replaces by epsilon")
-            #        E_patched = dAdt_happy / (epsilon * coef)
-            #    res = propagation.PropagationSolver.StepReaction.REPEAT
-            res = propagation.PropagationSolver.StepReaction.OK
+            if task != TaskType.LOCAL_CONTROL:
+                res = propagation.PropagationSolver.StepReaction.OK
+            else:
+                if dAdt >= 0.0:
+                    res = propagation.PropagationSolver.StepReaction.OK
+                    dAdt_happy = dAdt
+                else:
+                    if abs(instr.psigc_psie.imag) > epsilon:
+                        E_patched = -dAdt_happy / (instr.psigc_psie.imag * coef)
+                    else:
+                        print("Imaginary part in dA/dt is too small and has been replaces by epsilon")
+                        E_patched = dAdt_happy / (epsilon * coef)
+                    res = propagation.PropagationSolver.StepReaction.REPEAT
 
             # plotting the result
             if dyn_ref.l % mod_fileout == 0 and res == propagation.PropagationSolver.StepReaction.OK:
@@ -416,10 +562,10 @@ def main(argv):
                 print("emax = ", instr.emax)
                 print("emin = ", instr.emin)
                 print("normalized scaled time interval = ", instr.t_sc)
-                print("normalization on the lower state = ", instr.cnorm_l)
-                print("normalization on the upper state = ", instr.cnorm_u)
-                print("overlap with initial wavefunction = ", instr.overlp0)
-                print("overlap with final goal wavefunction = ", instr.overlpf)
+                print("normalization on the lower state = ", abs(instr.cnorm_l))
+                print("normalization on the upper state = ", abs(instr.cnorm_u))
+                print("overlap with initial wavefunction = ", abs(instr.overlp0))
+                print("overlap with final goal wavefunction = ", abs(instr.overlpf))
                 print("energy on the lower state = ", instr.cener_l.real)
                 print("energy on the upper state = ", instr.cener_u.real)
                 print("Time derivation of the expectation value from the goal operator A = ", dAdt)
@@ -442,8 +588,9 @@ def main(argv):
             if res_saved == propagation.PropagationSolver.StepReaction.OK:
                 t = stat.dt * dyn.l
                 E = phys_base.laser_field(E0, t, t0, sigma)
-                #E2 = phys_base.laser_field(E0, t, t0 + delay, sigma)
-                #E = E1 + E2
+                if task == TaskType.INTUITIVE_CONTROL:
+                    for npul in range(1, impulses_number):
+                        E += phys_base.laser_field(E0, t, t0 + (npul * delay), sigma)
             elif res_saved == propagation.PropagationSolver.StepReaction.REPEAT:
                 nonlocal E_patched
                 E = E_patched
@@ -463,7 +610,6 @@ def main(argv):
             t0=t0, sigma=sigma, nu_L=nu_L, delay=delay)
 
         solver.time_propagation()
-        #solver.filtering()
 
 
 if __name__ == "__main__":
