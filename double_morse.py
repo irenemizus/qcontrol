@@ -25,7 +25,7 @@ def pot(x, np, m, De, a, x0p):
 
     # theoretical ground energy value
     e_0 = omega_0 / 2.0 * (1 - xe / 2.0)
-    print("Theoretical ground energy of the system on the lower PEC = ", e_0)
+    print("Theoretical ground energy of the system (relative to the potential minimum) = ", e_0)
 
     v = []
     # Lower morse potential
@@ -60,11 +60,6 @@ def psi_init(x, np, x0, p0, m, De, a):
 
     # anharmonicity factor of the system on the lower PEC
     xe = omega_0 / 4.0 / De
-    print("Theoretical anharmonicity factor of the system = ", xe)
-
-    # theoretical ground energy value
-    e_0 = omega_0 / 2.0 * (1 - xe / 2.0)
-    print("Theoretical ground energy of the system relative to the potential minimum = ", e_0)
 
     psi = []
     y = [math.exp(-a * (xi - x0)) / xe for xi in x]

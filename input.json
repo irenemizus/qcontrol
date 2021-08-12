@@ -21,16 +21,16 @@
     },
   "phys_calc_pars":
     {
-      "task_type": "filtering",
-      "wf_type": "harmonic",
+      "task_type": "trans_wo_control",
+      "wf_type": "morse",
       "L": "5.0",
-      "T": "2240e-15"
+      "T": "600e-15"
     },
   "alg_calc_pars":
     {
-      "np": "2048",
+      "np": "1024",
       "nch": "64",
-      "nt": "900000",
+      "nt": "420000",
       "epsilon": "1e-15"
     },
   "init_conditions":
