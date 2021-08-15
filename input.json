@@ -1,48 +1,48 @@
 {
   "phys_syst_pars":
     {
-      "m": "0.5"
+      "m": 0.5
     },
   "potential_pars":
     {
       "pot_type": "morse",
-      "a": "1.0",
-      "De": "20000",
-      "x0p": "-0.17"
+      "a": 1.0,
+      "De": 20000,
+      "x0p": -0.17
     },
   "laser_field_pars":
     {
-      "impulses_number": "1",
-      "E0": "71.54",
-      "t0": "300e-15",
-      "sigma": "50e-15",
-      "nu_L": "0.29297e15",
-      "delay": "600e-15"
+      "impulses_number": 1,
+      "E0": 71.54,
+      "t0": 300e-15,
+      "sigma": 50e-15,
+      "nu_L": 0.29297e15,
+      "delay": 600e-15
     },
   "phys_calc_pars":
     {
       "task_type": "trans_wo_control",
       "wf_type": "morse",
-      "L": "5.0",
-      "T": "600e-15"
+      "L": 5.0,
+      "T": 600e-15
     },
   "alg_calc_pars":
     {
-      "np": "1024",
-      "nch": "64",
-      "nt": "420000",
-      "epsilon": "1e-15"
+      "np": 1024,
+      "nch": 64,
+      "nt": 420000,
+      "epsilon": 1e-15
     },
   "init_conditions":
     {
-      "x0": "0.0",
-      "p0": "0.0"
+      "x0": 0.0,
+      "p0": 0.0
     },
   "print_pars":
     {
-      "lmin": "0",
-      "mod_stdout": "500",
-      "mod_fileout": "100",
+      "lmin": 0,
+      "mod_stdout": 500,
+      "mod_fileout": 100,
       "file_abs": "fort.21",
       "file_real": "fort.22",
       "file_mom": "fort.23"
