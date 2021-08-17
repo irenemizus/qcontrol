@@ -12,7 +12,7 @@
     },
   "laser_field_pars":
     {
-      "impulses_number": 1,
+      "impulses_number": 2,
       "E0": 71.54,
       "t0": 300e-15,
       "sigma": 50e-15,
@@ -21,7 +21,7 @@
     },
   "phys_calc_pars":
     {
-      "task_type": "trans_wo_control",
+      "task_type": "local_control",
       "wf_type": "morse",
       "L": 5.0,
       "T": 600e-15

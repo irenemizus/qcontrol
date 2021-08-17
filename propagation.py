@@ -2,7 +2,6 @@ import math
 import cmath
 import copy
 from enum import Enum
-
 import datetime
 
 import math_base
@@ -212,7 +211,7 @@ class PropagationSolver:
             dyn.E = self.laser_field_envelope(stat, dyn)
             E_full = dyn.E * exp_L * exp_L
 
-            psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, stat.v, stat.akx2, emin, emax, dyn.E, eL)  # TODO move prop into this class
+            psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, stat.v, stat.akx2, emin, emax, dyn.E, eL)
 
             cnorm_l = math_base.cprod(psi_omega[0], psi_omega[0], stat.dx, self.np)
             cnorm_u = math_base.cprod(psi_omega[1], psi_omega[1], stat.dx, self.np)
