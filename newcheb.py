@@ -232,24 +232,6 @@ def main(argv):
     conf.load(data)
 
     # analyze provided json data
-    if conf.potential_pars.pot_type == PotentialType.MORSE:
-        print("Morse potentials are used")
-        pot = double_morse.pot
-    elif conf.potential_pars.pot_type == PotentialType.HARMONIC:
-        print("Harmonic potentials are used")
-        pot = harmonic.pot
-    else:
-        raise RuntimeError("Impossible case in the PotentialType class")
-
-    if conf.phys_calc_pars.wf_type == WaveFuncType.MORSE:
-        print("Morse wavefunctions are used")
-        psi_init = double_morse.psi_init
-    elif conf.phys_calc_pars.wf_type == WaveFuncType.HARMONIC:
-        print("Harmonic wavefunctions are used")
-        psi_init = harmonic.psi_init
-    else:
-        raise RuntimeError("Impossible case in the WaveFuncType class")
-
     if not math.log2(conf.alg_calc_pars.np).is_integer() or not math.log2(conf.alg_calc_pars.nch).is_integer():
         raise ValueError("The number of collocation points 'np' and of Chebyshev "
                          "interpolation points 'nch' must be positive integers and powers of 2")
@@ -272,6 +254,25 @@ def main(argv):
         raise ValueError("The value of an amplitude value of the laser field energy envelope 'E0',"
                          "of a scaling parameter of the laser field envelope 'sigma'"
                          "and of a basic frequency of the laser field 'nu_L' must be positive")
+
+
+    if conf.potential_pars.pot_type == PotentialType.MORSE:
+        print("Morse potentials are used")
+        pot = double_morse.pot
+    elif conf.potential_pars.pot_type == PotentialType.HARMONIC:
+        print("Harmonic potentials are used")
+        pot = harmonic.pot
+    else:
+        raise RuntimeError("Impossible case in the PotentialType class")
+
+    if conf.phys_calc_pars.wf_type == WaveFuncType.MORSE:
+        print("Morse wavefunctions are used")
+        psi_init = double_morse.psi_init
+    elif conf.phys_calc_pars.wf_type == WaveFuncType.HARMONIC:
+        print("Harmonic wavefunctions are used")
+        psi_init = harmonic.psi_init
+    else:
+        raise RuntimeError("Impossible case in the WaveFuncType class")
 
     if conf.phys_calc_pars.task_type == TaskType.FILTERING:
         print("A filtering task begins. E0 ans nu_L values are zeroed...")
@@ -298,7 +299,7 @@ def main(argv):
     else:
         raise RuntimeError("Impossible case in the TaskType class")
 
-    # main propagation loop
+    # main calculation part
     with open(os.path.join(OUT_PATH, conf.print_pars.file_abs), 'w') as f_abs, \
          open(os.path.join(OUT_PATH, conf.print_pars.file_real), 'w') as f_real, \
          open(os.path.join(OUT_PATH, conf.print_pars.file_mom), 'w') as f_mom, \

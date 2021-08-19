@@ -188,12 +188,13 @@ class FittingSolver:
         return res
 
 
-    # Calculating envelope of the laser field energy at the given time value
+    # calculating envelope of the laser field energy at the given time value
     def LaserFieldEnvelope(self, stat: propagation.PropagationSolver.StaticState,
                            dyn: propagation.PropagationSolver.DynamicState):
         if self.res_saved == propagation.PropagationSolver.StepReaction.OK:
             t = stat.dt * dyn.l
             E = phys_base.laser_field(self.conf.laser_field_pars.E0, t, self.conf.laser_field_pars.t0, self.conf.laser_field_pars.sigma)
+            # intuitive control algorithm
             if self.conf.phys_calc_pars.task_type == config.TaskType.INTUITIVE_CONTROL:
                 for npul in range(1, self.conf.laser_field_pars.impulses_number):
                     E += phys_base.laser_field(self.conf.laser_field_pars.E0, t,

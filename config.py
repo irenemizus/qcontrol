@@ -17,7 +17,7 @@ class TaskType(Enum):
     INTUITIVE_CONTROL = 2
     LOCAL_CONTROL = 3
 
-
+# redefinition of the dot operator for a 1D dictionary
 class DictWrapper(object):
     def __init__(self, d):
         self.d = d
@@ -27,7 +27,7 @@ class DictWrapper(object):
 
 class InputConfiguration:
     def __init__(self):
-        # Default input values
+        # default input values
         self.data = {
             "phys_syst_pars": {
                 "m": 0.5  # Dalton
@@ -93,7 +93,6 @@ class InputConfiguration:
                         elif isinstance(self.data[key_sec][key_par], TaskType):
                             self.data[key_sec][key_par] = TaskType[user_data[key_sec][key_par].upper()]
                         else:
-
                             self.data[key_sec][key_par] = user_data[key_sec][key_par]
                     else:
                         print(
@@ -111,6 +110,7 @@ class InputConfiguration:
             for sect in self.data:
                 self.wrapped_data[sect] = DictWrapper(self.data[sect])
 
+    # redefinition of the dot operator for a section
     def __getattr__(self, key):
         self.__refresh_wrapped_data()
         return self.wrapped_data[key]
