@@ -17,6 +17,7 @@ class PropagationSolver:
             report_dynamic,
             process_instrumentation,
             laser_field_envelope,
+            dynamic_state_factory,
             m, L, np, nch, T, nt, x0, p0, a, De, x0p, E0,
             t0, sigma, nu_L, delay):
 
@@ -26,6 +27,7 @@ class PropagationSolver:
         self.report_dynamic = report_dynamic
         self.process_instrumentation = process_instrumentation
         self.laser_field_envelope = laser_field_envelope
+        self.dynamic_state_factory = dynamic_state_factory
 
         self.m = m
         self.L = L
@@ -164,7 +166,7 @@ class PropagationSolver:
                      cener0, cener0_u, cenerf, E00, overlp00, overlpf0, dt, dx, x, v, akx2)
         self.report_static(stat)
 
-        dyn = PropagationSolver.DynamicState(0, psi, 0.0)
+        dyn = self.dynamic_state_factory(0, psi, 0.0)
         self.report_dynamic(dyn)
 
         # main propagation loop
@@ -246,13 +248,13 @@ class PropagationSolver:
                          cener_l, cener_u, E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after)
 
             res = self.process_instrumentation(instr)
-            if res == PropagationSolver.StepReaction.OK:
-                take_back = False
-            elif res == PropagationSolver.StepReaction.REPEAT:
-                take_back = True
-                dyn.__dict__ = dyn_bu.__dict__.copy()
-            else:
-                raise RuntimeError("Impossible case in the StepReaction class")
+            #if res == PropagationSolver.StepReaction.OK:
+            take_back = False
+            #elif res == PropagationSolver.StepReaction.REPEAT:
+            #    take_back = True
+            #    dyn.__dict__ = dyn_bu.__dict__.copy()
+            #else:
+            #    raise RuntimeError("Impossible case in the StepReaction class")
 
             self.report_dynamic(dyn)
 

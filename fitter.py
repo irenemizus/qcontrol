@@ -4,7 +4,13 @@ import propagation
 import phys_base
 import config
 
+
 class FittingSolver:
+    class FitterDynamicState(propagation.PropagationSolver.DynamicState):
+        def __init__(self, l=0, psi=None, E=0.0, E_vel=0.0):
+            super().__init__(l, psi, E)
+            self.E_vel = E_vel
+
     def __init__(
             self,
             conf,
@@ -28,17 +34,19 @@ class FittingSolver:
         self.plot_mom_up=plot_mom_up
         self.dt = 0
         self.stat_saved = propagation.PropagationSolver.StaticState()
-        self.dyn_ref = propagation.PropagationSolver.DynamicState()
+        self.dyn_ref = FittingSolver.FitterDynamicState()
         self.milliseconds_full = 0
         self.res_saved = propagation.PropagationSolver.StepReaction.OK
         self.E_patched = 0.0
         self.dAdt_happy = 0.0
+
         self.solver = propagation.PropagationSolver(
             self.psi_init, self.pot,
             report_static=self.report_static,
             report_dynamic=self.report_dynamic,
             process_instrumentation=self.process_instrumentation,
             laser_field_envelope=self.LaserFieldEnvelope,
+            dynamic_state_factory=self.fitter_dynamic_state_factory,
             m=conf.phys_syst_pars.m, L=conf.phys_calc_pars.L,
             np=conf.alg_calc_pars.np, nch=conf.alg_calc_pars.nch,
             T=conf.phys_calc_pars.T, nt=conf.alg_calc_pars.nt,
@@ -105,7 +113,11 @@ class FittingSolver:
         print("Final goal energy: ", abs(stat.cenerf))
 
 
-    def report_dynamic(self, dyn: propagation.PropagationSolver.DynamicState):
+    def fitter_dynamic_state_factory(self, l, psi, E):
+        return FittingSolver.FitterDynamicState(l, psi, E, 0.0)
+
+
+    def report_dynamic(self, dyn: FitterDynamicState):
         self.dyn_ref = dyn
 
 
@@ -146,7 +158,7 @@ class FittingSolver:
                 res = propagation.PropagationSolver.StepReaction.REPEAT
 
         # plotting the result
-        if self.dyn_ref.l % self.conf.print_pars.mod_fileout == 0 and res == propagation.PropagationSolver.StepReaction.OK:
+        if self.dyn_ref.l % self.conf.print_pars.mod_fileout == 0: # and res == propagation.PropagationSolver.StepReaction.OK:
             if self.dyn_ref.l >= self.conf.print_pars.lmin:
                 self.plot(self.dyn_ref.psi[0], t, self.stat_saved.x, self.conf.alg_calc_pars.np)
                 self.plot_up(self.dyn_ref.psi[1], t, self.stat_saved.x, self.conf.alg_calc_pars.np)
@@ -193,16 +205,60 @@ class FittingSolver:
                            dyn: propagation.PropagationSolver.DynamicState):
         if self.res_saved == propagation.PropagationSolver.StepReaction.OK:
             t = stat.dt * dyn.l
-            E = phys_base.laser_field(self.conf.laser_field_pars.E0, t, self.conf.laser_field_pars.t0, self.conf.laser_field_pars.sigma)
+            self.E_patched = phys_base.laser_field(self.conf.laser_field_pars.E0, t, self.conf.laser_field_pars.t0, self.conf.laser_field_pars.sigma)
             # intuitive control algorithm
             if self.conf.phys_calc_pars.task_type == config.TaskType.INTUITIVE_CONTROL:
                 for npul in range(1, self.conf.laser_field_pars.impulses_number):
-                    E += phys_base.laser_field(self.conf.laser_field_pars.E0, t,
+                    self.E_patched += phys_base.laser_field(self.conf.laser_field_pars.E0, t,
                                                self.conf.laser_field_pars.t0 + (npul * self.conf.laser_field_pars.delay),
                                                self.conf.laser_field_pars.sigma)
         elif self.res_saved == propagation.PropagationSolver.StepReaction.REPEAT:
-            E = self.E_patched
+            pass
         else:
             raise RuntimeError("Impossible case")
 
+        # Solving dynamic equation for E
+        phi0 = 1.0e+29
+        phi1 = 1.0e+35
+
+        # Linear difference to the "wished"
+        first = self.dyn_ref.E - self.E_patched
+
+        if self.dyn_ref.E == 0:
+            self.dyn_ref.E = self.E_patched
+
+        if self.E_patched <= 0:
+            raise RuntimeError("E_patched has to be positive")
+
+        if self.dyn_ref.E <= 0:
+            raise RuntimeError("E has to be positive")
+
+        second = self.E_patched * math.log(self.dyn_ref.E / self.E_patched)
+
+        BIG_NUMBER = 10
+        if math.fabs(phi1 * second) > math.fabs(phi0 * first) * BIG_NUMBER:
+            # Approx
+            E0 = self.dyn_ref.E
+            Ep = self.E_patched
+            v0 = self.dyn_ref.E_vel
+
+            if dyn.l % 200 == 0:
+                print("approximating, current velocity is %f" % v0)
+
+            A = phi0 * (E0 - Ep) + phi1 * Ep * math.log(E0 / Ep)
+            B = phi1 * Ep / E0 + phi0
+            arg0 = -math.atan(v0 * math.sqrt(B) / A)
+            C0 = A / (B * math.cos(arg0))
+
+            new_delta = C0 * math.cos(arg0 + math.sqrt(B) * stat.dt) - A / B
+
+            E = E0 + new_delta
+            self.dyn_ref.E_vel = -C0 * math.sqrt(B) * math.sin(arg0 + math.sqrt(B) * stat.dt)
+        else:
+            # Euler
+            E_acc = -phi0 * first - phi1 * second
+            self.dyn_ref.E_vel += E_acc * stat.dt
+            E = self.dyn_ref.E + self.dyn_ref.E_vel * stat.dt
+
+        #print("E_approx=%f, E_approx_vel=%f, E_euler=%f, E_euler_vel=%f" % (E_approx, E_vel_approx, E, self.dyn_ref.E_vel))
         return E
