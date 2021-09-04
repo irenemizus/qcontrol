@@ -203,62 +203,50 @@ class FittingSolver:
     # calculating envelope of the laser field energy at the given time value
     def LaserFieldEnvelope(self, stat: propagation.PropagationSolver.StaticState,
                            dyn: propagation.PropagationSolver.DynamicState):
-        if self.res_saved == propagation.PropagationSolver.StepReaction.OK:
-            t = stat.dt * dyn.l
-            self.E_patched = phys_base.laser_field(self.conf.laser_field_pars.E0, t, self.conf.laser_field_pars.t0, self.conf.laser_field_pars.sigma)
-            # intuitive control algorithm
-            if self.conf.phys_calc_pars.task_type == config.TaskType.INTUITIVE_CONTROL:
-                for npul in range(1, self.conf.laser_field_pars.impulses_number):
-                    self.E_patched += phys_base.laser_field(self.conf.laser_field_pars.E0, t,
-                                               self.conf.laser_field_pars.t0 + (npul * self.conf.laser_field_pars.delay),
-                                               self.conf.laser_field_pars.sigma)
-        elif self.res_saved == propagation.PropagationSolver.StepReaction.REPEAT:
-            pass
-        else:
-            raise RuntimeError("Impossible case")
+#        if self.res_saved == propagation.PropagationSolver.StepReaction.OK:
+        t = stat.dt * dyn.l
+        self.E_patched = phys_base.laser_field(self.conf.laser_field_pars.E0, t, self.conf.laser_field_pars.t0, self.conf.laser_field_pars.sigma)
 
-        # Solving dynamic equation for E
-        phi0 = 1.0e+29
-        phi1 = 1.0e+35
+        # transition without control
+        if self.conf.phys_calc_pars.task_type == config.TaskType.TRANS_WO_CONTROL:
+            E = self.E_patched
+        # intuitive control algorithm
+        elif self.conf.phys_calc_pars.task_type == config.TaskType.INTUITIVE_CONTROL:
+            for npul in range(1, self.conf.laser_field_pars.impulses_number):
+                self.E_patched += phys_base.laser_field(self.conf.laser_field_pars.E0, t,
+                                            self.conf.laser_field_pars.t0 + (npul * self.conf.laser_field_pars.delay),
+                                            self.conf.laser_field_pars.sigma)
+            E = self.E_patched
+#        elif self.res_saved == propagation.PropagationSolver.StepReaction.REPEAT:
+#            pass
+#        else:
+#            raise RuntimeError("Impossible case")
+        # local control algorithm (with A = Pe)
+        elif self.conf.phys_calc_pars.task_type == config.TaskType.LOCAL_CONTROL:
+            if self.dyn_ref.E == 0.0:
+                self.dyn_ref.E = self.E_patched
 
-        # Linear difference to the "wished"
-        first = self.dyn_ref.E - self.E_patched
+            if self.E_patched <= 0:
+                raise RuntimeError("E_patched has to be positive")
 
-        if self.dyn_ref.E == 0:
-            self.dyn_ref.E = self.E_patched
+            if self.dyn_ref.E <= 0:
+                raise RuntimeError("E has to be positive")
 
-        if self.E_patched <= 0:
-            raise RuntimeError("E_patched has to be positive")
+            # solving dynamic equation for E
+            k_E = 1.0e+29
+            lamb = 4.0e+14
+            pow_E = 0.8
 
-        if self.dyn_ref.E <= 0:
-            raise RuntimeError("E has to be positive")
+            # linear difference to the "desired" value
+            first = self.dyn_ref.E - self.E_patched
+            # decay term
+            second = self.dyn_ref.E_vel * math.pow(self.E_patched / self.dyn_ref.E, pow_E)
 
-        second = self.E_patched * math.log(self.dyn_ref.E / self.E_patched)
-
-        BIG_NUMBER = 10
-        if math.fabs(phi1 * second) > math.fabs(phi0 * first) * BIG_NUMBER:
-            # Approx
-            E0 = self.dyn_ref.E
-            Ep = self.E_patched
-            v0 = self.dyn_ref.E_vel
-
-            if dyn.l % 200 == 0:
-                print("approximating, current velocity is %f" % v0)
-
-            A = phi0 * (E0 - Ep) + phi1 * Ep * math.log(E0 / Ep)
-            B = phi1 * Ep / E0 + phi0
-            arg0 = -math.atan(v0 * math.sqrt(B) / A)
-            C0 = A / (B * math.cos(arg0))
-
-            new_delta = C0 * math.cos(arg0 + math.sqrt(B) * stat.dt) - A / B
-
-            E = E0 + new_delta
-            self.dyn_ref.E_vel = -C0 * math.sqrt(B) * math.sin(arg0 + math.sqrt(B) * stat.dt)
-        else:
             # Euler
-            E_acc = -phi0 * first - phi1 * second
+            E_acc = -k_E * first - lamb * second
             self.dyn_ref.E_vel += E_acc * stat.dt
             E = self.dyn_ref.E + self.dyn_ref.E_vel * stat.dt
+        else:
+            E = self.E_patched
 
-        #print("E_approx=%f, E_approx_vel=%f, E_euler=%f, E_euler_vel=%f" % (E_approx, E_vel_approx, E, self.dyn_ref.E_vel))
         return E
