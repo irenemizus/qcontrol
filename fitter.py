@@ -40,6 +40,7 @@ class FittingSolver:
         self.E_patched = 0.0
         self.dAdt_happy = 0.0
 
+        conf_prop = conf.fitter.propagation
         self.solver = propagation.PropagationSolver(
             self.psi_init, self.pot,
             report_static=self.report_static,
@@ -47,14 +48,7 @@ class FittingSolver:
             process_instrumentation=self.process_instrumentation,
             laser_field_envelope=self.LaserFieldEnvelope,
             dynamic_state_factory=self.fitter_dynamic_state_factory,
-            m=conf.phys_syst_pars.m, L=conf.phys_calc_pars.L,
-            np=conf.alg_calc_pars.np, nch=conf.alg_calc_pars.nch,
-            T=conf.phys_calc_pars.T, nt=conf.alg_calc_pars.nt,
-            x0=conf.init_conditions.x0, p0=conf.init_conditions.p0,
-            a=conf.potential_pars.a, De=conf.potential_pars.De,
-            x0p=conf.potential_pars.x0p, E0=conf.laser_field_pars.E0,
-            t0=conf.laser_field_pars.t0, sigma=conf.laser_field_pars.sigma,
-            nu_L=conf.laser_field_pars.nu_L, delay=conf.laser_field_pars.delay)
+            conf_prop=conf_prop)
 
 
     def time_propagation(self):
@@ -67,40 +61,40 @@ class FittingSolver:
 
         # check if input data are correct in terms of the given problem
         # calculating the initial energy range of the Hamiltonian operator H
-        emax0 = stat.v[0][1][0] + abs(stat.akx2[int(self.conf.alg_calc_pars.np / 2 - 1)]) + 2.0
+        emax0 = stat.v[0][1][0] + abs(stat.akx2[int(self.conf.fitter.propagation.np / 2 - 1)]) + 2.0
         emin0 = stat.v[0][0]
 
         # calculating the initial minimum number of collocation points that is needed for convergence
         np_min0 = int(
-            math.ceil(self.conf.phys_calc_pars.L *
+            math.ceil(self.conf.fitter.propagation.L *
                       math.sqrt(
-                          2.0 * self.conf.phys_syst_pars.m * (emax0 - emin0) * phys_base.dalt_to_au / phys_base.hart_to_cm) /
+                          2.0 * self.conf.fitter.propagation.m * (emax0 - emin0) * phys_base.dalt_to_au / phys_base.hart_to_cm) /
                       math.pi
                       )
         )
 
         # calculating the initial minimum number of time steps that is needed for convergence
         nt_min0 = int(
-            math.ceil((emax0 - emin0) * self.conf.phys_calc_pars.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h
+            math.ceil((emax0 - emin0) * self.conf.fitter.propagation.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h
                       )
         )
 
-        if self.conf.alg_calc_pars.np < np_min0:
-            self._warning_collocation_points(self.conf.alg_calc_pars.np, np_min0)
-        if self.conf.alg_calc_pars.nt < nt_min0:
-            self._warning_time_steps(self.conf.alg_calc_pars.nt, nt_min0)
+        if self.conf.fitter.propagation.np < np_min0:
+            self._warning_collocation_points(self.conf.fitter.propagation.np, np_min0)
+        if self.conf.fitter.propagation.nt < nt_min0:
+            self._warning_time_steps(self.conf.fitter.propagation.nt, nt_min0)
 
         cener0_tot = stat.cener0 + stat.cener0_u
         overlp0_abs = abs(stat.overlp00) + abs(stat.overlpf0)
 
         # plotting initial values
-        self.plot(stat.psi0[0], 0.0, stat.x, self.conf.alg_calc_pars.np)
-        self.plot_up(stat.psi0[1], 0.0, stat.x, self.conf.alg_calc_pars.np)
+        self.plot(stat.psi0[0], 0.0, stat.x, self.conf.fitter.propagation.np)
+        self.plot_up(stat.psi0[1], 0.0, stat.x, self.conf.fitter.propagation.np)
 
         self.plot_mom(0.0, stat.moms0, stat.cener0.real, stat.E00.real, stat.overlp00, cener0_tot.real,
-                 abs(stat.psi0[0][520]), stat.psi0[0][520].real)
+                 abs(stat.psi0[0][520]), stat.psi0[0][520].real) # TODO: replace 520 by expression
         self.plot_mom_up(0.0, stat.moms0, stat.cener0_u.real, stat.E00.real, stat.overlpf0, overlp0_abs,
-                    abs(stat.psi0[1][520]), stat.psi0[1][520].real)
+                    abs(stat.psi0[1][520]), stat.psi0[1][520].real) # TODO: replace 520 by expression
 
         print("Initial emax = ", emax0)
 
@@ -126,10 +120,10 @@ class FittingSolver:
 
         # calculating the minimum number of collocation points and time steps that are needed for convergence
         nt_min = int(math.ceil(
-            (instr.emax - instr.emin) * self.conf.phys_calc_pars.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
+            (instr.emax - instr.emin) * self.conf.fitter.propagation.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
         np_min = int(math.ceil(
-            self.conf.phys_calc_pars.L * math.sqrt(
-                2.0 * self.conf.phys_syst_pars.m * (
+            self.conf.fitter.propagation.L * math.sqrt(
+                2.0 * self.conf.fitter.propagation.m * (
                             instr.emax - instr.emin) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
 
         cener = instr.cener_l + instr.cener_u
@@ -143,37 +137,37 @@ class FittingSolver:
         coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
         dAdt = self.dyn_ref.E * instr.psigc_psie.imag * coef
 
-        if self.conf.phys_calc_pars.task_type != config.TaskType.LOCAL_CONTROL:
+        if self.conf.fitter.task_type != config.RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL:
             res = propagation.PropagationSolver.StepReaction.OK
         else:
             if dAdt >= 0.0:
                 res = propagation.PropagationSolver.StepReaction.OK
                 self.dAdt_happy = dAdt
             else:
-                if abs(instr.psigc_psie.imag) > self.conf.alg_calc_pars.epsilon:
+                if abs(instr.psigc_psie.imag) > self.conf.fitter.epsilon:
                     self.E_patched = -self.dAdt_happy / (instr.psigc_psie.imag * coef)
                 else:
                     print("Imaginary part in dA/dt is too small and has been replaces by epsilon")
-                    self.E_patched = self.dAdt_happy / (self.conf.alg_calc_pars.epsilon * coef)
-                res = propagation.PropagationSolver.StepReaction.REPEAT
+                    self.E_patched = self.dAdt_happy / (self.conf.fitter.epsilon * coef)
+                res = propagation.PropagationSolver.StepReaction.CORRECT
 
         # plotting the result
-        if self.dyn_ref.l % self.conf.print_pars.mod_fileout == 0: # and res == propagation.PropagationSolver.StepReaction.OK:
-            if self.dyn_ref.l >= self.conf.print_pars.lmin:
-                self.plot(self.dyn_ref.psi[0], t, self.stat_saved.x, self.conf.alg_calc_pars.np)
-                self.plot_up(self.dyn_ref.psi[1], t, self.stat_saved.x, self.conf.alg_calc_pars.np)
+        if self.dyn_ref.l % self.conf.output.mod_fileout == 0:
+            if self.dyn_ref.l >= self.conf.output.lmin:
+                self.plot(self.dyn_ref.psi[0], t, self.stat_saved.x, self.conf.fitter.propagation.np)
+                self.plot_up(self.dyn_ref.psi[1], t, self.stat_saved.x, self.conf.fitter.propagation.np)
 
-            if self.dyn_ref.l >= self.conf.print_pars.lmin:
+            if self.dyn_ref.l >= self.conf.output.lmin:
                 self.plot_mom(t, instr.moms, instr.cener_l.real, self.dyn_ref.E, instr.overlp0, cener.real,
-                         abs(self.dyn_ref.psi[0][520]), self.dyn_ref.psi[0][520].real)
+                         abs(self.dyn_ref.psi[0][520]), self.dyn_ref.psi[0][520].real) # TODO: replace 520 by expression
                 self.plot_mom_up(t, instr.moms, instr.cener_u.real, instr.E_full.real, instr.overlpf, overlp_abs,
-                            abs(self.dyn_ref.psi[1][520]), self.dyn_ref.psi[1][520].real)
+                            abs(self.dyn_ref.psi[1][520]), self.dyn_ref.psi[1][520].real) # TODO: replace 520 by expression
 
-        if self.dyn_ref.l % self.conf.print_pars.mod_stdout == 0:
-            if self.conf.alg_calc_pars.np < np_min:
-                self._warning_collocation_points(self.conf.alg_calc_pars.np, np_min)
-            if self.conf.alg_calc_pars.nt < nt_min:
-                self._warning_time_steps(self.conf.alg_calc_pars.nt, nt_min)
+        if self.dyn_ref.l % self.conf.output.mod_stdout == 0:
+            if self.conf.fitter.propagation.np < np_min:
+                self._warning_collocation_points(self.conf.fitter.propagation.np, np_min)
+            if self.conf.fitter.propagation.nt < nt_min:
+                self._warning_time_steps(self.conf.fitter.propagation.nt, nt_min)
 
             print("l = ", self.dyn_ref.l)
             print("t = ", t * 1e15, "fs")
@@ -194,7 +188,7 @@ class FittingSolver:
                     self.milliseconds_full / self.dyn_ref.l))
 
             if res != propagation.PropagationSolver.StepReaction.OK:
-                print("REPEATNG THE ITERATION")
+                print("CORRECTING THE ITERATION")
 
         self.res_saved = res
         return res
@@ -203,26 +197,22 @@ class FittingSolver:
     # calculating envelope of the laser field energy at the given time value
     def LaserFieldEnvelope(self, stat: propagation.PropagationSolver.StaticState,
                            dyn: propagation.PropagationSolver.DynamicState):
-#        if self.res_saved == propagation.PropagationSolver.StepReaction.OK:
         t = stat.dt * dyn.l
-        self.E_patched = phys_base.laser_field(self.conf.laser_field_pars.E0, t, self.conf.laser_field_pars.t0, self.conf.laser_field_pars.sigma)
+        self.E_patched = phys_base.laser_field(self.conf.fitter.propagation.E0, t, self.conf.fitter.propagation.t0, self.conf.fitter.propagation.sigma)
 
         # transition without control
-        if self.conf.phys_calc_pars.task_type == config.TaskType.TRANS_WO_CONTROL:
+        if self.conf.fitter.task_type == config.RootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL:
             E = self.E_patched
         # intuitive control algorithm
-        elif self.conf.phys_calc_pars.task_type == config.TaskType.INTUITIVE_CONTROL:
-            for npul in range(1, self.conf.laser_field_pars.impulses_number):
-                self.E_patched += phys_base.laser_field(self.conf.laser_field_pars.E0, t,
-                                            self.conf.laser_field_pars.t0 + (npul * self.conf.laser_field_pars.delay),
-                                            self.conf.laser_field_pars.sigma)
+        elif self.conf.fitter.task_type == config.RootConfiguration.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
+            for npul in range(1, self.conf.fitter.impulses_number):
+                self.E_patched += phys_base.laser_field(self.conf.fitter.propagation.E0, t,
+                                            self.conf.fitter.propagation.t0 + (npul * self.conf.fitter.delay),
+                                            self.conf.fitter.propagation.sigma)
             E = self.E_patched
-#        elif self.res_saved == propagation.PropagationSolver.StepReaction.REPEAT:
-#            pass
-#        else:
-#            raise RuntimeError("Impossible case")
         # local control algorithm (with A = Pe)
-        elif self.conf.phys_calc_pars.task_type == config.TaskType.LOCAL_CONTROL:
+        elif self.conf.fitter.task_type == config.RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL and \
+                self.conf.fitter.task_subtype == config.RootConfiguration.FitterConfiguration.TaskSubType.GOAL_POPULATION:
             if self.dyn_ref.E == 0.0:
                 self.dyn_ref.E = self.E_patched
 
@@ -233,17 +223,13 @@ class FittingSolver:
                 raise RuntimeError("E has to be positive")
 
             # solving dynamic equation for E
-            k_E = 1.0e+29
-            lamb = 4.0e+14
-            pow_E = 0.8
-
             # linear difference to the "desired" value
             first = self.dyn_ref.E - self.E_patched
             # decay term
-            second = self.dyn_ref.E_vel * math.pow(self.E_patched / self.dyn_ref.E, pow_E)
+            second = self.dyn_ref.E_vel * math.pow(self.E_patched / self.dyn_ref.E, self.conf.fitter.pow)
 
             # Euler
-            E_acc = -k_E * first - lamb * second
+            E_acc = -self.conf.fitter.k_E * first - self.conf.fitter.lamb * second
             self.dyn_ref.E_vel += E_acc * stat.dt
             E = self.dyn_ref.E + self.dyn_ref.E_vel * stat.dt
         else:

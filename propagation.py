@@ -18,8 +18,7 @@ class PropagationSolver:
             process_instrumentation,
             laser_field_envelope,
             dynamic_state_factory,
-            m, L, np, nch, T, nt, x0, p0, a, De, x0p, E0,
-            t0, sigma, nu_L, delay):
+            conf_prop):
 
         self.pot = pot
         self.psi_init = psi_init
@@ -29,22 +28,21 @@ class PropagationSolver:
         self.laser_field_envelope = laser_field_envelope
         self.dynamic_state_factory = dynamic_state_factory
 
-        self.m = m
-        self.L = L
-        self.np = np
-        self.nch = nch
-        self.T = T
-        self.nt = nt
-        self.x0 = x0
-        self.p0 = p0
-        self.a = a
-        self.De = De
-        self.x0p = x0p
-        self.E0 = E0
-        self.t0 = t0
-        self.sigma = sigma
-        self.nu_L = nu_L
-        self.delay = delay
+        self.m = conf_prop.m
+        self.L = conf_prop.L
+        self.np = conf_prop.np
+        self.nch = conf_prop.nch
+        self.T = conf_prop.T
+        self.nt = conf_prop.nt
+        self.x0 = conf_prop.x0
+        self.p0 = conf_prop.p0
+        self.a = conf_prop.a
+        self.De = conf_prop.De
+        self.x0p = conf_prop.x0p
+        self.E0 = conf_prop.E0
+        self.t0 = conf_prop.t0
+        self.sigma = conf_prop.sigma
+        self.nu_L = conf_prop.nu_L
 
 
     # These values are calculated once and forever
@@ -102,10 +100,10 @@ class PropagationSolver:
             self.time_after = time_after
 
 
-    # The user's decision to repeat or not to repeat a step
+    # The user's decision to correct or not to correct a step
     class StepReaction(Enum):
         OK = 0
-        REPEAT = 1
+        CORRECT = 1
 
 
     def time_propagation(self):
