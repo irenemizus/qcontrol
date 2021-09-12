@@ -16,22 +16,16 @@ class FittingSolver:
             conf,
             psi_init,
             pot,
+            reporter,
             _warning_collocation_points,
-            _warning_time_steps,
-            plot,
-            plot_up,
-            plot_mom,
-            plot_mom_up
+            _warning_time_steps
     ):
         self.conf=conf
         self.psi_init=psi_init
         self.pot=pot
+        self.reporter = reporter
         self._warning_collocation_points=_warning_collocation_points
         self._warning_time_steps=_warning_time_steps
-        self.plot=plot
-        self.plot_up=plot_up
-        self.plot_mom=plot_mom
-        self.plot_mom_up=plot_mom_up
         self.dt = 0
         self.stat_saved = propagation.PropagationSolver.StaticState()
         self.dyn_ref = FittingSolver.FitterDynamicState()
@@ -88,12 +82,12 @@ class FittingSolver:
         overlp0_abs = abs(stat.overlp00) + abs(stat.overlpf0)
 
         # plotting initial values
-        self.plot(stat.psi0[0], 0.0, stat.x, self.conf.fitter.propagation.np)
-        self.plot_up(stat.psi0[1], 0.0, stat.x, self.conf.fitter.propagation.np)
+        self.reporter.plot(stat.psi0[0], 0.0, stat.x, self.conf.fitter.propagation.np)
+        self.reporter.plot_up(stat.psi0[1], 0.0, stat.x, self.conf.fitter.propagation.np)
 
-        self.plot_mom(0.0, stat.moms0, stat.cener0.real, stat.E00.real, stat.overlp00, cener0_tot.real,
+        self.reporter.plot_mom(0.0, stat.moms0, stat.cener0.real, stat.E00.real, stat.overlp00, cener0_tot.real,
                  abs(stat.psi0[0][520]), stat.psi0[0][520].real) # TODO: replace 520 by expression
-        self.plot_mom_up(0.0, stat.moms0, stat.cener0_u.real, stat.E00.real, stat.overlpf0, overlp0_abs,
+        self.reporter.plot_mom_up(0.0, stat.moms0, stat.cener0_u.real, stat.E00.real, stat.overlpf0, overlp0_abs,
                     abs(stat.psi0[1][520]), stat.psi0[1][520].real) # TODO: replace 520 by expression
 
         print("Initial emax = ", emax0)
@@ -154,13 +148,13 @@ class FittingSolver:
         # plotting the result
         if self.dyn_ref.l % self.conf.output.mod_fileout == 0:
             if self.dyn_ref.l >= self.conf.output.lmin:
-                self.plot(self.dyn_ref.psi[0], t, self.stat_saved.x, self.conf.fitter.propagation.np)
-                self.plot_up(self.dyn_ref.psi[1], t, self.stat_saved.x, self.conf.fitter.propagation.np)
+                self.reporter.plot(self.dyn_ref.psi[0], t, self.stat_saved.x, self.conf.fitter.propagation.np)
+                self.reporter.plot_up(self.dyn_ref.psi[1], t, self.stat_saved.x, self.conf.fitter.propagation.np)
 
             if self.dyn_ref.l >= self.conf.output.lmin:
-                self.plot_mom(t, instr.moms, instr.cener_l.real, self.dyn_ref.E, instr.overlp0, cener.real,
+                self.reporter.plot_mom(t, instr.moms, instr.cener_l.real, self.dyn_ref.E, instr.overlp0, cener.real,
                          abs(self.dyn_ref.psi[0][520]), self.dyn_ref.psi[0][520].real) # TODO: replace 520 by expression
-                self.plot_mom_up(t, instr.moms, instr.cener_u.real, instr.E_full.real, instr.overlpf, overlp_abs,
+                self.reporter.plot_mom_up(t, instr.moms, instr.cener_u.real, instr.E_full.real, instr.overlpf, overlp_abs,
                             abs(self.dyn_ref.psi[1][520]), self.dyn_ref.psi[1][520].real) # TODO: replace 520 by expression
 
         if self.dyn_ref.l % self.conf.output.mod_stdout == 0:

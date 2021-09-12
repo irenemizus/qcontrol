@@ -151,7 +151,6 @@ __license__ = "Python"
 
 OUT_PATH="output"
 
-import os.path
 import sys
 import getopt
 import json
@@ -159,14 +158,13 @@ import math
 
 import double_morse
 import harmonic
-import phys_base
 import fitter
+import reporter
 from config import *
 
 
 def usage():
     """ Print usage information """
-
     print (__doc__)
 
 
@@ -178,33 +176,6 @@ def _warning_collocation_points(np, np_min):
 def _warning_time_steps(nt, nt_min):
     print("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
           "You've got a divergence!".format(nt, nt_min), file=sys.stderr)
-
-
-def plot_file(psi, t, x, np, f_abs, f_real):
-    """ Plots absolute and real values of the current wavefunction """
-    for i in range(np):
-        f_abs.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], abs(psi[i])))
-        f_real.write("{:.6f} {:.6f} {:.6e}\n".format(t * 1e+15, x[i], psi[i].real))
-        f_abs.flush()
-        f_real.flush()
-
-
-def plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, tot, abs_psi_max, real_psi_max, file_mom):
-    """ Plots expectation values of the current x, x*x, p and p*p """
-    file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(
-                    t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, abs(overlp), tot, abs_psi_max, real_psi_max))
-    file_mom.flush()
-
-
-def plot_test_file(l, phi_l, phi_u, f):
-    f.write("Step number: {0}\n".format(l))
-    f.write("Lower state wavefunction:")
-    for i in range(len(phi_l)):
-        f.write("{0}\n".format(phi_l[i]))
-    f.write("Upper state wavefunction:")
-    for i in range(len(phi_u)):
-        f.write("{0}\n".format(phi_u[i]))
-
 
 def main(argv):
     """ The main() function """
@@ -259,7 +230,6 @@ def main(argv):
                          "of a scaling parameter of the laser field envelope 'sigma'"
                          "and of a basic frequency of the laser field 'nu_L' must be positive")
 
-
     if conf.fitter.propagation.pot_type == conf.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
         print("Morse potentials are used")
         pot = double_morse.pot
@@ -309,40 +279,11 @@ def main(argv):
         raise RuntimeError("Impossible case in the TaskType class")
 
     # main calculation part
-    with open(os.path.join(OUT_PATH, conf.output.file_abs), 'w') as f_abs, \
-         open(os.path.join(OUT_PATH, conf.output.file_real), 'w') as f_real, \
-         open(os.path.join(OUT_PATH, conf.output.file_mom), 'w') as f_mom, \
-         open(os.path.join(OUT_PATH, conf.output.file_abs) + "_exc", 'w') as f_abs_up, \
-         open(os.path.join(OUT_PATH, conf.output.file_real + "_exc"), 'w') as f_real_up, \
-         open(os.path.join(OUT_PATH, conf.output.file_mom + "_exc"), 'w') as f_mom_up:
-
-        def plot(psi, t, x, np):
-            plot_file(psi, t, x, np, f_abs, f_real)
-
-
-        def plot_mom(t, moms: phys_base.ExpectationValues, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
-            plot_mom_file(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, E, overlp, ener_tot,
-                          abs_psi_max, real_psi_max, f_mom)
-
-
-        def plot_up(psi, t, x, np):
-            plot_file(psi, t, x, np, f_abs_up, f_real_up)
-
-
-        def plot_mom_up(t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
-            plot_mom_file(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, E, overlp, overlp_tot,
-                          abs_psi_max, real_psi_max, f_mom_up)
-
-
-        fitting_solver = fitter.FittingSolver(conf, psi_init, pot,
+    with reporter.Reporter(conf.output, OUT_PATH) as reporter_impl:
+        fitting_solver = fitter.FittingSolver(conf, psi_init, pot, reporter_impl,
                                               _warning_collocation_points,
-                                              _warning_time_steps,
-                                              plot,
-                                              plot_up,
-                                              plot_mom,
-                                              plot_mom_up
+                                              _warning_time_steps
                                               )
-
         fitting_solver.time_propagation()
 
 
