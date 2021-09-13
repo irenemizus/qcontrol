@@ -1,4 +1,5 @@
 import math
+import numpy
 
 import propagation
 import phys_base
@@ -80,15 +81,15 @@ class FittingSolver:
 
         cener0_tot = stat.cener0 + stat.cener0_u
         overlp0_abs = abs(stat.overlp00) + abs(stat.overlpf0)
+        max_ind_psi_l = numpy.argmax(stat.psi0[0])
+        max_ind_psi_u = numpy.argmax(stat.psi0[1])
 
         # plotting initial values
-        self.reporter.plot(stat.psi0[0], 0.0, stat.x, self.conf.fitter.propagation.np)
-        self.reporter.plot_up(stat.psi0[1], 0.0, stat.x, self.conf.fitter.propagation.np)
-
-        self.reporter.plot_mom(0.0, stat.moms0, stat.cener0.real, stat.E00.real, stat.overlp00, cener0_tot.real,
-                 abs(stat.psi0[0][520]), stat.psi0[0][520].real) # TODO: replace 520 by expression
-        self.reporter.plot_mom_up(0.0, stat.moms0, stat.cener0_u.real, stat.E00.real, stat.overlpf0, overlp0_abs,
-                    abs(stat.psi0[1][520]), stat.psi0[1][520].real) # TODO: replace 520 by expression
+        self.reporter.print_time_point(0, stat.psi0, 0.0, stat.x, self.conf.fitter.propagation.np, stat.moms0,
+                                       stat.cener0.real, stat.cener0_u.real, stat.E00.real,
+                                       stat.overlp00, stat.overlpf0, overlp0_abs, cener0_tot.real,
+                                       abs(stat.psi0[0][max_ind_psi_l]), stat.psi0[0][max_ind_psi_l].real,
+                                       abs(stat.psi0[1][max_ind_psi_u]), stat.psi0[1][max_ind_psi_u].real)
 
         print("Initial emax = ", emax0)
 
@@ -145,17 +146,16 @@ class FittingSolver:
                     self.E_patched = self.dAdt_happy / (self.conf.fitter.epsilon * coef)
                 res = propagation.PropagationSolver.StepReaction.CORRECT
 
-        # plotting the result
-        if self.dyn_ref.l % self.conf.output.mod_fileout == 0:
-            if self.dyn_ref.l >= self.conf.output.lmin:
-                self.reporter.plot(self.dyn_ref.psi[0], t, self.stat_saved.x, self.conf.fitter.propagation.np)
-                self.reporter.plot_up(self.dyn_ref.psi[1], t, self.stat_saved.x, self.conf.fitter.propagation.np)
+        max_ind_psi_l = numpy.argmax(abs(self.dyn_ref.psi[0]))
+        max_ind_psi_u = numpy.argmax(abs(self.dyn_ref.psi[1]))
 
-            if self.dyn_ref.l >= self.conf.output.lmin:
-                self.reporter.plot_mom(t, instr.moms, instr.cener_l.real, self.dyn_ref.E, instr.overlp0, cener.real,
-                         abs(self.dyn_ref.psi[0][520]), self.dyn_ref.psi[0][520].real) # TODO: replace 520 by expression
-                self.reporter.plot_mom_up(t, instr.moms, instr.cener_u.real, instr.E_full.real, instr.overlpf, overlp_abs,
-                            abs(self.dyn_ref.psi[1][520]), self.dyn_ref.psi[1][520].real) # TODO: replace 520 by expression
+        # plotting the result
+        self.reporter.print_time_point(self.dyn_ref.l, self.dyn_ref.psi, t, self.stat_saved.x,
+                                       self.conf.fitter.propagation.np, instr.moms,
+                                       instr.cener_l.real, instr.cener_u.real, self.dyn_ref.E,
+                                       instr.overlp0, instr.overlpf, overlp_abs, cener.real,
+                                       abs(self.dyn_ref.psi[0][max_ind_psi_l]), self.dyn_ref.psi[0][max_ind_psi_l].real,
+                                       abs(self.dyn_ref.psi[1][max_ind_psi_u]), self.dyn_ref.psi[1][max_ind_psi_u].real)
 
         if self.dyn_ref.l % self.conf.output.mod_stdout == 0:
             if self.conf.fitter.propagation.np < np_min:

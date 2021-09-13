@@ -1,7 +1,5 @@
 import os.path
 
-import phys_base
-
 class Reporter:
     def __init__(self, conf_output, out_path):
         self.conf_output = conf_output
@@ -54,14 +52,14 @@ class Reporter:
         file_mom.flush()
 
     def plot(self, psi, t, x, np):
-        self.__plot_file(psi, t, x, np, self.f_abs, self.f_real)
+        self.__plot_file(psi[0], t, x, np, self.f_abs, self.f_real)
 
-    def plot_mom(self, t, moms: phys_base.ExpectationValues, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
+    def plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
         self.__plot_mom_file(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, E, overlp, ener_tot,
                                               abs_psi_max, real_psi_max, self.f_mom)
 
     def plot_up(self, psi, t, x, np):
-        self.__plot_file(psi, t, x, np, self.f_abs_up, self.f_real_up)
+        self.__plot_file(psi[1], t, x, np, self.f_abs_up, self.f_real_up)
 
     def plot_mom_up(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
         self.__plot_mom_file(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, E, overlp, overlp_tot,
@@ -76,4 +74,13 @@ class Reporter:
         f.write("Upper state wavefunction:")
         for i in range(len(phi_u)):
             f.write("{0}\n".format(phi_u[i]))
+
+    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
+        if l % self.conf_output.mod_fileout == 0 and l >= self.conf_output.lmin:
+            self.plot(psi, t, x, np)
+            self.plot_up(psi, t, x, np)
+            self.plot_mom(t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max)
+            self.plot_mom_up(t, moms, ener_u, E, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+
 
