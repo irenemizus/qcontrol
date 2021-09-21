@@ -2,7 +2,8 @@
   "output": {
     "lmin": 0,
     "mod_stdout": 500,
-    "mod_fileout": 100,
+    "mod_fileout": 500,
+    "numb_plotout": 10,
     "file_abs": "fort.21",
     "file_real": "fort.22",
     "file_mom": "fort.23"

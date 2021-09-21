@@ -48,6 +48,7 @@ class RootConfiguration(ConfigurationBase):
             self._data["lmin"] = 0
             self._data["mod_stdout"] = 500
             self._data["mod_fileout"] = 100
+            self._data["numb_plotout"] = 20
 
     class FitterConfiguration(ConfigurationBase):
         class PropagationConfiguration(ConfigurationBase):

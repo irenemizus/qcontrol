@@ -26,6 +26,10 @@ Options:
     mod_fileout
         step of writing in file (to write in file each <val>-th time step).
         By default, is equal to 100
+    numb_plotout
+        maximum number of graphs for different time points to plot on one canvas
+        for the absolute and real values of wavefunctions.
+        By default, is equal to 20
     file_abs
         output file name, to which absolute values of wavefunctions should be written
         by default, is equal to "fort.21"
@@ -148,13 +152,16 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
+from tools import print_err
 
 OUT_PATH="output"
+OUT_PATH_PLOT="plots"
 
 import sys
 import getopt
 import json
 import math
+import os.path
 
 import double_morse
 import harmonic
@@ -169,13 +176,13 @@ def usage():
 
 
 def _warning_collocation_points(np, np_min):
-    print("WARNING: The number of collocation points np = {} should be more than an estimated initial value {}. "
-          "You've got a divergence!".format(np, np_min), file=sys.stderr)
+    print_err("WARNING: The number of collocation points np = {} should be more than an estimated initial value {}. "
+          "You've got a divergence!".format(np, np_min))
 
 
 def _warning_time_steps(nt, nt_min):
-    print("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
-          "You've got a divergence!".format(nt, nt_min), file=sys.stderr)
+    print_err("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
+          "You've got a divergence!".format(nt, nt_min))
 
 def main(argv):
     """ The main() function """
@@ -183,8 +190,8 @@ def main(argv):
     try:
         options, arguments = getopt.getopt(argv, 'hf:', ['help', 'jsonfile='])
     except getopt.GetoptError:
-        print("\tThere are unrecognized options!", sys.stderr)
-        print("\tRun this script with '-h' option to see the usage info and available options.", sys.stderr)
+        print_err("\tThere are unrecognized options!")
+        print_err("\tRun this script with '-h' option to see the usage info and available options.")
         sys.exit(2)
 
     file_json = None
@@ -211,11 +218,13 @@ def main(argv):
         raise ValueError("The number of collocation points 'np' and of Chebyshev "
                          "interpolation points 'nch' must be positive integers and powers of 2")
 
-    if conf.output.lmin < 0 or conf.output.mod_fileout < 0 or conf.output.mod_stdout < 0 or conf.fitter.impulses_number < 0:
+    if conf.output.lmin < 0 or conf.output.mod_fileout < 0 or conf.output.mod_stdout < 0 \
+            or conf.fitter.impulses_number < 0 or conf.output.numb_plotout < 0:
         raise ValueError("The number of laser pulses 'impulses_number', "
                          "the number 'lmin' of time iteration, from which the result"
                          "should be written to a file, as well as steps of output "
-                         "'mod_stdout' and 'mod_fileout' should be positive or 0")
+                         "'mod_stdout' and 'mod_fileout' and maximum number of graphs "
+                         "'numb_plotout' to be plotted on one canvas should be positive or 0")
 
     if conf.fitter.propagation.L <= 0.0 or conf.fitter.propagation.T <= 0.0:
         raise ValueError("The value of spatial range 'L' and of time range 'T' of the problem"
@@ -279,12 +288,13 @@ def main(argv):
         raise RuntimeError("Impossible case in the TaskType class")
 
     # main calculation part
-    with reporter.Reporter(conf.output, OUT_PATH) as reporter_impl:
+    with reporter.PlotReporter(conf.output, OUT_PATH) as reporter_impl:
         fitting_solver = fitter.FittingSolver(conf, psi_init, pot, reporter_impl,
                                               _warning_collocation_points,
                                               _warning_time_steps
                                               )
         fitting_solver.time_propagation()
+        plots_path = os.path.join(OUT_PATH, OUT_PATH_PLOT)
 
 
 if __name__ == "__main__":

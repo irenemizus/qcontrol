@@ -1,6 +1,31 @@
+import plotly.graph_objects as go
 import os.path
 
+from tools import print_err
+
+
 class Reporter:
+    def __init__(self):
+        pass
+
+    def plot(self, psi, t, x, np):
+        raise NotImplementedError()
+
+    def plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
+        raise NotImplementedError()
+
+    def plot_up(self, psi, t, x, np):
+        raise NotImplementedError()
+
+    def plot_mom_up(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
+        raise NotImplementedError()
+
+    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
+        raise NotImplementedError()
+
+
+class TableReporter(Reporter):
     def __init__(self, conf_output, out_path):
         self.conf_output = conf_output
         self.out_path = out_path
@@ -75,6 +100,7 @@ class Reporter:
         for i in range(len(phi_u)):
             f.write("{0}\n".format(phi_u[i]))
 
+
     def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         if l % self.conf_output.mod_fileout == 0 and l >= self.conf_output.lmin:
@@ -83,4 +109,321 @@ class Reporter:
             self.plot_mom(t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max)
             self.plot_mom_up(t, moms, ener_u, E, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
 
+
+class PlotReporter(Reporter):
+    def __init__(self, conf_output, out_path):
+        self.conf_output = conf_output
+        self.out_path = out_path
+
+
+    def __enter__(self):
+        # Time
+        self.t_list = []
+        self.t_u_list = []
+
+        # Coordinate
+        self.x_list = []
+
+        # X = Time
+        self.x_l_list = []
+        self.x2_l_list = []
+        self.p_l_list = []
+        self.p2_l_list = []
+        self.x_u_list = []
+        self.x2_u_list = []
+        self.p_u_list = []
+        self.p2_u_list = []
+        self.ener_list = []
+        self.ener_u_list = []
+        self.E_list = []
+        self.overlp_list = []
+        self.overlp_u_list = []
+        self.ener_tot_list = []
+        self.overlp_tot_list = []
+        self.abs_psi_max_list = []
+        self.real_psi_max_list = []
+        self.x_u_list = []
+        self.x2_u_list = []
+        self.p_u_list = []
+        self.p2_u_list = []
+        self.ener_u_list = []
+        self.E_list = []
+        self.overlp_list = []
+        self.overlp_u_list = []
+        self.overlp_tot = []
+        self.ener_tot_list = []
+        self.abs_psi_max_list = []
+        self.real_psi_max_list = []
+        self.abs_psi_max_u_list = []
+        self.real_psi_max_u_list = []
+
+        # X = Coordinate
+        self.psi_abs = {}  # key: t, value: {'x': [], 'y': []}
+        self.psi_real = {}  # key: t, value: {'x': [], 'y': []}
+        self.psi_abs_u = {}
+        self.psi_real_u = {}
+
+        return self
+
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
+    @staticmethod
+    def __plot_update_graph(psi, numb_plotout, title_plot, title_y, plot_name):
+        fig = go.Figure()
+
+        # Filtering the curves
+        psi_filt = {}
+
+        len_abs = len(psi)
+        mod_plotoutput = len_abs / numb_plotout
+        if mod_plotoutput == 0: mod_plotoutput = 1
+        k_filt = -1
+        K_all = 0
+        for el in psi:
+            new_k = round(K_all / mod_plotoutput)
+            if new_k > k_filt:
+                psi_filt[el] = psi[el]
+            k_filt = new_k
+            K_all += 1
+
+        for t in psi_filt:
+            sc = go.Scatter(x=psi_filt[t]['x'], y=psi_filt[t]['y'], name = str(t), mode="lines")
+            fig.add_trace(sc)  # , row=1, col=1
+
+            fig.update_layout(
+                title={
+                    'text': title_plot,
+                    'y': 0.9,
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top'
+                },
+                xaxis_title={
+                    'text': 'x'
+                },
+                yaxis_title={
+                    'text': title_y
+                }
+            )
+
+        fig.write_image(plot_name)
+
+
+    @staticmethod
+    def __plot_moms_update_graph(t_list, moms_list, namem, title_plot, title_y, plot_name):
+        fig_mom = go.Figure()
+
+        sc_x = go.Scatter(x=t_list, y=moms_list[0], name=namem[0], mode="lines")
+        sc_x2 = go.Scatter(x=t_list, y=moms_list[1], name=namem[1], mode="lines")
+        sc_p = go.Scatter(x=t_list, y=moms_list[2], name=namem[2], mode="lines")
+
+        fig_mom.add_trace(sc_x)
+        fig_mom.add_trace(sc_x2)
+        fig_mom.add_trace(sc_p)
+
+        if len(moms_list) == 4:
+            sc_p2 = go.Scatter(x=t_list, y=moms_list[3], name=namem[3], mode="lines")
+            fig_mom.add_trace(sc_p2)
+
+        fig_mom.update_layout(
+            title={
+                'text': title_plot,
+                'y': 0.9,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
+            xaxis_title={
+                'text': 'time'
+            },
+            yaxis_title={
+                'text': title_y
+            }
+        )
+
+        fig_mom.write_image(plot_name)
+
+    @staticmethod
+    def __plot_tvals_update_graph(t_list, val_list, title_plot, title_y, plot_name):
+        fig = go.Figure()
+
+        sc = go.Scatter(x=t_list, y=val_list, mode="lines")
+        fig.add_trace(sc)
+
+        fig.update_layout(
+            title={
+                'text': title_plot,
+                'y': 0.9,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
+            xaxis_title={
+                'text': 'time'
+            },
+            yaxis_title={
+                'text': title_y
+            }
+        )
+
+        fig.write_image(plot_name)
+
+
+    def plot(self, psi, t, x, np):
+        psi0_abs = []
+        psi0_real = []
+        for i in range(np):
+            psi0_abs.append(abs(psi[0][i]))
+            psi0_real.append(psi[0][i].real)
+
+        self.psi_abs[t] = {'x': x, 'y': psi0_abs}
+        self.psi_real[t] = {'x': x, 'y': psi0_real}
+
+        # Updating the graph for psi_abs
+        self.__plot_update_graph(self.psi_abs, self.conf_output.numb_plotout,
+                                 "Absolute value of the wave function on the ground state",
+                                 "abs(Ψ)", "fig_abs_grd.pdf")
+
+        # Updating the graph for psi_real
+        self.__plot_update_graph(self.psi_real, self.conf_output.numb_plotout,
+                                 "Real value of the wave function on the ground state",
+                                 "Re(Ψ)", "fig_real_grd.pdf")
+
+
+    def plot_up(self, psi, t, x, np):
+        psi1_abs = []
+        psi1_real = []
+        for i in range(np):
+            psi1_abs.append(abs(psi[1][i]))
+            psi1_real.append(psi[1][i].real)
+
+        self.psi_abs_u[t] = {'x': x, 'y': psi1_abs}
+        self.psi_real_u[t] = {'x': x, 'y': psi1_real}
+
+        # Updating the graph for psi_abs
+        self.__plot_update_graph(self.psi_abs_u, self.conf_output.numb_plotout,
+                                 "Absolute value of the wave function on the excited state",
+                                 "abs(Ψ)", "fig_abs_exc.pdf")
+
+        # Updating the graph for psi_real
+        self.__plot_update_graph(self.psi_real_u, self.conf_output.numb_plotout,
+                                 "Real value of the wave function on the excited state",
+                                 "Re(Ψ)", "fig_real_exc.pdf")
+
+
+    def plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
+        self.t_list.append(t)
+        self.x_l_list.append(moms.x_l.real)
+        self.x2_l_list.append(moms.x2_l.real)
+        self.p_l_list.append(moms.p_l.real)
+        self.p2_l_list.append(moms.p2_l.real)
+        self.ener_list.append(ener)
+        self.E_list.append(E)
+        self.overlp_list.append(abs(overlp))
+        self.ener_tot_list.append(ener_tot)
+        self.abs_psi_max_list.append(abs_psi_max)
+        self.real_psi_max_list.append(real_psi_max)
+
+        namem = ["<x>", "<x^2>", "<p>", "<p^2>"]
+        moms_list = [self.x_l_list, self.x2_l_list, self.p_l_list]
+
+        # Updating the graph for moms without <p^2>
+        self.__plot_moms_update_graph(self.t_list, moms_list, namem,
+                                      "Expectation values for the ground state", "", "fig_moms_low_grd.pdf")
+
+        moms_list.append(self.p2_l_list)
+        # Updating the graph for moms
+        self.__plot_moms_update_graph(self.t_list, moms_list, namem,
+                                      "Expectation values for the ground state", "", "fig_moms_grd.pdf")
+
+
+        # Updating the graph for ener
+        self.__plot_tvals_update_graph(self.t_list, self.ener_list,
+                                       "Energy on the ground state", "Energy", "fig_ener_grd.pdf")
+
+        # Updating the graph for laser field energy
+        self.__plot_tvals_update_graph(self.t_list, self.E_list,
+                                       "Laser field energy envelope", "E", "fig_lf_en.pdf")
+
+        # Updating the graph for lower state population
+        self.__plot_tvals_update_graph(self.t_list, self.overlp_list,
+                                       "Ground state population", "abs((psi0, psi))", "fig_overlp_grd.pdf")
+
+        # Updating the graph for total energy
+        self.__plot_tvals_update_graph(self.t_list, self.ener_tot_list,
+                                       "Total energy", "Total energy", "fig_ener_tot.pdf")
+
+        # Updating the graph for maximum absolute value of ground state wavefunction
+        self.__plot_tvals_update_graph(self.t_list, self.abs_psi_max_list,
+                                       "Time dependence of max|Ψ| for the ground state wavefunction", "max|Ψ|",
+                                       "fig_abs_max_grd.pdf")
+
+        # Updating the graph for maximum real value of ground state wavefunction
+        self.__plot_tvals_update_graph(self.t_list, self.real_psi_max_list,
+                                       "Time dependence of maximum value of real(Ψ) for the ground state wavefunction",
+                                       "real(Ψ)", "fig_real_max_grd.pdf")
+
+
+    def plot_mom_up(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
+        self.t_u_list.append(t)
+        self.x_u_list.append(moms.x_u.real)
+        self.x2_u_list.append(moms.x2_u.real)
+        self.p_u_list.append(moms.p_u.real)
+        self.p2_u_list.append(moms.p2_u.real)
+        self.ener_u_list.append(ener)
+        self.E_list.append(E)
+        self.overlp_u_list.append(abs(overlp))
+        self.overlp_tot_list.append(overlp_tot)
+        self.abs_psi_max_u_list.append(abs_psi_max)
+        self.real_psi_max_u_list.append(real_psi_max)
+
+        namem = ["<x>", "<x^2>", "<p>", "<p^2>"]
+        moms_list = [self.x_u_list, self.x2_u_list, self.p_u_list]
+
+        # Updating the graph for moms
+        self.__plot_moms_update_graph(self.t_u_list, moms_list, namem,
+                                      "Expectation values for the excited state", "", "fig_moms_low_exc.pdf")
+
+        moms_list.append(self.p2_u_list)
+        # Updating the graph for moms without <p^2>
+        self.__plot_moms_update_graph(self.t_u_list, moms_list, namem,
+                                      "Expectation values for the excited state", "", "fig_moms_exc.pdf")
+
+        # Updating the graph for ener
+        self.__plot_tvals_update_graph(self.t_u_list, self.ener_u_list,
+                                       "Energy on the excited state", "Energy", "fig_ener_exc.pdf")
+
+        # Updating the graph for excited state population
+        self.__plot_tvals_update_graph(self.t_u_list, self.overlp_u_list,
+                                       "Excited state population", "abs((psi1, psi))", "fig_overlp_exc.pdf")
+
+        # Updating the graph for total population
+        self.__plot_tvals_update_graph(self.t_u_list, self.overlp_tot_list,
+                                       "Total population", "Total population", "fig_overlp_tot.pdf")
+
+        # Updating the graph for maximum absolute value of excited state wavefunction
+        self.__plot_tvals_update_graph(self.t_u_list, self.abs_psi_max_u_list,
+                                       "Time dependence of max|Ψ| for the excited state wavefunction", "max|Ψ|",
+                                       "fig_abs_max_exc.pdf")
+
+        # Updating the graph for maximum real value of excited state wavefunction
+        self.__plot_tvals_update_graph(self.t_u_list, self.real_psi_max_u_list,
+                                       "Time dependence of maximum value of real(Ψ) for the excited state wavefunction",
+                                       "real(Ψ)", "fig_real_max_exc.pdf")
+
+
+    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
+        try:
+            if l % self.conf_output.mod_fileout == 0 and l >= self.conf_output.lmin:
+                self.plot(psi, t, x, np)
+                self.plot_up(psi, t, x, np)
+                self.plot_mom(t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max)
+                self.plot_mom_up(t, moms, ener_u, E, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+        except ValueError as err:
+            print_err("A nasty error has occurred during the reporting: ", err)
+            print_err("Hopefully that doesn't affect the calculations, so the application is going on...")
 
