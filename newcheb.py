@@ -16,29 +16,44 @@ Options:
     Content of the json file
 
     in key "output":
-    lmin
-        number of a time step, from which the result should be written to a file.
-        A negative value will be considered as 0
-        by default, is equal to 0
-    mod_stdout
-        step of output to stdout (to write to stdout each <val>-th time step).
-        By default, is equal to 500
-    mod_fileout
-        step of writing in file (to write in file each <val>-th time step).
-        By default, is equal to 100
-    numb_plotout
-        maximum number of graphs for different time points to plot on one canvas
-        for the absolute and real values of wavefunctions.
-        By default, is equal to 20
-    file_abs
-        output file name, to which absolute values of wavefunctions should be written
-        by default, is equal to "fort.21"
-    file_real
-        output file name, to which real parts of wavefunctions should be written
-        by default, is equal to "fort.22"
-    file_mom
-        output file name, to which expectation values of x, x*x, p, p*p should be written
-        by default, is equal to "fort.23"
+    key "table"
+        a subsection, which has to be specified if writing of the resulting tables is needed.
+        In the key "table":
+        lmin
+            number of a time step, from which the result should be written to a file.
+            A negative value will be considered as 0
+            by default, is equal to 0
+        mod_stdout
+            step of output to stdout (to write to stdout each <val>-th time step).
+            By default, is equal to 500
+        mod_fileout
+            step of writing in file (to write in file each <val>-th time step).
+            By default, is equal to 100
+        file_abs
+            output file name, to which absolute values of wavefunctions should be written
+            by default, is equal to "output/fort.21"
+        file_real
+            output file name, to which real parts of wavefunctions should be written
+            by default, is equal to "output/fort.22"
+        file_mom
+            output file name, to which expectation values of x, x*x, p, p*p should be written
+            by default, is equal to "output/fort.23"
+
+    key "plot"
+        a subsection, which has to be specified if plotting of the resulting figures is needed.
+        In the key "plot":
+        lmin
+            number of a time step, from which the result should be plotted.
+            A negative value will be considered as 0
+            by default, is equal to 0
+        mod_plotout
+            step of plotting graphs with x-axis = time (to plot to file each <val>-th time step).
+            By default, is equal to 500
+        number_plotout
+            maximum number of graphs for different time points to plot on one canvas
+            for the absolute and real values of wavefunctions.
+            By default, is equal to 10
+
 
     in key "fitter":
     task_type
@@ -154,14 +169,10 @@ __license__ = "Python"
 
 from tools import print_err
 
-OUT_PATH="output"
-OUT_PATH_PLOT="plots"
-
 import sys
 import getopt
 import json
 import math
-import os.path
 
 import double_morse
 import harmonic
@@ -218,13 +229,18 @@ def main(argv):
         raise ValueError("The number of collocation points 'np' and of Chebyshev "
                          "interpolation points 'nch' must be positive integers and powers of 2")
 
-    if conf.output.lmin < 0 or conf.output.mod_fileout < 0 or conf.output.mod_stdout < 0 \
-            or conf.fitter.impulses_number < 0 or conf.output.numb_plotout < 0:
+    if conf.output.table.lmin < 0 or conf.output.plot.lmin < 0 or \
+            conf.output.table.mod_fileout < 0 or conf.output.table.mod_stdout < 0:
+        raise ValueError("The number 'lmin' of time iteration, from which the result"
+                         "should be written to a file or plotted, as well as steps for output "
+                         "'mod_stdout' and 'mod_fileout' should be positive or 0")
+
+    if conf.fitter.impulses_number < 0 or conf.output.plot.number_plotout < 0 or \
+        conf.output.plot.mod_plotout < 0:
         raise ValueError("The number of laser pulses 'impulses_number', "
-                         "the number 'lmin' of time iteration, from which the result"
-                         "should be written to a file, as well as steps of output "
-                         "'mod_stdout' and 'mod_fileout' and maximum number of graphs "
-                         "'numb_plotout' to be plotted on one canvas should be positive or 0")
+                         "as well as the step for plotting graphs with x-axis = time "
+                         "'mod_plotout' and maximum number of graphs "
+                         "'number_plotout' to be plotted on one canvas should be positive or 0")
 
     if conf.fitter.propagation.L <= 0.0 or conf.fitter.propagation.T <= 0.0:
         raise ValueError("The value of spatial range 'L' and of time range 'T' of the problem"
@@ -288,13 +304,12 @@ def main(argv):
         raise RuntimeError("Impossible case in the TaskType class")
 
     # main calculation part
-    with reporter.PlotReporter(conf.output, OUT_PATH) as reporter_impl:
+    with reporter.MultipleReporter(conf.output) as reporter_impl:
         fitting_solver = fitter.FittingSolver(conf, psi_init, pot, reporter_impl,
                                               _warning_collocation_points,
                                               _warning_time_steps
                                               )
         fitting_solver.time_propagation()
-        plots_path = os.path.join(OUT_PATH, OUT_PATH_PLOT)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,6 @@ import os.path
 
 from tools import print_err
 
-
 class Reporter:
     def __init__(self):
         pass
@@ -26,9 +25,8 @@ class Reporter:
 
 
 class TableReporter(Reporter):
-    def __init__(self, conf_output, out_path):
+    def __init__(self, conf_output):
         self.conf_output = conf_output
-        self.out_path = out_path
         self.f_abs = None
         self.f_real = None
         self.f_mom = None
@@ -37,12 +35,12 @@ class TableReporter(Reporter):
         self.f_mom_up = None
 
     def __enter__(self):
-        self.f_abs = open(os.path.join(self.out_path, self.conf_output.file_abs), 'w')
-        self.f_real = open(os.path.join(self.out_path, self.conf_output.file_real), 'w')
-        self.f_mom = open(os.path.join(self.out_path, self.conf_output.file_mom), 'w')
-        self.f_abs_up = open(os.path.join(self.out_path, self.conf_output.file_abs) + "_exc", 'w')
-        self.f_real_up = open(os.path.join(self.out_path, self.conf_output.file_real + "_exc"), 'w')
-        self.f_mom_up = open(os.path.join(self.out_path, self.conf_output.file_mom + "_exc"), 'w')
+        self.f_abs = open(self.conf_output.file_abs, 'w')
+        self.f_real = open(self.conf_output.file_real, 'w')
+        self.f_mom = open(self.conf_output.file_mom, 'w')
+        self.f_abs_up = open(self.conf_output.file_abs + "_exc", 'w')
+        self.f_real_up = open(self.conf_output.file_real + "_exc", 'w')
+        self.f_mom_up = open(self.conf_output.file_mom + "_exc", 'w')
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -111,9 +109,8 @@ class TableReporter(Reporter):
 
 
 class PlotReporter(Reporter):
-    def __init__(self, conf_output, out_path):
+    def __init__(self, conf_output):
         self.conf_output = conf_output
-        self.out_path = out_path
 
 
     def __enter__(self):
@@ -283,12 +280,12 @@ class PlotReporter(Reporter):
         self.psi_real[t] = {'x': x, 'y': psi0_real}
 
         # Updating the graph for psi_abs
-        self.__plot_update_graph(self.psi_abs, self.conf_output.numb_plotout,
+        self.__plot_update_graph(self.psi_abs, self.conf_output.number_plotout,
                                  "Absolute value of the wave function on the ground state",
                                  "abs(Ψ)", "fig_abs_grd.pdf")
 
         # Updating the graph for psi_real
-        self.__plot_update_graph(self.psi_real, self.conf_output.numb_plotout,
+        self.__plot_update_graph(self.psi_real, self.conf_output.number_plotout,
                                  "Real value of the wave function on the ground state",
                                  "Re(Ψ)", "fig_real_grd.pdf")
 
@@ -304,12 +301,12 @@ class PlotReporter(Reporter):
         self.psi_real_u[t] = {'x': x, 'y': psi1_real}
 
         # Updating the graph for psi_abs
-        self.__plot_update_graph(self.psi_abs_u, self.conf_output.numb_plotout,
+        self.__plot_update_graph(self.psi_abs_u, self.conf_output.number_plotout,
                                  "Absolute value of the wave function on the excited state",
                                  "abs(Ψ)", "fig_abs_exc.pdf")
 
         # Updating the graph for psi_real
-        self.__plot_update_graph(self.psi_real_u, self.conf_output.numb_plotout,
+        self.__plot_update_graph(self.psi_real_u, self.conf_output.number_plotout,
                                  "Real value of the wave function on the excited state",
                                  "Re(Ψ)", "fig_real_exc.pdf")
 
@@ -418,7 +415,7 @@ class PlotReporter(Reporter):
     def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         try:
-            if l % self.conf_output.mod_fileout == 0 and l >= self.conf_output.lmin:
+            if l % self.conf_output.mod_plotout == 0 and l >= self.conf_output.lmin:
                 self.plot(psi, t, x, np)
                 self.plot_up(psi, t, x, np)
                 self.plot_mom(t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max)
@@ -426,4 +423,47 @@ class PlotReporter(Reporter):
         except ValueError as err:
             print_err("A nasty error has occurred during the reporting: ", err)
             print_err("Hopefully that doesn't affect the calculations, so the application is going on...")
+
+
+class MultipleReporter(Reporter):
+    def __init__(self, conf_output):
+        self.reps = []
+        if not conf_output.plot.is_empty():
+            self.reps.append(PlotReporter(conf_output.plot))
+        if not conf_output.table.is_empty():
+            self.reps.append(TableReporter(conf_output.table))
+
+    def __enter__(self):
+        for rep in self.reps:
+            rep.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    def plot(self, psi, t, x, np):
+        for rep in self.reps:
+            rep.plot(self, psi, t, x, np)
+
+
+    def plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
+        for rep in self.reps:
+            rep.plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max)
+
+
+    def plot_up(self, psi, t, x, np):
+        for rep in self.reps:
+            rep.plot_up(self, psi, t, x, np)
+
+
+    def plot_mom_up(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
+        for rep in self.reps:
+            rep.plot_mom(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max)
+
+
+    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
+        for rep in self.reps:
+            rep.print_time_point(l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u)
 

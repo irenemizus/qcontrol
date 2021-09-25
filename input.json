@@ -1,12 +1,18 @@
 {
   "output": {
-    "lmin": 0,
-    "mod_stdout": 500,
-    "mod_fileout": 500,
-    "numb_plotout": 10,
-    "file_abs": "fort.21",
-    "file_real": "fort.22",
-    "file_mom": "fort.23"
+    "table": {
+      "lmin": 0,
+      "mod_stdout": 500,
+      "mod_fileout": 100,
+      "file_abs": "output/fort.21",
+      "file_real": "output/fort.22",
+      "file_mom": "output/fort.23"
+    },
+    "plot": {
+      "lmin": 0,
+      "mod_plotout": 500,
+      "number_plotout": 10
+    }
   },
   "fitter": {
     "task_type": "local_control",

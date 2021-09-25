@@ -157,7 +157,7 @@ class FittingSolver:
                                        abs(self.dyn_ref.psi[0][max_ind_psi_l]), self.dyn_ref.psi[0][max_ind_psi_l].real,
                                        abs(self.dyn_ref.psi[1][max_ind_psi_u]), self.dyn_ref.psi[1][max_ind_psi_u].real)
 
-        if self.dyn_ref.l % self.conf.output.mod_stdout == 0:
+        if self.dyn_ref.l % self.conf.output.table.mod_stdout == 0:
             if self.conf.fitter.propagation.np < np_min:
                 self._warning_collocation_points(self.conf.fitter.propagation.np, np_min)
             if self.conf.fitter.propagation.nt < nt_min:

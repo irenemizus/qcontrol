@@ -2,10 +2,15 @@ from enum import Enum
 
 class ConfigurationBase:
     def __init__(self):
+        self._empty = True
         self._data = {
         }
 
+    def is_empty(self):
+        return self._empty
+
     def load(self, user_data):
+        self._empty = False  # Even loading an empty configuration means the object isn't empty anymore
         # analyze provided input json user_data
         for key in self._data:
             if key in user_data:
@@ -38,7 +43,7 @@ class ConfigurationBase:
 
 class RootConfiguration(ConfigurationBase):
 
-    class OutputConfiguration(ConfigurationBase):
+    class OutputTableConfiguration(ConfigurationBase):
         def __init__(self):
             super().__init__()
             # default input values
@@ -48,7 +53,20 @@ class RootConfiguration(ConfigurationBase):
             self._data["lmin"] = 0
             self._data["mod_stdout"] = 500
             self._data["mod_fileout"] = 100
-            self._data["numb_plotout"] = 20
+
+    class OutputPlotConfiguration(ConfigurationBase):
+        def __init__(self):
+            super().__init__()
+            # default input values
+            self._data["lmin"] = 0
+            self._data["mod_plotout"] = 500
+            self._data["number_plotout"] = 10
+
+    class OutputMultipleConfiguration(ConfigurationBase):
+        def __init__(self):
+            super().__init__()
+            self._data['table'] = RootConfiguration.OutputTableConfiguration()
+            self._data['plot'] = RootConfiguration.OutputPlotConfiguration()
 
     class FitterConfiguration(ConfigurationBase):
         class PropagationConfiguration(ConfigurationBase):
@@ -166,5 +184,5 @@ class RootConfiguration(ConfigurationBase):
 
     def __init__(self):
         super().__init__()
-        self._data["output"] = RootConfiguration.OutputConfiguration()
+        self._data["output"] = RootConfiguration.OutputMultipleConfiguration()
         self._data["fitter"] = RootConfiguration.FitterConfiguration()
