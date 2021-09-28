@@ -4,14 +4,17 @@
       "lmin": 0,
       "mod_stdout": 500,
       "mod_fileout": 100,
-      "file_abs": "output/fort.21",
-      "file_real": "output/fort.22",
-      "file_mom": "output/fort.23"
+      "out_path": "output",
+      "file_abs": "fort.21",
+      "file_real": "fort.22",
+      "file_mom": "fort.23"
     },
     "plot": {
       "lmin": 0,
       "mod_plotout": 500,
-      "number_plotout": 10
+      "mod_update": 50,
+      "number_plotout": 10,
+      "out_path": "output/plots"
     }
   },
   "fitter": {

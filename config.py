@@ -47,9 +47,10 @@ class RootConfiguration(ConfigurationBase):
         def __init__(self):
             super().__init__()
             # default input values
-            self._data["file_abs"] = "fort.21"
-            self._data["file_real"] = "fort.22"
-            self._data["file_mom"] = "fort.23"
+            self._data["out_path"] = "output"
+            self._data["tab_abs"] = "fort.21"
+            self._data["tab_real"] = "fort.22"
+            self._data["tab_mom"] = "fort.23"
             self._data["lmin"] = 0
             self._data["mod_stdout"] = 500
             self._data["mod_fileout"] = 100
@@ -58,9 +59,30 @@ class RootConfiguration(ConfigurationBase):
         def __init__(self):
             super().__init__()
             # default input values
+            self._data["out_path"] = "output/plots"
             self._data["lmin"] = 0
             self._data["mod_plotout"] = 500
+            self._data["mod_update"] = 50
             self._data["number_plotout"] = 10
+            self._data["gr_abs_grd"] = "fig_abs_grd.pdf"
+            self._data["gr_real_grd"] = "fig_real_grd.pdf"
+            self._data["gr_abs_exc"] = "fig_abs_exc.pdf"
+            self._data["gr_real_exc"] = "fig_real_exc.pdf"
+            self._data["gr_moms_low_grd"] = "fig_moms_low_grd.pdf"
+            self._data["gr_moms_grd"] = "fig_moms_grd.pdf"
+            self._data["gr_ener_grd"] = "fig_ener_grd.pdf"
+            self._data["gr_lf_en"] = "fig_lf_en.pdf"
+            self._data["gr_overlp_grd"] = "fig_overlp_grd.pdf"
+            self._data["gr_ener_tot"] = "fig_ener_tot.pdf"
+            self._data["gr_abs_max_grd"] = "fig_abs_max_grd.pdf"
+            self._data["gr_real_max_grd"] = "fig_real_max_grd.pdf"
+            self._data["gr_moms_low_exc"] = "fig_moms_low_exc.pdf"
+            self._data["gr_moms_exc"] = "fig_moms_exc.pdf"
+            self._data["gr_ener_exc"] = "fig_ener_exc.pdf"
+            self._data["gr_overlp_exc"] = "fig_overlp_exc.pdf"
+            self._data["gr_overlp_tot"] = "fig_overlp_tot.pdf"
+            self._data["gr_abs_max_exc"] = "fig_abs_max_exc.pdf"
+            self._data["gr_real_max_exc"] = "fig_real_max_exc.pdf"
 
     class OutputMultipleConfiguration(ConfigurationBase):
         def __init__(self):

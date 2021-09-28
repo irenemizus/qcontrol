@@ -38,6 +38,9 @@ Options:
         file_mom
             output file name, to which expectation values of x, x*x, p, p*p should be written
             by default, is equal to "output/fort.23"
+        out_path
+            a path name for the output tables
+            by default, is equal to "output"
 
     key "plot"
         a subsection, which has to be specified if plotting of the resulting figures is needed.
@@ -49,10 +52,16 @@ Options:
         mod_plotout
             step of plotting graphs with x-axis = time (to plot to file each <val>-th time step).
             By default, is equal to 500
+        mod_update
+            step for updating the plots
+            By default, is equal to 50
         number_plotout
             maximum number of graphs for different time points to plot on one canvas
             for the absolute and real values of wavefunctions.
             By default, is equal to 10
+        out_path
+            a path name for the output plots
+            by default, is equal to "output/plots"
 
 
     in key "fitter":
@@ -236,10 +245,10 @@ def main(argv):
                          "'mod_stdout' and 'mod_fileout' should be positive or 0")
 
     if conf.fitter.impulses_number < 0 or conf.output.plot.number_plotout < 0 or \
-        conf.output.plot.mod_plotout < 0:
+        conf.output.plot.mod_plotout < 0 or conf.output.plot.mod_update < 0:
         raise ValueError("The number of laser pulses 'impulses_number', "
-                         "as well as the step for plotting graphs with x-axis = time "
-                         "'mod_plotout' and maximum number of graphs "
+                         "the step for plotting graphs with x-axis = time 'mod_plotout' "
+                         "and for updating the plots 'mod_update', and maximum number of graphs "
                          "'number_plotout' to be plotted on one canvas should be positive or 0")
 
     if conf.fitter.propagation.L <= 0.0 or conf.fitter.propagation.T <= 0.0:
