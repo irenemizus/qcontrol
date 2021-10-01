@@ -29,13 +29,13 @@ Options:
         mod_fileout
             step of writing in file (to write in file each <val>-th time step).
             By default, is equal to 100
-        file_abs
+        tab_abs
             output file name, to which absolute values of wavefunctions should be written
             by default, is equal to "output/fort.21"
-        file_real
+        tab_real
             output file name, to which real parts of wavefunctions should be written
             by default, is equal to "output/fort.22"
-        file_mom
+        tab_mom
             output file name, to which expectation values of x, x*x, p, p*p should be written
             by default, is equal to "output/fort.23"
         out_path
@@ -57,12 +57,14 @@ Options:
             By default, is equal to 50
         number_plotout
             maximum number of graphs for different time points to plot on one canvas
-            for the absolute and real values of wavefunctions.
-            By default, is equal to 10
+            for the absolute and real values of wavefunctions. Must be larger than 1
+            By default, is equal to 15
         out_path
             a path name for the output plots
             by default, is equal to "output/plots"
-
+        gr_*
+            output file name, to which the corresponding result should be plotted
+            by default, is equal to "output/plots/fig_*.pdf"
 
     in key "fitter":
     task_type
@@ -244,12 +246,16 @@ def main(argv):
                          "should be written to a file or plotted, as well as steps for output "
                          "'mod_stdout' and 'mod_fileout' should be positive or 0")
 
-    if conf.fitter.impulses_number < 0 or conf.output.plot.number_plotout < 0 or \
-        conf.output.plot.mod_plotout < 0 or conf.output.plot.mod_update < 0:
-        raise ValueError("The number of laser pulses 'impulses_number', "
-                         "the step for plotting graphs with x-axis = time 'mod_plotout' "
-                         "and for updating the plots 'mod_update', and maximum number of graphs "
-                         "'number_plotout' to be plotted on one canvas should be positive or 0")
+    if conf.output.plot.mod_plotout < 0 or conf.output.plot.mod_update < 0:
+        raise ValueError("The step for plotting graphs with x-axis = time 'mod_plotout' "
+                         "and for updating the plots 'mod_update' should be positive or 0")
+
+    if conf.output.plot.number_plotout < 2:
+        raise ValueError("The maximum number of graphs 'number_plotout' to be plotted on one canvas"
+                         "must be larger than 1!")
+
+    if conf.fitter.impulses_number < 0:
+        raise ValueError("The number of laser pulses 'impulses_number' should be positive or 0")
 
     if conf.fitter.propagation.L <= 0.0 or conf.fitter.propagation.T <= 0.0:
         raise ValueError("The value of spatial range 'L' and of time range 'T' of the problem"

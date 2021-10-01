@@ -5,15 +5,15 @@
       "mod_stdout": 500,
       "mod_fileout": 100,
       "out_path": "output",
-      "file_abs": "fort.21",
-      "file_real": "fort.22",
-      "file_mom": "fort.23"
+      "tab_abs": "fort.21",
+      "tab_real": "fort.22",
+      "tab_mom": "fort.23"
     },
     "plot": {
       "lmin": 0,
-      "mod_plotout": 500,
-      "mod_update": 50,
-      "number_plotout": 10,
+      "mod_plotout": 100,
+      "mod_update": 20,
+      "number_plotout": 15,
       "out_path": "output/plots"
     }
   },

@@ -160,6 +160,8 @@ class PlotReporter(Reporter):
         self.psi_abs_u = {}
         self.psi_real_u = {}
 
+        self.i = 0
+
         return self
 
 
@@ -175,7 +177,7 @@ class PlotReporter(Reporter):
         psi_filt = {}
 
         len_abs = len(psi)
-        mod_plotoutput = len_abs / numb_plotout
+        mod_plotoutput = len_abs / (numb_plotout - 1) # we have the initial plots, as well
         if mod_plotoutput == 0: mod_plotoutput = 1
         k_filt = -1
         K_all = 0
@@ -279,16 +281,16 @@ class PlotReporter(Reporter):
         self.psi_abs[t] = {'x': x, 'y': psi0_abs}
         self.psi_real[t] = {'x': x, 'y': psi0_real}
 
-        # Updating the graph for psi_abs
+        if self.i % self.conf_output.mod_update == 0:
+            # Updating the graph for psi_abs
+            self.__plot_update_graph(self.psi_abs, self.conf_output.number_plotout,
+                                     "Absolute value of the wave function on the ground state",
+                                     "abs(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_grd))
 
-        self.__plot_update_graph(self.psi_abs, self.conf_output.number_plotout,
-                                 "Absolute value of the wave function on the ground state",
-                                 "abs(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_grd))
-
-        # Updating the graph for psi_real
-        self.__plot_update_graph(self.psi_real, self.conf_output.number_plotout,
-                                 "Real value of the wave function on the ground state",
-                                 "Re(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_grd))
+            # Updating the graph for psi_real
+            self.__plot_update_graph(self.psi_real, self.conf_output.number_plotout,
+                                     "Real value of the wave function on the ground state",
+                                     "Re(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_grd))
 
 
     def plot_up(self, psi, t, x, np):
@@ -301,16 +303,16 @@ class PlotReporter(Reporter):
         self.psi_abs_u[t] = {'x': x, 'y': psi1_abs}
         self.psi_real_u[t] = {'x': x, 'y': psi1_real}
 
-        # Updating the graph for psi_abs
+        if self.i % self.conf_output.mod_update == 0:
+            # Updating the graph for psi_abs
+            self.__plot_update_graph(self.psi_abs_u, self.conf_output.number_plotout,
+                                     "Absolute value of the wave function on the excited state",
+                                     "abs(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_exc))
 
-        self.__plot_update_graph(self.psi_abs_u, self.conf_output.number_plotout,
-                                 "Absolute value of the wave function on the excited state",
-                                 "abs(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_exc))
-
-        # Updating the graph for psi_real
-        self.__plot_update_graph(self.psi_real_u, self.conf_output.number_plotout,
-                                 "Real value of the wave function on the excited state",
-                                 "Re(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_exc))
+            # Updating the graph for psi_real
+            self.__plot_update_graph(self.psi_real_u, self.conf_output.number_plotout,
+                                     "Real value of the wave function on the excited state",
+                                     "Re(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_exc))
 
 
     def plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
@@ -329,47 +331,47 @@ class PlotReporter(Reporter):
         namem = ["<x>", "<x^2>", "<p>", "<p^2>"]
         moms_list = [self.x_l_list, self.x2_l_list, self.p_l_list]
 
-        # Updating the graph for moms without <p^2>
-        self.__plot_moms_update_graph(self.t_list, moms_list, namem,
-                                      "Expectation values for the ground state", "",
-                                      os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_low_grd))
+        if self.i % self.conf_output.mod_update == 0:
+            # Updating the graph for moms without <p^2>
+            self.__plot_moms_update_graph(self.t_list, moms_list, namem,
+                                          "Expectation values for the ground state", "",
+                                          os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_low_grd))
 
-        moms_list.append(self.p2_l_list)
-        # Updating the graph for moms
-        self.__plot_moms_update_graph(self.t_list, moms_list, namem,
-                                      "Expectation values for the ground state", "",
-                                      os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_grd))
+            moms_list.append(self.p2_l_list)
+            # Updating the graph for moms
+            self.__plot_moms_update_graph(self.t_list, moms_list, namem,
+                                          "Expectation values for the ground state", "",
+                                          os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_grd))
 
+            # Updating the graph for ener
+            self.__plot_tvals_update_graph(self.t_list, self.ener_list,
+                                           "Energy on the ground state", "Energy",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_ener_grd))
 
-        # Updating the graph for ener
-        self.__plot_tvals_update_graph(self.t_list, self.ener_list,
-                                       "Energy on the ground state", "Energy",
-                                       os.path.join(self.conf_output.out_path, self.conf_output.gr_ener_grd))
+            # Updating the graph for laser field energy
+            self.__plot_tvals_update_graph(self.t_list, self.E_list,
+                                           "Laser field energy envelope", "E",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_lf_en))
 
-        # Updating the graph for laser field energy
-        self.__plot_tvals_update_graph(self.t_list, self.E_list,
-                                       "Laser field energy envelope", "E",
-                                       os.path.join(self.conf_output.out_path, self.conf_output.gr_lf_en))
+            # Updating the graph for lower state population
+            self.__plot_tvals_update_graph(self.t_list, self.overlp_list,
+                                           "Ground state population", "abs((psi0, psi))",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_overlp_grd))
 
-        # Updating the graph for lower state population
-        self.__plot_tvals_update_graph(self.t_list, self.overlp_list,
-                                       "Ground state population", "abs((psi0, psi))",
-                                       os.path.join(self.conf_output.out_path, self.conf_output.gr_overlp_grd))
+            # Updating the graph for total energy
+            self.__plot_tvals_update_graph(self.t_list, self.ener_tot_list,
+                                           "Total energy", "Total energy",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_ener_tot))
 
-        # Updating the graph for total energy
-        self.__plot_tvals_update_graph(self.t_list, self.ener_tot_list,
-                                       "Total energy", "Total energy",
-                                       os.path.join(self.conf_output.out_path, self.conf_output.gr_ener_tot))
+            # Updating the graph for maximum absolute value of ground state wavefunction
+            self.__plot_tvals_update_graph(self.t_list, self.abs_psi_max_list,
+                                           "Time dependence of max|Ψ| for the ground state wavefunction", "max|Ψ|",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_max_grd))
 
-        # Updating the graph for maximum absolute value of ground state wavefunction
-        self.__plot_tvals_update_graph(self.t_list, self.abs_psi_max_list,
-                                       "Time dependence of max|Ψ| for the ground state wavefunction", "max|Ψ|",
-                                       os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_max_grd))
-
-        # Updating the graph for maximum real value of ground state wavefunction
-        self.__plot_tvals_update_graph(self.t_list, self.real_psi_max_list,
-                                       "Time dependence of maximum value of real(Ψ) for the ground state wavefunction",
-                                       "real(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_max_grd))
+            # Updating the graph for maximum real value of ground state wavefunction
+            self.__plot_tvals_update_graph(self.t_list, self.real_psi_max_list,
+                                           "Time dependence of maximum value of real(Ψ) for the ground state wavefunction",
+                                           "real(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_max_grd))
 
 
     def plot_mom_up(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
@@ -379,7 +381,6 @@ class PlotReporter(Reporter):
         self.p_u_list.append(moms.p_u.real)
         self.p2_u_list.append(moms.p2_u.real)
         self.ener_u_list.append(ener)
-        self.E_list.append(E)
         self.overlp_u_list.append(abs(overlp))
         self.overlp_tot_list.append(overlp_tot)
         self.abs_psi_max_u_list.append(abs_psi_max)
@@ -388,41 +389,42 @@ class PlotReporter(Reporter):
         namem = ["<x>", "<x^2>", "<p>", "<p^2>"]
         moms_list = [self.x_u_list, self.x2_u_list, self.p_u_list]
 
-        # Updating the graph for moms
-        self.__plot_moms_update_graph(self.t_u_list, moms_list, namem,
-                                      "Expectation values for the excited state", "",
-                                      os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_low_exc))
+        if self.i % self.conf_output.mod_update == 0:
+            # Updating the graph for moms
+            self.__plot_moms_update_graph(self.t_u_list, moms_list, namem,
+                                          "Expectation values for the excited state", "",
+                                          os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_low_exc))
 
-        moms_list.append(self.p2_u_list)
-        # Updating the graph for moms without <p^2>
-        self.__plot_moms_update_graph(self.t_u_list, moms_list, namem,
-                                      "Expectation values for the excited state", "",
-                                      os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_exc))
+            moms_list.append(self.p2_u_list)
+            # Updating the graph for moms without <p^2>
+            self.__plot_moms_update_graph(self.t_u_list, moms_list, namem,
+                                          "Expectation values for the excited state", "",
+                                          os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_exc))
 
-        # Updating the graph for ener
-        self.__plot_tvals_update_graph(self.t_u_list, self.ener_u_list,
-                                       "Energy on the excited state", "Energy",
-                                       os.path.join(self.conf_output.out_path, self.conf_output.gr_ener_exc))
+            # Updating the graph for ener
+            self.__plot_tvals_update_graph(self.t_u_list, self.ener_u_list,
+                                           "Energy on the excited state", "Energy",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_ener_exc))
 
-        # Updating the graph for excited state population
-        self.__plot_tvals_update_graph(self.t_u_list, self.overlp_u_list,
-                                       "Excited state population", "abs((psi1, psi))",
-                                       os.path.join(self.conf_output.out_path, self.conf_output.gr_overlp_exc))
+            # Updating the graph for excited state population
+            self.__plot_tvals_update_graph(self.t_u_list, self.overlp_u_list,
+                                           "Excited state population", "abs((psi1, psi))",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_overlp_exc))
 
-        # Updating the graph for total population
-        self.__plot_tvals_update_graph(self.t_u_list, self.overlp_tot_list,
-                                       "Total population", "Total population",
-                                       os.path.join(self.conf_output.out_path, self.conf_output.gr_overlp_tot))
+            # Updating the graph for total population
+            self.__plot_tvals_update_graph(self.t_u_list, self.overlp_tot_list,
+                                           "Total population", "Total population",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_overlp_tot))
 
-        # Updating the graph for maximum absolute value of excited state wavefunction
-        self.__plot_tvals_update_graph(self.t_u_list, self.abs_psi_max_u_list,
-                                       "Time dependence of max|Ψ| for the excited state wavefunction", "max|Ψ|",
-                                       os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_max_exc))
+            # Updating the graph for maximum absolute value of excited state wavefunction
+            self.__plot_tvals_update_graph(self.t_u_list, self.abs_psi_max_u_list,
+                                           "Time dependence of max|Ψ| for the excited state wavefunction", "max|Ψ|",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_max_exc))
 
-        # Updating the graph for maximum real value of excited state wavefunction
-        self.__plot_tvals_update_graph(self.t_u_list, self.real_psi_max_u_list,
-                                       "Time dependence of maximum value of real(Ψ) for the excited state wavefunction",
-                                       "real(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_max_exc))
+            # Updating the graph for maximum real value of excited state wavefunction
+            self.__plot_tvals_update_graph(self.t_u_list, self.real_psi_max_u_list,
+                                           "Time dependence of maximum value of real(Ψ) for the excited state wavefunction",
+                                           "real(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_max_exc))
 
 
     def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
@@ -433,6 +435,7 @@ class PlotReporter(Reporter):
                 self.plot_up(psi, t, x, np)
                 self.plot_mom(t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max)
                 self.plot_mom_up(t, moms, ener_u, E, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+                self.i += 1
         except ValueError as err:
             print_err("A nasty error has occurred during the reporting: ", err)
             print_err("Hopefully that doesn't affect the calculations, so the application is going on...")
