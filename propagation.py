@@ -17,6 +17,7 @@ class PropagationSolver:
             report_dynamic,
             process_instrumentation,
             laser_field_envelope,
+            freq_multiplier,
             dynamic_state_factory,
             conf_prop):
 
@@ -26,6 +27,7 @@ class PropagationSolver:
         self.report_dynamic = report_dynamic
         self.process_instrumentation = process_instrumentation
         self.laser_field_envelope = laser_field_envelope
+        self.freq_multiplier = freq_multiplier
         self.dynamic_state_factory = dynamic_state_factory
 
         self.m = conf_prop.m
@@ -73,21 +75,23 @@ class PropagationSolver:
 
     # These parameters are updated on each calculation step
     class DynamicState:
-        def __init__(self, l=0, psi=None, E=0.0):
+        def __init__(self, l=0, psi=None, E=0.0, freq_mult = 1.0):
             self.l = l
             self.psi = psi
             self.E = E
+            self.freq_mult = freq_mult
 
 
     # These parameters are recalculated from scratch on each step,
     # and then follows an output of them to the user
     class InstrumentationOutputData:
-        def __init__(self, moms: phys_base.ExpectationValues, cnorm_l, cnorm_u, psigc_psie,
+        def __init__(self, moms: phys_base.ExpectationValues, cnorm_l, cnorm_u, psigc_psie, psigc_dv_psie,
                      cener_l, cener_u, E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after):
             self.moms = moms
             self.cnorm_l = cnorm_l
             self.cnorm_u = cnorm_u
             self.psigc_psie = psigc_psie
+            self.psigc_dv_psie = psigc_dv_psie
             self.cener_l = cener_l
             self.cener_u = cener_u
             self.E_full = E_full
@@ -164,7 +168,7 @@ class PropagationSolver:
                      cener0, cener0_u, cenerf, E00, overlp00, overlpf0, dt, dx, x, v, akx2)
         self.report_static(stat)
 
-        dyn = self.dynamic_state_factory(0, psi, 0.0)
+        dyn = self.dynamic_state_factory(0, psi, 0.0, 1.0)
         self.report_dynamic(dyn)
 
         # main propagation loop
@@ -186,17 +190,18 @@ class PropagationSolver:
             emin_u = stat.v[1][0]
 
             t = stat.dt * dyn.l
+            dyn.freq_mult = self.freq_multiplier(stat)
 
             # Here we're transforming the problem to the one for psi_omega
             psi_omega = []
-            exp_L = cmath.exp(1j * math.pi * self.nu_L * t)
+            exp_L = cmath.exp(1j * math.pi * self.nu_L * dyn.freq_mult * t)
             psi_omega_l = dyn.psi[0] / exp_L
             psi_omega.append(psi_omega_l)
             psi_omega_u = dyn.psi[1] * exp_L
             psi_omega.append(psi_omega_u)
 
             # New energy ranges
-            eL = self.nu_L * phys_base.Hz_to_cm / 2.0
+            eL = self.nu_L * dyn.freq_mult * phys_base.Hz_to_cm / 2.0
             emax_l_omega = emax_l + self.E0 + eL
             emin_l_omega = emin_l - self.E0 + eL
 
@@ -223,6 +228,7 @@ class PropagationSolver:
                 psi_omega[1] /= math.sqrt(abs(cnorm))
 
             psigc_psie = math_base.cprod(psi_omega[1], psi_omega[0], stat.dx, self.np)
+            psigc_dv_psie = math_base.cprod3(psi_omega[1], stat.v[0][1] - stat.v[1][1], psi_omega[0], stat.dx, self.np)
 
             # converting back to psi
             dyn.psi[0] = psi_omega[0] * exp_L
@@ -242,7 +248,7 @@ class PropagationSolver:
 
             time_after = datetime.datetime.now()
 
-            instr = PropagationSolver.InstrumentationOutputData(moms, cnorm_l, cnorm_u, psigc_psie,
+            instr = PropagationSolver.InstrumentationOutputData(moms, cnorm_l, cnorm_u, psigc_psie, psigc_dv_psie,
                          cener_l, cener_u, E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after)
 
             res = self.process_instrumentation(instr)

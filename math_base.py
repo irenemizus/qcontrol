@@ -49,6 +49,25 @@ def cprod2(cx1, cx, dx, np):
     return numpy.vdot(cx1, cx1cx) * dx
 
 
+def cprod3(cx1, cx, cx2, dx, np):
+    """ Calculates cnorm3 = < cx1 | cx | cx2>
+        INPUT
+        cx1 complex vector of length np
+        cx complex vector of length np
+        cx2 complex vector of length np
+        dx coordinate grid step
+        np number of grid points
+        OUTPUT
+        cnorm3 = < cx1 | cx | cx2> """
+
+    assert cx1.size == np
+    assert cx.size == np
+    assert cx2.size == np
+
+    cx1cx = numpy.multiply(cx1, cx)
+    return numpy.vdot(cx2, cx1cx) * dx
+
+
 def initak(n, dx, iorder):
     """ Initializes an array ak, which can be used for
         multiplication in the frequency domain of an FFT.

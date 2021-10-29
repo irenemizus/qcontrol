@@ -83,6 +83,11 @@ Options:
                               to the excited one under the influence of external
                               laser field with controlled envelope form (by the local control
                               algorithm) and a constant chirp
+    task_subtype
+        subtype of the calculation task:
+        "goal_population"   - a subtype of a "local control" task, when the goal operator is A = / 0  0 \  (by default)
+                                                                                                 \ 0  1 /
+        "goal_projection"   - a subtype of a "local control" task, when the goal operator is A = P_g + P_e
     k_E
         aspect ratio for the inertial "force" in equation for the laser field energy in sec^(-2).
         Applicable for the task_type = "local_control", only. For all other cases is a dummy variable
@@ -308,8 +313,8 @@ def main(argv):
     elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.LOCAL_CONTROL:
         if conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GOAL_POPULATION:
             print("A local control with goal population task begins...")
-        elif conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GOAL_MOMENTUM:
-            print("A local control with goal momentum task begins...")
+        elif conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GOAL_PROJECTION:
+            print("A local control with goal projection task begins...")
         else:
             raise RuntimeError("Impossible case in the TaskSubType class")
         if conf.fitter.impulses_number != 1:

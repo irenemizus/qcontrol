@@ -19,10 +19,10 @@
   },
   "fitter": {
     "task_type": "local_control",
-    "task_subtype": "goal_population",
+    "task_subtype": "goal_projection",
     "k_E": 1e29,
-    "lamb": 4e14,
-    "pow": 0.8,
+    "lamb": 8e14,
+    "pow": 0.65,
     "epsilon": 1e-15,
     "impulses_number": 2,
     "delay": 600e-15,

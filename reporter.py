@@ -10,16 +10,16 @@ class Reporter:
     def plot(self, psi, t, x, np):
         raise NotImplementedError()
 
-    def plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
+    def plot_mom(self, t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max):
         raise NotImplementedError()
 
     def plot_up(self, psi, t, x, np):
         raise NotImplementedError()
 
-    def plot_mom_up(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
+    def plot_mom_up(self, t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max):
         raise NotImplementedError()
 
-    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         raise NotImplementedError()
 
@@ -67,26 +67,26 @@ class TableReporter(Reporter):
             f_real.flush()
 
     @staticmethod
-    def __plot_mom_file(t, momx, momx2, momp, momp2, ener, E, overlp, tot, abs_psi_max, real_psi_max, file_mom):
+    def __plot_mom_file(t, momx, momx2, momp, momp2, ener, E, freq_mult, overlp, tot, abs_psi_max, real_psi_max, file_mom):
         """ Plots expectation values of the current x, x*x, p and p*p """
-        file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(
-            t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, abs(overlp), tot, abs_psi_max,
+        file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(
+            t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, freq_mult, abs(overlp), tot, abs_psi_max,
             real_psi_max))
         file_mom.flush()
 
     def plot(self, psi, t, x, np):
         self.__plot_file(psi[0], t, x, np, self.f_abs, self.f_real)
 
-    def plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
-        self.__plot_mom_file(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, E, overlp, ener_tot,
-                                              abs_psi_max, real_psi_max, self.f_mom)
+    def plot_mom(self, t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max):
+        self.__plot_mom_file(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, E, freq_mult, overlp,
+                             ener_tot, abs_psi_max, real_psi_max, self.f_mom)
 
     def plot_up(self, psi, t, x, np):
         self.__plot_file(psi[1], t, x, np, self.f_abs_up, self.f_real_up)
 
-    def plot_mom_up(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
-        self.__plot_mom_file(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, E, overlp, overlp_tot,
-                                              abs_psi_max, real_psi_max, self.f_mom_up)
+    def plot_mom_up(self, t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max):
+        self.__plot_mom_file(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, E, freq_mult, overlp,
+                             overlp_tot, abs_psi_max, real_psi_max, self.f_mom_up)
 
     @staticmethod
     def __plot_test_file(l, phi_l, phi_u, f):
@@ -99,13 +99,13 @@ class TableReporter(Reporter):
             f.write("{0}\n".format(phi_u[i]))
 
 
-    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         if l % self.conf_output.mod_fileout == 0 and l >= self.conf_output.lmin:
             self.plot(psi, t, x, np)
             self.plot_up(psi, t, x, np)
-            self.plot_mom(t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max)
-            self.plot_mom_up(t, moms, ener_u, E, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+            self.plot_mom(t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max)
+            self.plot_mom_up(t, moms, ener_u, E, freq_mult, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
 
 
 class PlotReporter(Reporter):
@@ -133,6 +133,7 @@ class PlotReporter(Reporter):
         self.ener_list = []
         self.ener_u_list = []
         self.E_list = []
+        self.freq_mult_list = []
         self.overlp_list = []
         self.overlp_u_list = []
         self.ener_tot_list = []
@@ -315,7 +316,7 @@ class PlotReporter(Reporter):
                                      "Re(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_exc))
 
 
-    def plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
+    def plot_mom(self, t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max):
         self.t_list.append(t)
         self.x_l_list.append(moms.x_l.real)
         self.x2_l_list.append(moms.x2_l.real)
@@ -323,6 +324,7 @@ class PlotReporter(Reporter):
         self.p2_l_list.append(moms.p2_l.real)
         self.ener_list.append(ener)
         self.E_list.append(E)
+        self.freq_mult_list.append(freq_mult)
         self.overlp_list.append(abs(overlp))
         self.ener_tot_list.append(ener_tot)
         self.abs_psi_max_list.append(abs_psi_max)
@@ -353,6 +355,11 @@ class PlotReporter(Reporter):
                                            "Laser field energy envelope", "E",
                                            os.path.join(self.conf_output.out_path, self.conf_output.gr_lf_en))
 
+            # Updating the graph for laser field frequency multiplier
+            self.__plot_tvals_update_graph(self.t_list, self.freq_mult_list,
+                                           "Laser field frequency multiplier", "f",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_lf_fr))
+
             # Updating the graph for lower state population
             self.__plot_tvals_update_graph(self.t_list, self.overlp_list,
                                            "Ground state population", "abs((psi0, psi))",
@@ -374,7 +381,7 @@ class PlotReporter(Reporter):
                                            "real(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_max_grd))
 
 
-    def plot_mom_up(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
+    def plot_mom_up(self, t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max):
         self.t_u_list.append(t)
         self.x_u_list.append(moms.x_u.real)
         self.x2_u_list.append(moms.x2_u.real)
@@ -427,14 +434,14 @@ class PlotReporter(Reporter):
                                            "real(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_max_exc))
 
 
-    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         try:
             if l % self.conf_output.mod_plotout == 0 and l >= self.conf_output.lmin:
                 self.plot(psi, t, x, np)
                 self.plot_up(psi, t, x, np)
-                self.plot_mom(t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max)
-                self.plot_mom_up(t, moms, ener_u, E, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+                self.plot_mom(t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max)
+                self.plot_mom_up(t, moms, ener_u, E, freq_mult, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
                 self.i += 1
         except ValueError as err:
             print_err("A nasty error has occurred during the reporting: ", err)
@@ -449,37 +456,40 @@ class MultipleReporter(Reporter):
         if not conf_output.table.is_empty():
             self.reps.append(TableReporter(conf_output.table))
 
+
     def __enter__(self):
         for rep in self.reps:
             rep.__enter__()
         return self
 
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
+
     def plot(self, psi, t, x, np):
         for rep in self.reps:
-            rep.plot(self, psi, t, x, np)
+            rep.plot(psi, t, x, np)
 
 
-    def plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max):
+    def plot_mom(self, t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max):
         for rep in self.reps:
-            rep.plot_mom(self, t, moms, ener, E, overlp, ener_tot, abs_psi_max, real_psi_max)
+            rep.plot_mom(t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max)
 
 
     def plot_up(self, psi, t, x, np):
         for rep in self.reps:
-            rep.plot_up(self, psi, t, x, np)
+            rep.plot_up(psi, t, x, np)
 
 
-    def plot_mom_up(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max):
+    def plot_mom_up(self, t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max):
         for rep in self.reps:
-            rep.plot_mom(self, t, moms, ener, E, overlp, overlp_tot, abs_psi_max, real_psi_max)
+            rep.plot_mom(t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max)
 
 
-    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         for rep in self.reps:
-            rep.print_time_point(l, psi, t, x, np, moms, ener, ener_u, E, overlp, overlp_u, overlp_tot, ener_tot,
+            rep.print_time_point(l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u)
 

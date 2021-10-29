@@ -8,9 +8,10 @@ import config
 
 class FittingSolver:
     class FitterDynamicState(propagation.PropagationSolver.DynamicState):
-        def __init__(self, l=0, psi=None, E=0.0, E_vel=0.0):
-            super().__init__(l, psi, E)
+        def __init__(self, l=0, psi=None, E=0.0, freq_mult = 1.0, E_vel=0.0, freq_mult_vel = 0.0):
+            super().__init__(l, psi, E, freq_mult)
             self.E_vel = E_vel
+            self.freq_mult_vel = freq_mult_vel
 
     def __init__(
             self,
@@ -33,6 +34,7 @@ class FittingSolver:
         self.milliseconds_full = 0
         self.res_saved = propagation.PropagationSolver.StepReaction.OK
         self.E_patched = 0.0
+        self.freq_mult_patched = 1.0
         self.dAdt_happy = 0.0
 
         conf_prop = conf.fitter.propagation
@@ -42,6 +44,7 @@ class FittingSolver:
             report_dynamic=self.report_dynamic,
             process_instrumentation=self.process_instrumentation,
             laser_field_envelope=self.LaserFieldEnvelope,
+            freq_multiplier=self.FreqMultiplier,
             dynamic_state_factory=self.fitter_dynamic_state_factory,
             conf_prop=conf_prop)
 
@@ -86,7 +89,7 @@ class FittingSolver:
 
         # plotting initial values
         self.reporter.print_time_point(0, stat.psi0, 0.0, stat.x, self.conf.fitter.propagation.np, stat.moms0,
-                                       stat.cener0.real, stat.cener0_u.real, stat.E00.real,
+                                       stat.cener0.real, stat.cener0_u.real, stat.E00.real, 1.0,
                                        stat.overlp00, stat.overlpf0, overlp0_abs, cener0_tot.real,
                                        abs(stat.psi0[0][max_ind_psi_l]), stat.psi0[0][max_ind_psi_l].real,
                                        abs(stat.psi0[1][max_ind_psi_u]), stat.psi0[1][max_ind_psi_u].real)
@@ -102,8 +105,8 @@ class FittingSolver:
         print("Final goal energy: ", abs(stat.cenerf))
 
 
-    def fitter_dynamic_state_factory(self, l, psi, E):
-        return FittingSolver.FitterDynamicState(l, psi, E, 0.0)
+    def fitter_dynamic_state_factory(self, l, psi, E, freq_mult):
+        return FittingSolver.FitterDynamicState(l, psi, E, freq_mult, 0.0, 0.0)
 
 
     def report_dynamic(self, dyn: FitterDynamicState):
@@ -129,12 +132,12 @@ class FittingSolver:
         self.milliseconds_full += milliseconds_per_step
 
         # local control algorithm
-        coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
-        dAdt = self.dyn_ref.E * instr.psigc_psie.imag * coef
-
         if self.conf.fitter.task_type != config.RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL:
             res = propagation.PropagationSolver.StepReaction.OK
-        else:
+            dAdt = 0.0
+        elif self.conf.fitter.task_subtype == config.RootConfiguration.FitterConfiguration.TaskSubType.GOAL_POPULATION:
+            coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
+            dAdt = self.dyn_ref.E * instr.psigc_psie.imag * coef
             if dAdt >= 0.0:
                 res = propagation.PropagationSolver.StepReaction.OK
                 self.dAdt_happy = dAdt
@@ -145,6 +148,32 @@ class FittingSolver:
                     print("Imaginary part in dA/dt is too small and has been replaces by epsilon")
                     self.E_patched = self.dAdt_happy / (self.conf.fitter.epsilon * coef)
                 res = propagation.PropagationSolver.StepReaction.CORRECT
+        else:
+            coef2 = -4.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
+            Sge2 = instr.psigc_psie * instr.psigc_psie
+            Sdvge = instr.psigc_psie * instr.psigc_dv_psie
+            freq_cm = phys_base.Hz_to_cm * self.conf.fitter.propagation.nu_L
+            body = Sdvge + freq_cm * self.dyn_ref.freq_mult * Sge2
+            dAdt = body.imag * coef2
+            if dAdt >= 0.0:
+                res = propagation.PropagationSolver.StepReaction.OK
+                self.dAdt_happy = dAdt
+            else:
+                if Sge2.imag > self.conf.fitter.epsilon:
+                    self.freq_mult_patched = (self.dAdt_happy - coef2 * Sdvge.imag) / (Sge2.imag * freq_cm * coef2)
+                elif Sge2.imag > 0.0:
+                    print("Imaginary part in dA/dt is positive but too small and has been replaces by epsilon")
+                    self.freq_mult_patched = (self.dAdt_happy - coef2 * Sdvge.imag) / (self.conf.fitter.epsilon * freq_cm * coef2)
+                elif Sge2.imag < -self.conf.fitter.epsilon:
+                    self.freq_mult_patched = - Sdvge.imag / (Sge2.imag * freq_cm)
+                else:
+                    print("Imaginary part in dA/dt is negative but too small and has been replaces by -epsilon")
+                    self.freq_mult_patched = Sdvge.imag / (self.conf.fitter.epsilon * freq_cm)
+
+                if (self.freq_mult_patched < 0.0):
+                    self.freq_mult_patched = 0.0
+
+                res = propagation.PropagationSolver.StepReaction.CORRECT
 
         max_ind_psi_l = numpy.argmax(abs(self.dyn_ref.psi[0]))
         max_ind_psi_u = numpy.argmax(abs(self.dyn_ref.psi[1]))
@@ -152,7 +181,7 @@ class FittingSolver:
         # plotting the result
         self.reporter.print_time_point(self.dyn_ref.l, self.dyn_ref.psi, t, self.stat_saved.x,
                                        self.conf.fitter.propagation.np, instr.moms,
-                                       instr.cener_l.real, instr.cener_u.real, self.dyn_ref.E,
+                                       instr.cener_l.real, instr.cener_u.real, self.dyn_ref.E, self.dyn_ref.freq_mult,
                                        instr.overlp0, instr.overlpf, overlp_abs, cener.real,
                                        abs(self.dyn_ref.psi[0][max_ind_psi_l]), self.dyn_ref.psi[0][max_ind_psi_l].real,
                                        abs(self.dyn_ref.psi[1][max_ind_psi_u]), self.dyn_ref.psi[1][max_ind_psi_u].real)
@@ -175,7 +204,8 @@ class FittingSolver:
             print("overlap with final goal wavefunction = ", abs(instr.overlpf))
             print("energy on the lower state = ", instr.cener_l.real)
             print("energy on the upper state = ", instr.cener_u.real)
-            print("Time derivation of the expectation value from the goal operator A = ", dAdt)
+            if self.conf.fitter.task_type == config.RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL:
+                print("Time derivation of the expectation value from the goal operator A = ", dAdt)
 
             print(
                 "milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(
@@ -230,3 +260,31 @@ class FittingSolver:
             E = self.E_patched
 
         return E
+
+
+    # calculating a frequency multiplier value at the given time value
+    def FreqMultiplier(self, stat: propagation.PropagationSolver.StaticState):
+        # local control algorithm (with A = Pg + Pe)
+        if self.conf.fitter.task_type == config.RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL and \
+                self.conf.fitter.task_subtype == config.RootConfiguration.FitterConfiguration.TaskSubType.GOAL_PROJECTION:
+            if self.freq_mult_patched < 0:
+                raise RuntimeError("freq_mult_patched has to be positive or zero")
+
+            if self.dyn_ref.freq_mult < 0:
+                raise RuntimeError("Frequency multiplicator has to be positive or zero")
+
+            # solving dynamic equation for frequency multiplicator
+            # linear difference to the "desired" value
+            first = self.dyn_ref.freq_mult - self.freq_mult_patched
+            # decay term
+            second = self.dyn_ref.freq_mult_vel * math.pow(self.freq_mult_patched / self.dyn_ref.freq_mult, self.conf.fitter.pow)
+
+            # Euler
+            freq_mult_acc = -self.conf.fitter.k_E * first - self.conf.fitter.lamb * second
+            self.dyn_ref.freq_mult_vel += freq_mult_acc * stat.dt
+            freq_mult = self.dyn_ref.freq_mult + self.dyn_ref.freq_mult_vel * stat.dt
+#            freq_mult = self.freq_mult_patched
+        else:
+            freq_mult = 1.0
+
+        return freq_mult

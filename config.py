@@ -72,6 +72,7 @@ class RootConfiguration(ConfigurationBase):
             self._data["gr_moms_grd"] = "fig_moms_grd.pdf"
             self._data["gr_ener_grd"] = "fig_ener_grd.pdf"
             self._data["gr_lf_en"] = "fig_lf_en.pdf"
+            self._data["gr_lf_fr"] = "fig_lf_fr.pdf"
             self._data["gr_overlp_grd"] = "fig_overlp_grd.pdf"
             self._data["gr_ener_tot"] = "fig_ener_tot.pdf"
             self._data["gr_abs_max_grd"] = "fig_abs_max_grd.pdf"
@@ -179,7 +180,7 @@ class RootConfiguration(ConfigurationBase):
 
         class TaskSubType(Enum):
             GOAL_POPULATION = 0
-            GOAL_MOMENTUM = 1
+            GOAL_PROJECTION = 1
 
             @staticmethod
             def from_int(i):
