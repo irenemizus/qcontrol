@@ -32,7 +32,6 @@ class FittingSolver:
         self.stat_saved = propagation.PropagationSolver.StaticState()
         self.dyn_ref = FittingSolver.FitterDynamicState()
         self.milliseconds_full = 0
-        self.res_saved = propagation.PropagationSolver.StepReaction.OK
         self.E_patched = 0.0
         self.freq_mult_patched = 1.0
         self.dAdt_happy = 0.0
@@ -213,9 +212,6 @@ class FittingSolver:
 
             if res != propagation.PropagationSolver.StepReaction.OK:
                 print("CORRECTING THE ITERATION")
-
-        self.res_saved = res
-        return res
 
 
     # calculating envelope of the laser field energy at the given time value

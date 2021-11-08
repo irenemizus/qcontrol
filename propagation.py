@@ -177,90 +177,79 @@ class PropagationSolver:
 
 
     def step(self, stat: StaticState, dyn: DynamicState):
-        dyn_bu = copy.deepcopy(dyn)
-        take_back = True
-        while take_back:
-            time_before = datetime.datetime.now()
+        time_before = datetime.datetime.now()
 
-            # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_l
-            emax_l = stat.v[0][1][0] + abs(stat.akx2[int(self.np / 2 - 1)]) + 2.0
-            emin_l = stat.v[0][0]
-            # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_u
-            emax_u = stat.v[1][1][0] + abs(stat.akx2[int(self.np / 2 - 1)]) + 2.0
-            emin_u = stat.v[1][0]
+        # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_l
+        emax_l = stat.v[0][1][0] + abs(stat.akx2[int(self.np / 2 - 1)]) + 2.0
+        emin_l = stat.v[0][0]
+        # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_u
+        emax_u = stat.v[1][1][0] + abs(stat.akx2[int(self.np / 2 - 1)]) + 2.0
+        emin_u = stat.v[1][0]
 
-            t = stat.dt * dyn.l
-            dyn.freq_mult = self.freq_multiplier(stat)
+        t = stat.dt * dyn.l
+        dyn.freq_mult = self.freq_multiplier(stat)
 
-            # Here we're transforming the problem to the one for psi_omega
-            psi_omega = []
-            exp_L = cmath.exp(1j * math.pi * self.nu_L * dyn.freq_mult * t)
-            psi_omega_l = dyn.psi[0] / exp_L
-            psi_omega.append(psi_omega_l)
-            psi_omega_u = dyn.psi[1] * exp_L
-            psi_omega.append(psi_omega_u)
+        # Here we're transforming the problem to the one for psi_omega
+        psi_omega = []
+        exp_L = cmath.exp(1j * math.pi * self.nu_L * dyn.freq_mult * t)
+        psi_omega_l = dyn.psi[0] / exp_L
+        psi_omega.append(psi_omega_l)
+        psi_omega_u = dyn.psi[1] * exp_L
+        psi_omega.append(psi_omega_u)
 
-            # New energy ranges
-            eL = self.nu_L * dyn.freq_mult * phys_base.Hz_to_cm / 2.0
-            emax_l_omega = emax_l + self.E0 + eL
-            emin_l_omega = emin_l - self.E0 + eL
+        # New energy ranges
+        eL = self.nu_L * dyn.freq_mult * phys_base.Hz_to_cm / 2.0
+        emax_l_omega = emax_l + self.E0 + eL
+        emin_l_omega = emin_l - self.E0 + eL
 
-            emax_u_omega = emax_u + self.E0 - eL
-            emin_u_omega = emin_u - self.E0 - eL
+        emax_u_omega = emax_u + self.E0 - eL
+        emin_u_omega = emin_u - self.E0 - eL
 
-            emax = max(emax_l_omega, emin_l_omega, emax_u_omega, emin_u_omega)
-            emin = min(emax_l_omega, emin_l_omega, emax_u_omega, emin_u_omega)
+        emax = max(emax_l_omega, emin_l_omega, emax_u_omega, emin_u_omega)
+        emin = min(emax_l_omega, emin_l_omega, emax_u_omega, emin_u_omega)
 
-            t_sc = stat.dt * (emax - emin) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
+        t_sc = stat.dt * (emax - emin) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
 
-            dyn.E = self.laser_field_envelope(stat, dyn)
-            E_full = dyn.E * exp_L * exp_L
+        dyn.E = self.laser_field_envelope(stat, dyn)
+        E_full = dyn.E * exp_L * exp_L
 
-            psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, stat.v, stat.akx2, emin, emax, dyn.E, eL)
+        psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, stat.v, stat.akx2, emin, emax, dyn.E, eL)
 
-            cnorm_l = math_base.cprod(psi_omega[0], psi_omega[0], stat.dx, self.np)
-            cnorm_u = math_base.cprod(psi_omega[1], psi_omega[1], stat.dx, self.np)
-            cnorm = cnorm_l + cnorm_u
+        cnorm_l = math_base.cprod(psi_omega[0], psi_omega[0], stat.dx, self.np)
+        cnorm_u = math_base.cprod(psi_omega[1], psi_omega[1], stat.dx, self.np)
+        cnorm = cnorm_l + cnorm_u
 
-            # renormalization
-            if cnorm > 0.0:
-                psi_omega[0] /= math.sqrt(abs(cnorm))
-                psi_omega[1] /= math.sqrt(abs(cnorm))
+        # renormalization
+        if cnorm > 0.0:
+            psi_omega[0] /= math.sqrt(abs(cnorm))
+            psi_omega[1] /= math.sqrt(abs(cnorm))
 
-            psigc_psie = math_base.cprod(psi_omega[1], psi_omega[0], stat.dx, self.np)
-            psigc_dv_psie = math_base.cprod3(psi_omega[1], stat.v[0][1] - stat.v[1][1], psi_omega[0], stat.dx, self.np)
+        psigc_psie = math_base.cprod(psi_omega[1], psi_omega[0], stat.dx, self.np)
+        psigc_dv_psie = math_base.cprod3(psi_omega[1], stat.v[0][1] - stat.v[1][1], psi_omega[0], stat.dx, self.np)
 
-            # converting back to psi
-            dyn.psi[0] = psi_omega[0] * exp_L
-            dyn.psi[1] = psi_omega[1] / exp_L
+        # converting back to psi
+        dyn.psi[0] = psi_omega[0] * exp_L
+        dyn.psi[1] = psi_omega[1] / exp_L
 
-            # calculating of a current energy
-            phi = phys_base.hamil2D_orig(dyn.psi, stat.v, stat.akx2, self.np, E_full)
+        # calculating of a current energy
+        phi = phys_base.hamil2D_orig(dyn.psi, stat.v, stat.akx2, self.np, E_full)
 
-            cener_l = math_base.cprod(phi[0], dyn.psi[0], stat.dx, self.np)
-            cener_u = math_base.cprod(phi[1], dyn.psi[1], stat.dx, self.np)
+        cener_l = math_base.cprod(phi[0], dyn.psi[0], stat.dx, self.np)
+        cener_u = math_base.cprod(phi[1], dyn.psi[1], stat.dx, self.np)
 
-            overlp0 = math_base.cprod(stat.psi0[0], dyn.psi[0], stat.dx, self.np)
-            overlpf = math_base.cprod(stat.psif[0], dyn.psi[1], stat.dx, self.np)
+        overlp0 = math_base.cprod(stat.psi0[0], dyn.psi[0], stat.dx, self.np)
+        overlpf = math_base.cprod(stat.psif[0], dyn.psi[1], stat.dx, self.np)
 
-            # calculating of expectation values
-            moms = phys_base.exp_vals_calc(dyn.psi, stat.x, stat.akx2, stat.dx, self.np, self.m)
+        # calculating of expectation values
+        moms = phys_base.exp_vals_calc(dyn.psi, stat.x, stat.akx2, stat.dx, self.np, self.m)
 
-            time_after = datetime.datetime.now()
+        time_after = datetime.datetime.now()
 
-            instr = PropagationSolver.InstrumentationOutputData(moms, cnorm_l, cnorm_u, psigc_psie, psigc_dv_psie,
-                         cener_l, cener_u, E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after)
+        instr = PropagationSolver.InstrumentationOutputData(moms, cnorm_l, cnorm_u, psigc_psie, psigc_dv_psie,
+                     cener_l, cener_u, E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after)
 
-            res = self.process_instrumentation(instr)
-            #if res == PropagationSolver.StepReaction.OK:
-            take_back = False
-            #elif res == PropagationSolver.StepReaction.REPEAT:
-            #    take_back = True
-            #    dyn.__dict__ = dyn_bu.__dict__.copy()
-            #else:
-            #    raise RuntimeError("Impossible case in the StepReaction class")
-
-            self.report_dynamic(dyn)
+        self.process_instrumentation(instr)
+        self.report_dynamic(dyn)
 
 
 
