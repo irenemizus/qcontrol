@@ -132,6 +132,9 @@ class RootConfiguration(ConfigurationBase):
                 self._data["a"] = 1.0   # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
                 self._data["De"] = 20000.0  # 1/cm
                 self._data["x0p"] = -0.17   # a_0
+                self._data["a_e"] = 1.0
+                self._data["De_e"] = 10000.0
+                self._data["Du"] = 20000.0
                 self._data["x0"] = 0.0  # TODO: to fix x0 != 0
                 self._data["p0"] = 0.0  # TODO: to fix p0 != 0
                 self._data["L"] = 5.0   # a_0

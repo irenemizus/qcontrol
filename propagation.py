@@ -41,6 +41,9 @@ class PropagationSolver:
         self.a = conf_prop.a
         self.De = conf_prop.De
         self.x0p = conf_prop.x0p
+        self.a_e = conf_prop.a_e
+        self.De_e = conf_prop.De_e
+        self.Du = conf_prop.Du
         self.E0 = conf_prop.E0
         self.t0 = conf_prop.t0
         self.sigma = conf_prop.sigma
@@ -118,7 +121,7 @@ class PropagationSolver:
         x = math_base.coord_grid(dx, self.np)
 
         # evaluating of potential(s)
-        v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p)
+        v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du)
 
         # evaluating of k vector
         akx2 = math_base.initak(self.np, dx, 2)
@@ -141,7 +144,7 @@ class PropagationSolver:
         cener0_u = math_base.cprod(phi0_u, psi0[1], dx, self.np)
 
         # evaluating of the final goal -- upper state wavefunction
-        psif = self.psi_init(x, self.np, self.x0p, self.p0, self.m, self.De / 2.0, self.a)
+        psif = self.psi_init(x, self.np, self.x0p, self.p0, self.m, self.De_e, self.a_e)
 
         # final normalization check
         cnormf = math_base.cprod(psif[0], psif[0], dx, self.np)

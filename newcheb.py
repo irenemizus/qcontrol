@@ -125,16 +125,29 @@ Options:
             type of the potentials ("morse" or "harmonic")
             by default, the "morse" type is used
         a
-            scaling coefficient for dimensional problem
+            ground state scaling coefficient for dimensional problem
             by default, is equal to 1.0 1/a_0 -- for "morse" potential,
                                         a_0 -- for "harmonic" potential
         De
-            dissociation energy value for dimensional problem
-            by default, is equal to 20000.0 1/cm for "morse" potential
+            ground state dissociation energy value for dimensional problem
+            by default, is equal to 20000.0 1/cm for "morse" potential,
                         is a dummy variable for "harmonic" potential
         x0p
             shift of the upper potential relative to the ground one
-            by default, is equal to -0.17 a_0
+            by default, is equal to -0.17 a_0 for "morse" potential,
+                        is a dummy variable for "harmonic" potential
+        a_e
+            excited state scaling coefficient for dimensional problem
+            by default, is equal to 1.0 1/a_0 -- for "morse" potential,
+                        is a dummy variable for "harmonic" potential
+        De_e
+            excited state dissociation energy value for dimensional problem
+            by default, is equal to 10000.0 1/cm for "morse" potential,
+                        is a dummy variable for "harmonic" potential
+        Du
+            energy shift between the minima of the upper potential and the ground one
+            by default, is equal to 20000.0 1/cm for "morse" potential,
+                        is a dummy variable for "harmonic" potential
         wf_type
             type of the wavefunctions ("morse" or "harmonic")
             by default, the "morse" type is used
