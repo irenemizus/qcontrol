@@ -1,0 +1,52 @@
+{
+  "output": {
+    "table": {
+      "lmin": 0,
+      "mod_stdout": 500,
+      "mod_fileout": 100,
+      "out_path": "output",
+      "tab_abs": "fort.21",
+      "tab_real": "fort.22",
+      "tab_mom": "fort.23"
+    },
+    "plot": {
+      "lmin": 0,
+      "mod_plotout": 100,
+      "mod_update": 20,
+      "number_plotout": 15,
+      "out_path": "output/plots"
+    }
+  },
+  "fitter": {
+    "task_type": "filtering",
+    "task_subtype": "goal_projection",
+    "k_E": 1e29,
+    "lamb": 8e14,
+    "pow": 0.65,
+    "epsilon": 1e-15,
+    "impulses_number": 0,
+    "delay": 600e-15,
+    "propagation": {
+      "m": 0.5,
+      "pot_type": "morse",
+      "a": 1.0,
+      "De": 20000,
+      "x0p": 0.0,
+      "a_e": 0.0,
+      "De_e": 0.0,
+      "Du": 0.0,
+      "wf_type": "harmonic",
+      "x0": 0.0,
+      "p0": 0.0,
+      "L": 5.0,
+      "T": 2240e-15,
+      "np": 2048,
+      "nch": 64,
+      "nt": 900000,
+      "E0": 0.0,
+      "t0": 300e-15,
+      "sigma": 50e-15,
+      "nu_L": 0.0
+    }
+  }
+}

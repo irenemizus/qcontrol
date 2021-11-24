@@ -127,6 +127,7 @@ class RootConfiguration(ConfigurationBase):
                 super().__init__()
                 # default input values
                 self._data["m"] = 0.5   # Dalton
+                # 1.0 -- for a model harmonic oscillator
                 self._data["wf_type"] = RootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE
                 self._data["pot_type"] = RootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE
                 self._data["a"] = 1.0   # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
@@ -146,6 +147,7 @@ class RootConfiguration(ConfigurationBase):
                 # 1200 fs -- for two laser pulses;
                 # 280 (600) fs -- for the working transition between PECs and LC;
                 # 2240 fs -- for filtering on the ground PEC (99.16% quality)
+                # 0.1 pi (half period units) -- for a model harmonic oscillator
                 self._data["np"] = 1024
                 # 1024 -- for the working transition between PECs and controls;
                 # 128 -- for a model harmonic oscillator with a = 1.0;
@@ -171,6 +173,7 @@ class RootConfiguration(ConfigurationBase):
             FILTERING = 1
             INTUITIVE_CONTROL = 2
             LOCAL_CONTROL = 3
+            SINGLE_POT = 4
 
             @staticmethod
             def from_int(i):

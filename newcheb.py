@@ -21,8 +21,8 @@ Options:
         In the key "table":
         lmin
             number of a time step, from which the result should be written to a file.
-            A negative value will be considered as 0
-            by default, is equal to 0
+            A negative value will be considered as 0.
+            By default, is equal to 0
         mod_stdout
             step of output to stdout (to write to stdout each <val>-th time step).
             By default, is equal to 500
@@ -30,25 +30,25 @@ Options:
             step of writing in file (to write in file each <val>-th time step).
             By default, is equal to 100
         tab_abs
-            output file name, to which absolute values of wavefunctions should be written
-            by default, is equal to "output/fort.21"
+            output file name, to which absolute values of wavefunctions should be written.
+            By default, is equal to "output/fort.21"
         tab_real
-            output file name, to which real parts of wavefunctions should be written
-            by default, is equal to "output/fort.22"
+            output file name, to which real parts of wavefunctions should be written.
+            By default, is equal to "output/fort.22"
         tab_mom
-            output file name, to which expectation values of x, x*x, p, p*p should be written
-            by default, is equal to "output/fort.23"
+            output file name, to which expectation values of x, x*x, p, p*p should be written.
+            By default, is equal to "output/fort.23"
         out_path
-            a path name for the output tables
-            by default, is equal to "output"
+            a path name for the output tables.
+            By default, is equal to "output"
 
     key "plot"
         a subsection, which has to be specified if plotting of the resulting figures is needed.
         In the key "plot":
         lmin
             number of a time step, from which the result should be plotted.
-            A negative value will be considered as 0
-            by default, is equal to 0
+            A negative value will be considered as 0.
+            By default, is equal to 0
         mod_plotout
             step of plotting graphs with x-axis = time (to plot to file each <val>-th time step).
             By default, is equal to 500
@@ -60,11 +60,11 @@ Options:
             for the absolute and real values of wavefunctions. Must be larger than 1
             By default, is equal to 15
         out_path
-            a path name for the output plots
-            by default, is equal to "output/plots"
+            a path name for the output plots.
+            By default, is equal to "output/plots"
         gr_*
-            output file name, to which the corresponding result should be plotted
-            by default, is equal to "output/plots/fig_*.pdf"
+            output file name, to which the corresponding result should be plotted.
+            By default, is equal to "output/plots/fig_*.pdf"
 
     in key "fitter":
     task_type
@@ -73,6 +73,8 @@ Options:
                               to the excited one under the influence of external
                               non-controlled laser field with gaussian envelope and a constant
                               chirp (by default)
+        "single_pot"        - simple propagation of an initial harmonic / morse wavefunction
+                              shifted from the potential minima in a harmonic / morse potential
         "filtering"         - filtering task
                               in this case E0 and nu_L are zeroing mandatory
         "intuitive_control" - calculation of transitions from the ground state
@@ -90,80 +92,79 @@ Options:
         "goal_projection"   - a subtype of a "local control" task, when the goal operator is A = P_g + P_e
     k_E
         aspect ratio for the inertial "force" in equation for the laser field energy in sec^(-2).
-        Applicable for the task_type = "local_control", only. For all other cases is a dummy variable
-        by default, is equal to 1e29
+        Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
+        By default, is equal to 1e29
     lamb
         aspect ratio for the decay term in equation for the laser field energy in 1 / sec.
-        Applicable for the task_type = "local_control", only. For all other cases is a dummy variable
-        by default, is equal to 4e14
+        Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
+        By default, is equal to 4e14
     pow
         power value in the decay term in equation for the laser field energy.
-        Applicable for the task_type = "local_control", only. For all other cases is a dummy variable
-        by default, is equal to 0.8
+        Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
+        By default, is equal to 0.8
     epsilon
         small parameter for cutting of an imaginary part in dA/dt.
-        Applicable for the task_type = "local_control", only. For all other cases is a dummy variable
-        by default, is equal to 1e-15
+        Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
+        By default, is equal to 1e-15
     impulses_number
-        number of laser pulses in the "intuitive_control" task type
-        the values more than 1 are applicable for the task_type = "intuitive_control", only.
-        In this case if a value less than 2 provided, it will be replaced by 2
-        for the task_type = "filtering" it will be replaced by 0
-        for the task_type = "trans_wo_control" or "local_control" it will be replaced by 1
-        by default, is equal to 1
+        number of laser pulses in the "intuitive_control" task type.
+        The values more than 1 are applicable for the task_type = "intuitive_control", only.
+        In this case if a value less than 2 provided, it will be replaced by 2.
+        For the task_type = "filtering"  / "single_morse" / "single_harmonic" it will be replaced by 0.
+        For the task_type = "trans_wo_control" or "local_control" it will be replaced by 1.
+        By default, is equal to 1
     delay
-        time delay between the laser pulses in sec
-        is a dummy variable for impulses_number less than 2
-        by default, is equal to 600e-15
+        time delay between the laser pulses in sec.
+        Is a dummy variable for impulses_number less than 2.
+        By default, is equal to 600e-15
     propagation
         a dictionary that contains the parameters, which are used in a simple propagation task with laser field:
         m
             reduced mass value of the considered system
-            for dimensionless problem, should be equal to 1.0
             by default, is equal to 0.5 Dalton
         pot_type
             type of the potentials ("morse" or "harmonic")
             by default, the "morse" type is used
         a
-            ground state scaling coefficient for dimensional problem
+            ground state scaling coefficient
             by default, is equal to 1.0 1/a_0 -- for "morse" potential,
                                         a_0 -- for "harmonic" potential
         De
-            ground state dissociation energy value for dimensional problem
+            ground state dissociation energy value
             by default, is equal to 20000.0 1/cm for "morse" potential,
                         is a dummy variable for "harmonic" potential
         x0p
             shift of the upper potential relative to the ground one
-            by default, is equal to -0.17 a_0 for "morse" potential,
-                        is a dummy variable for "harmonic" potential
+            by default, is equal to -0.17 a_0 for double potentials,
+                        is identically equated to zero for filtering / single morse / single harmonic tasks
         a_e
-            excited state scaling coefficient for dimensional problem
+            excited state scaling coefficient
             by default, is equal to 1.0 1/a_0 -- for "morse" potential,
-                        is a dummy variable for "harmonic" potential
+                        is equal to 1.0 a_0 -- for "harmonic" potential,
+                        is identically equated to zero for filtering / single morse / single harmonic tasks
         De_e
-            excited state dissociation energy value for dimensional problem
+            excited state dissociation energy value
             by default, is equal to 10000.0 1/cm for "morse" potential,
-                        is a dummy variable for "harmonic" potential
+                        is a dummy variable for "harmonic" potential,
+                        is identically equated to zero for filtering / single morse / single harmonic tasks
         Du
             energy shift between the minima of the upper potential and the ground one
-            by default, is equal to 20000.0 1/cm for "morse" potential,
-                        is a dummy variable for "harmonic" potential
+            by default, is equal to 20000.0 1/cm for double potentials,
+                        is identically equated to zero for filtering / single morse / single harmonic tasks
         wf_type
             type of the wavefunctions ("morse" or "harmonic")
             by default, the "morse" type is used
         x0
-            coordinate initial conditions for dimensionless problem
+            coordinate initial condition
             by default, is equal to 0.0
         p0
-            momentum initial conditions for dimensionless problem
+            momentum initial condition
             by default, is equal to 0.0
         L
-            spatial range of the problem (in a_0 if applicable)
-            for dimensionless problem, should be equal to 15.0
+            spatial range of the problem in a_0
             by default, is equal to 5.0 a_0
         T
-            time range of the problem in sec or in pi (half periods) units
-            for dimensionless problem, should be equal to 0.1
+            time range of the problem in sec
             by default, is equal to 600e15 s
         np
             number of collocation points; must be a power of 2
@@ -176,16 +177,20 @@ Options:
             by default, is equal to 420000
         E0
             amplitude value of the laser field energy envelope in 1 / cm
-            by default, is equal to 71.54 1 / cm
+            by default, is equal to 71.54 1 / cm,
+                        is identically equated to zero for filtering / single morse / single harmonic tasks
         t0
             initial time, when the laser field reaches its maximum value, in sec
+            is a dummy variable for filtering / single morse / single harmonic tasks
             by default, is equal to 300e-15 s
         sigma
             scaling parameter of the laser field envelope in sec
+            is a dummy variable for filtering / single morse / single harmonic tasks
             by default, is equal to 50e-15 s
         nu_L
             basic frequency of the laser field in Hz
-            by default, is equal to 0.29297e15 Hz
+            by default, is equal to 0.29297e15 Hz,
+                        is identically equated to zero for filtering / single morse / single harmonic tasks
 
 Examples:
     python newcheb.py --jsonfile "input.json"
@@ -291,9 +296,11 @@ def main(argv):
     if conf.fitter.propagation.pot_type == conf.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
         print("Morse potentials are used")
         pot = double_morse.pot
+        psi_goal = double_morse.psi_init
     elif conf.fitter.propagation.pot_type == conf.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
         print("Harmonic potentials are used")
         pot = harmonic.pot
+        psi_goal = harmonic.psi_init
     else:
         raise RuntimeError("Impossible case in the PotentialType class")
 
@@ -306,13 +313,20 @@ def main(argv):
     else:
         raise RuntimeError("Impossible case in the WaveFuncType class")
 
-    if conf.fitter.task_type == conf.FitterConfiguration.TaskType.FILTERING:
-        print("A filtering task begins. E0 ans nu_L values are zeroed...")
+    if conf.fitter.task_type == conf.FitterConfiguration.TaskType.FILTERING or \
+            conf.fitter.task_type == conf.FitterConfiguration.TaskType.SINGLE_POT:
+        print("A '%s' task begins. E0 and nu_L values are zeroed..." % conf.fitter.task_type)
         conf.fitter.propagation.E0 = 0.0
         conf.fitter.propagation.nu_L = 0.0
         if conf.fitter.impulses_number != 0:
-            print("For the task_type = 'filtering' the impulses_number value will be replaced by zero")
+            print("For the task_type = '%s' the impulses_number value will be replaced by zero" % conf.fitter.task_type)
             conf.fitter.impulses_number = 0
+        print("For the task_type = '%s' the excited state is identically equated to zero; "
+              "thus, the x0p, De_e, a_e and Du parameters will be zeroed." % conf.fitter.task_type)
+        conf.fitter.propagation.De_e = 0.0
+        conf.fitter.propagation.Du = 0.0
+        conf.fitter.propagation.x0p = 0.0
+        conf.fitter.propagation.a_e = 0.0
     elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.TRANS_WO_CONTROL:
         print("An ordinary transition task begins...")
         if conf.fitter.impulses_number != 1:
@@ -338,7 +352,7 @@ def main(argv):
 
     # main calculation part
     with reporter.MultipleReporter(conf.output) as reporter_impl:
-        fitting_solver = fitter.FittingSolver(conf, psi_init, pot, reporter_impl,
+        fitting_solver = fitter.FittingSolver(conf, psi_init, psi_goal, pot, reporter_impl,
                                               _warning_collocation_points,
                                               _warning_time_steps
                                               )

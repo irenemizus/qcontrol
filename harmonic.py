@@ -22,25 +22,30 @@ def pot(x, np, m, De, a, x0p, De_e, a_e, Du):
         v       real vector of length np describing the dimensionless potential V(X) """
 
     v = []
-    # stiffness coefficient for dimensional case
+    # stiffness coefficient for dimensional case on the lower PEC
     k_s = hart_to_cm / m / dalt_to_au / pow(a, 4.0)
     # k_s = m * omega_0 * omega_0 * dalt_to_au / hart_to_cm
-    # scaling factor for dimensional case
+    # scaling factor for dimensional case on the lower PEC
     # a = math.sqrt(hart_to_cm / m / omega_0 / dalt_to_au)
 
-    # harmonic frequency  for dimensional case
+    # harmonic frequency for dimensional case on the lower PEC
     omega_0 = k_s * a * a
 
     # theoretical ground energy value
     e_0 = omega_0 / 2.0
     print("Theoretical ground energy for the harmonic oscillator (relative to the potential minimum) = ", e_0)
 
-    # Single harmonic potential
+    # Lower harmonic potential
     v_l = numpy.array([k_s * xi * xi / 2.0 for xi in x])
     v.append((0.0, v_l))
 
-    v_u = numpy.array([0.0] * np)
-    v.append((0.0, v_u))
+    # stiffness coefficient for dimensional case on the upper PEC
+    k_s_u = hart_to_cm / m / dalt_to_au / pow(a_e, 4.0)
+
+    # Upper harmonic potential
+    #  v_u = numpy.array([0.0] * np)
+    v_u = numpy.array([k_s_u * (xi - x0p) * (xi - x0p) / 2.0 + Du for xi in x])
+    v.append((Du, v_u))
 
     v.append(v_u)
 
@@ -50,13 +55,14 @@ def pot(x, np, m, De, a, x0p, De_e, a_e, Du):
 def psi_init(x, np, x0, p0, m, De, a):
     """ Initial wave function generator
         INPUT
-        x       vector of length np defining positions of grid points
-        np      number of grid points
-        x0      initial coordinate
-        p0      initial momentum
-        m       reduced mass of the system
-        a       scaling factor
-        De      dissociation energy (dummy variable)
+        x           vector of length np defining positions of grid points
+        np          number of grid points
+        x0          initial coordinate
+        p0          initial momentum
+        m           reduced mass of the system
+        a           scaling factor
+        De          dissociation energy (dummy variable)
+
         OUTPUT
         psi     complex vector of length np describing the dimensionless wavefunction """
 

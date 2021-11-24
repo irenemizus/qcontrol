@@ -6,12 +6,14 @@ import datetime
 
 import math_base
 import phys_base
+from config import RootConfiguration
 
 
 class PropagationSolver:
     def __init__(
             self,
             psi_init,
+            psi_goal,
             pot,
             report_static,
             report_dynamic,
@@ -19,16 +21,19 @@ class PropagationSolver:
             laser_field_envelope,
             freq_multiplier,
             dynamic_state_factory,
-            conf_prop):
+            conf_prop,
+            psi_params = None):
 
         self.pot = pot
         self.psi_init = psi_init
+        self.psi_goal = psi_goal
         self.report_static = report_static
         self.report_dynamic = report_dynamic
         self.process_instrumentation = process_instrumentation
         self.laser_field_envelope = laser_field_envelope
         self.freq_multiplier = freq_multiplier
         self.dynamic_state_factory = dynamic_state_factory
+        self.psi_params = psi_params
 
         self.m = conf_prop.m
         self.L = conf_prop.L
@@ -143,14 +148,21 @@ class PropagationSolver:
         phi0_u = phys_base.hamil(psi0[1], v[1][1], akx2, self.np)
         cener0_u = math_base.cprod(phi0_u, psi0[1], dx, self.np)
 
-        # evaluating of the final goal -- upper state wavefunction
-        psif = self.psi_init(x, self.np, self.x0p, self.p0, self.m, self.De_e, self.a_e)
+        # evaluating of the final goal -- upper state wavefunction/desired filtering result
+        if self.psi_params and self.psi_params["task_type"] == RootConfiguration.FitterConfiguration.TaskType.FILTERING:
+            psif = self.psi_goal(x, self.np, self.x0, self.p0, self.m, self.De, self.a)
+        else:
+            psif = self.psi_goal(x, self.np, self.x0p, self.p0, self.m, self.De_e, self.a_e)
 
         # final normalization check
         cnormf = math_base.cprod(psif[0], psif[0], dx, self.np)
 
-        # calculating of final excited energy
-        phif = phys_base.hamil(psif[0], v[1][1], akx2, self.np)
+        # calculating of final excited/filtered energy
+        if self.psi_params and self.psi_params["task_type"] == RootConfiguration.FitterConfiguration.TaskType.FILTERING:
+            phif = phys_base.hamil(psif[0], v[0][1], akx2, self.np)
+        else:
+            phif = phys_base.hamil(psif[0], v[1][1], akx2, self.np)
+
         cenerf = math_base.cprod(phif, psif[0], dx, self.np)
 
         # time propagation
@@ -162,7 +174,10 @@ class PropagationSolver:
 
         # initial population
         overlp00 = math_base.cprod(psi0[0], psi[0], dx, self.np)
-        overlpf0 = math_base.cprod(psif[0], psi[1], dx, self.np)
+        if self.psi_params and self.psi_params["task_type"] == RootConfiguration.FitterConfiguration.TaskType.FILTERING:
+            overlpf0 = math_base.cprod(psif[0], psi[0], dx, self.np)
+        else:
+            overlpf0 = math_base.cprod(psif[0], psi[1], dx, self.np)
 
         # calculating of initial expectation values
         moms0 = phys_base.exp_vals_calc(psi, x, akx2, dx, self.np, self.m)
@@ -241,7 +256,10 @@ class PropagationSolver:
         cener_u = math_base.cprod(phi[1], dyn.psi[1], stat.dx, self.np)
 
         overlp0 = math_base.cprod(stat.psi0[0], dyn.psi[0], stat.dx, self.np)
-        overlpf = math_base.cprod(stat.psif[0], dyn.psi[1], stat.dx, self.np)
+        if self.psi_params and self.psi_params["task_type"] == RootConfiguration.FitterConfiguration.TaskType.FILTERING:
+            overlpf = math_base.cprod(stat.psif[0], dyn.psi[0], stat.dx, self.np)
+        else:
+            overlpf = math_base.cprod(stat.psif[0], dyn.psi[1], stat.dx, self.np)
 
         # calculating of expectation values
         moms = phys_base.exp_vals_calc(dyn.psi, stat.x, stat.akx2, stat.dx, self.np, self.m)
@@ -253,88 +271,3 @@ class PropagationSolver:
 
         self.process_instrumentation(instr)
         self.report_dynamic(dyn)
-
-
-
-    # def filtering(self):
-    #     # filtering task for obtaining of an initial wavefunction in the given potential
-    #     dt = self.T / (self.nt - 1)
-    #     psi_init = harmonic.psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
-    #     psi_goal = self.psi_init(self.x, self.np, self.x0, self.p0, self.m, self.De, self.a)
-    #     psi = copy.deepcopy(psi_init)
-    #
-    #     # plotting initial values
-    #     self.plot(psi[0], 0.0, self.x, self.np)
-    #
-    #     # initial normalization check
-    #     cnorm0 = math_base.cprod(psi[0], psi[0], self.dx, self.np)
-    #
-    #     # calculating of initial energy
-    #     phi0 = phys_base.hamil(psi[0], self.v[0][1], self.akx2, self.np)
-    #     cener0 = math_base.cprod(phi0, psi[0], self.dx, self.np)
-    #
-    #     print(" Initial state features: ")
-    #     print("Initial normalization: ", abs(cnorm0))
-    #     print("Initial energy: ", abs(cener0))
-    #
-    #     milliseconds_full = 0
-    #
-    #     # main propagation loop
-    #     for l in range(1, self.nt + 1):
-    #         time_before = datetime.datetime.now()
-    #
-    #         t = dt * l
-    #         t_sc = dt * (self.emax0 - self.emin0) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
-    #
-    #         psi = phys_base.prop(psi, t_sc, self.nch, self.np, self.v, self.akx2, self.emin0, self.emax0, 0.0, 0.0)
-    #
-    #         cnorm = math_base.cprod(psi[0], psi[0], self.dx, self.np)
-    #
-    #         # renormalization
-    #         if cnorm > 0.0:
-    #             psi[0] /= math.sqrt(abs(cnorm))
-    #
-    #         phi = phys_base.hamil(psi[0], self.v[0][1], self.akx2, self.np)
-    #
-    #         cener = math_base.cprod(phi, psi[0], self.dx, self.np)
-    #         overlp0 = math_base.cprod(psi_init[0], psi[0], self.dx, self.np)
-    #         overlpg = math_base.cprod(psi_goal[0], psi[0], self.dx, self.np)
-    #         moms0 = phys_base.ExpectationValues(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    #
-    #         # plotting the result
-    #         if l % self.mod_fileout == 0:
-    #             if l >= self.lmin:
-    #                 self.plot(psi[0], t, self.x, self.np)
-    #
-    #             if l >= self.lmin:
-    #                 self.plot_mom(t, moms0, cener.real, 0.0, overlp0, cener.real)
-    #
-    #
-    #         time_after = datetime.datetime.now()
-    #         time_span = time_after - time_before
-    #         milliseconds_per_step = time_span.microseconds / 1000
-    #         milliseconds_full += milliseconds_per_step
-    #
-    #         if l % self.mod_stdout == 0:
-    #             print("l = ", l)
-    #             print("t = ", t * 1e15, "fs")
-    #
-    #             print("normalized scaled time interval = ", t_sc)
-    #             print("normalization on the lower state = ", cnorm)
-    #             print("overlap with initial wavefunction = ", abs(overlp0))
-    #             print("overlap with the target wavefunction = ", abs(overlpg))
-    #             print("energy on the lower state = ", cener.real)
-    #
-    #             print("milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(milliseconds_full / l))
-
-
-
-
-
-
-
-
-
-
-
-
