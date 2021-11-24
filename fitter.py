@@ -47,12 +47,9 @@ class FittingSolver:
             laser_field_envelope=self.LaserFieldEnvelope,
             freq_multiplier=self.FreqMultiplier,
             dynamic_state_factory=self.fitter_dynamic_state_factory,
-            conf_prop=conf_prop,
-            psi_params={ "task_type": RootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL })  # TODO add object
-
+            conf_prop=conf_prop)
 
     def time_propagation(self):
-        self.solver.psi_params["task_type"] = self.conf.fitter.task_type
         self.solver.time_propagation()
 
 

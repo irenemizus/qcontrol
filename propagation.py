@@ -6,6 +6,7 @@ import datetime
 
 import math_base
 import phys_base
+import task_manager
 from config import RootConfiguration
 
 
@@ -13,7 +14,7 @@ class PropagationSolver:
     def __init__(
             self,
             psi_init,
-            psi_goal,
+            task_manager: task_manager.TaskManager,
             pot,
             report_static,
             report_dynamic,
@@ -21,19 +22,17 @@ class PropagationSolver:
             laser_field_envelope,
             freq_multiplier,
             dynamic_state_factory,
-            conf_prop,
-            psi_params = None):
+            conf_prop):
 
         self.pot = pot
         self.psi_init = psi_init
-        self.psi_goal = psi_goal
+        self.task_manager = task_manager
         self.report_static = report_static
         self.report_dynamic = report_dynamic
         self.process_instrumentation = process_instrumentation
         self.laser_field_envelope = laser_field_envelope
         self.freq_multiplier = freq_multiplier
         self.dynamic_state_factory = dynamic_state_factory
-        self.psi_params = psi_params
 
         self.m = conf_prop.m
         self.L = conf_prop.L
@@ -149,20 +148,14 @@ class PropagationSolver:
         cener0_u = math_base.cprod(phi0_u, psi0[1], dx, self.np)
 
         # evaluating of the final goal -- upper state wavefunction/desired filtering result
-        if self.psi_params and self.psi_params["task_type"] == RootConfiguration.FitterConfiguration.TaskType.FILTERING:
-            psif = self.psi_goal(x, self.np, self.x0, self.p0, self.m, self.De, self.a)
-        else:
-            psif = self.psi_goal(x, self.np, self.x0p, self.p0, self.m, self.De_e, self.a_e)
+        psif = self.task_manager.psi_goal(x, self.np, self.x0, self.p0, self.x0p, self.m,
+                                          self.De, self.De_e, self.Du, self.a, self.a_e)
 
         # final normalization check
         cnormf = math_base.cprod(psif[0], psif[0], dx, self.np)
 
         # calculating of final excited/filtered energy
-        if self.psi_params and self.psi_params["task_type"] == RootConfiguration.FitterConfiguration.TaskType.FILTERING:
-            phif = phys_base.hamil(psif[0], v[0][1], akx2, self.np)
-        else:
-            phif = phys_base.hamil(psif[0], v[1][1], akx2, self.np)
-
+        phif = self.task_manager.ener_goal(psif, v, akx2, self.np)
         cenerf = math_base.cprod(phif, psif[0], dx, self.np)
 
         # time propagation
@@ -174,10 +167,7 @@ class PropagationSolver:
 
         # initial population
         overlp00 = math_base.cprod(psi0[0], psi[0], dx, self.np)
-        if self.psi_params and self.psi_params["task_type"] == RootConfiguration.FitterConfiguration.TaskType.FILTERING:
-            overlpf0 = math_base.cprod(psif[0], psi[0], dx, self.np)
-        else:
-            overlpf0 = math_base.cprod(psif[0], psi[1], dx, self.np)
+        overlpf0 = self.task_manager.init_proximity_to_goal(psif, psi, dx, self.np)
 
         # calculating of initial expectation values
         moms0 = phys_base.exp_vals_calc(psi, x, akx2, dx, self.np, self.m)
@@ -256,10 +246,7 @@ class PropagationSolver:
         cener_u = math_base.cprod(phi[1], dyn.psi[1], stat.dx, self.np)
 
         overlp0 = math_base.cprod(stat.psi0[0], dyn.psi[0], stat.dx, self.np)
-        if self.psi_params and self.psi_params["task_type"] == RootConfiguration.FitterConfiguration.TaskType.FILTERING:
-            overlpf = math_base.cprod(stat.psif[0], dyn.psi[0], stat.dx, self.np)
-        else:
-            overlpf = math_base.cprod(stat.psif[0], dyn.psi[1], stat.dx, self.np)
+        overlpf = self.task_manager.init_proximity_to_goal(stat.psif, dyn.psi, stat.dx, self.np)
 
         # calculating of expectation values
         moms = phys_base.exp_vals_calc(dyn.psi, stat.x, stat.akx2, stat.dx, self.np, self.m)
