@@ -7,7 +7,6 @@ import datetime
 import math_base
 import phys_base
 import task_manager
-from config import RootConfiguration
 
 
 class PropagationSolver:

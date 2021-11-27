@@ -200,12 +200,14 @@ class FittingSolver:
                 print("emin = ", instr.emin)
             print("normalized scaled time interval = ", instr.t_sc)
             print("normalization on the lower state = ", abs(instr.cnorm_l))
-            if self.conf.fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING:
+            if self.conf.fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING and \
+               self.conf.fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
                 print("normalization on the upper state = ", abs(instr.cnorm_u))
             print("overlap with initial wavefunction = ", abs(instr.overlp0))
             print("overlap with final goal wavefunction = ", abs(instr.overlpf))
             print("energy on the lower state = ", instr.cener_l.real)
-            if self.conf.fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING:
+            if self.conf.fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING and \
+               self.conf.fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
                 print("energy on the upper state = ", instr.cener_u.real)
             if self.conf.fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL:
                 print("Time derivation of the expectation value from the goal operator A = ", dAdt)

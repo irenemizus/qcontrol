@@ -142,7 +142,7 @@ class RootConfiguration(ConfigurationBase):
                 # 5.0 a_0 -- for the working transition between PECs and controls;
                 # 0.2 -- for a model harmonic oscillator with a = 1.0;
                 # 4.0 a_0 -- for morse oscillator;
-                # 6.0 a_0 -- for dimensional harmonic oscillator
+                # 10.0 a_0 -- for dimensional harmonic oscillator
                 self._data["T"] = 600e-15   # s
                 # 1200 fs -- for two laser pulses;
                 # 280 (600) fs -- for the working transition between PECs and LC;

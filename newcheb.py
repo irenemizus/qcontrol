@@ -208,8 +208,6 @@ import getopt
 import json
 import math
 
-import double_morse
-import harmonic
 import fitter
 import reporter
 import task_manager
@@ -294,73 +292,48 @@ def main(argv):
                          "of a scaling parameter of the laser field envelope 'sigma'"
                          "and of a basic frequency of the laser field 'nu_L' must be positive")
 
-    if conf.fitter.propagation.pot_type == conf.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
-        print("Morse potentials are used")
-        pot = double_morse.pot
-        psi_goal = double_morse.psi_init
-    elif conf.fitter.propagation.pot_type == conf.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
-        print("Harmonic potentials are used")
-        pot = harmonic.pot
-        psi_goal = harmonic.psi_init
-    else:
-        raise RuntimeError("Impossible case in the PotentialType class")
-
-    if conf.fitter.propagation.wf_type == conf.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE:
-        print("Morse wavefunctions are used")
-        psi_init = double_morse.psi_init
-    elif conf.fitter.propagation.wf_type == conf.FitterConfiguration.PropagationConfiguration.WaveFuncType.HARMONIC:
-        print("Harmonic wavefunctions are used")
-        psi_init = harmonic.psi_init
-    else:
-        raise RuntimeError("Impossible case in the WaveFuncType class")
 
     if conf.fitter.task_type == conf.FitterConfiguration.TaskType.FILTERING or \
             conf.fitter.task_type == conf.FitterConfiguration.TaskType.SINGLE_POT:
+
         print("A '%s' task begins. E0 and nu_L values are zeroed..."
               % str(conf.fitter.task_type).split(".")[-1].lower())
-        task_manager_imp = task_manager.SingleStateTaskManager(psi_goal)
         conf.fitter.propagation.E0 = 0.0
         conf.fitter.propagation.nu_L = 0.0
+
         if conf.fitter.impulses_number != 0:
             print("For the task_type = '%s' the impulses_number value will be replaced by zero"
                   % str(conf.fitter.task_type).split(".")[-1].lower())
             conf.fitter.impulses_number = 0
-        print("For the task_type = '%s' the excited state is identically equated to zero; "
-              "thus, the x0p, De_e, a_e and Du parameters will be zeroed."
-              % str(conf.fitter.task_type).split(".")[-1].lower())
-        conf.fitter.propagation.De_e = 0.0
-        conf.fitter.propagation.Du = 0.0
-        conf.fitter.propagation.x0p = 0.0
-        conf.fitter.propagation.a_e = 0.0
-    elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.TRANS_WO_CONTROL:
-        print("An ordinary transition task begins...")
-        task_manager_imp = task_manager.MultipleStateTaskManager(psi_goal)
-        if conf.fitter.impulses_number != 1:
-            print("For the task_type = 'trans_wo_control' the impulses_number value will be replaced by 1")
-            conf.fitter.impulses_number = 1
-    elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
-        print("An intuitive control task begins...")
-        task_manager_imp = task_manager.MultipleStateTaskManager(psi_goal)
-        if conf.fitter.impulses_number < 2:
-            print("For the task_type = 'intuitive_control' the impulses_number value will be replaced by 2")
-            conf.fitter.impulses_number = 2
-    elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.LOCAL_CONTROL:
-        task_manager_imp = task_manager.MultipleStateTaskManager(psi_goal)
-        if conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GOAL_POPULATION:
-            print("A local control with goal population task begins...")
-        elif conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GOAL_PROJECTION:
-            print("A local control with goal projection task begins...")
-        else:
-            raise RuntimeError("Impossible case in the TaskSubType class")
-        if conf.fitter.impulses_number != 1:
-            print("For the task_type = 'local_control' the impulses_number value will be replaced by 1")
-            conf.fitter.impulses_number = 1
     else:
-        raise RuntimeError("Impossible case in the TaskType class")
+        if conf.fitter.task_type == conf.fitter.TaskType.TRANS_WO_CONTROL:
+            print("An ordinary transition task begins...")
+            if conf.fitter.impulses_number != 1:
+                print("For the task_type = 'trans_wo_control' the impulses_number value will be replaced by 1")
+                conf.fitter.impulses_number = 1
+        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
+            print("An intuitive control task begins...")
+            if conf.fitter.impulses_number < 2:
+                print("For the task_type = 'intuitive_control' the impulses_number value will be replaced by 2")
+                conf.fitter.impulses_number = 2
+        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.LOCAL_CONTROL:
+            if conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GOAL_POPULATION:
+                print("A local control with goal population task begins...")
+            elif conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GOAL_PROJECTION:
+                print("A local control with goal projection task begins...")
+            else:
+                raise RuntimeError("Impossible case in the TaskSubType class")
+            if conf.fitter.impulses_number != 1:
+                print("For the task_type = 'local_control' the impulses_number value will be replaced by 1")
+                conf.fitter.impulses_number = 1
+        else:
+            raise RuntimeError("Impossible case in the TaskType class")
+
+    task_manager_imp = task_manager.create(conf.fitter)
 
     # main calculation part
     with reporter.MultipleReporter(conf.output) as reporter_impl:
-        fitting_solver = fitter.FittingSolver(conf, psi_init, task_manager_imp, pot, reporter_impl,
+        fitting_solver = fitter.FittingSolver(conf, task_manager_imp.psi_init, task_manager_imp, task_manager_imp.pot, reporter_impl,
                                               _warning_collocation_points,
                                               _warning_time_steps
                                               )
