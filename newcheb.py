@@ -83,13 +83,21 @@ Options:
                               with gaussian envelopes and a constant chirps
         "local_control"     - calculation of transition from the ground state
                               to the excited one under the influence of external
-                              laser field with controlled envelope form (by the local control
-                              algorithm) and a constant chirp
+                              laser field with controlled envelope form / chirp (by the local control
+                              algorithm)
+        "optimal_control"     - calculation of transition from the ground state
+                              to the excited one under the influence of a controlled external
+                              laser field with iterative optimal control algorithm
     task_subtype
         subtype of the calculation task:
         "goal_population"   - a subtype of a "local control" task, when the goal operator is A = / 0  0 \  (by default)
                                                                                                  \ 0  1 /
         "goal_projection"   - a subtype of a "local control" task, when the goal operator is A = P_g + P_e
+        "gradient_method"   - a subtype of an "optimal control" task, when the propagation on a current time step
+                              is under an old field, calculated on the previous step
+        "krotov_method"     - a subtype of an "optimal control" task, when the propagation on a current time step
+                              is partially under the old field and partially - under the new field,
+                              which is calculated "on the fly"
     k_E
         aspect ratio for the inertial "force" in equation for the laser field energy in sec^(-2).
         Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
@@ -325,6 +333,16 @@ def main(argv):
                 raise RuntimeError("Impossible case in the TaskSubType class")
             if conf.fitter.impulses_number != 1:
                 print("For the task_type = 'local_control' the impulses_number value will be replaced by 1")
+                conf.fitter.impulses_number = 1
+        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.OPTIMAL_CONTROL:
+            if conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GRADIENT_METHOD:
+                print("An optimal control task with gradient method begins...")
+            elif conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.KROTOV_METHOD:
+                print("An optimal control task with Krotov method begins...")
+            else:
+                raise RuntimeError("Impossible case in the TaskSubType class")
+            if conf.fitter.impulses_number != 1:
+                print("For the task_type = 'optimal_control' the impulses_number value will be replaced by 1")
                 conf.fitter.impulses_number = 1
         else:
             raise RuntimeError("Impossible case in the TaskType class")

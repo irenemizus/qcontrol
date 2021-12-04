@@ -174,6 +174,7 @@ class RootConfiguration(ConfigurationBase):
             INTUITIVE_CONTROL = 2
             LOCAL_CONTROL = 3
             SINGLE_POT = 4
+            OPTIMAL_CONTROL = 5
 
             @staticmethod
             def from_int(i):
@@ -187,6 +188,8 @@ class RootConfiguration(ConfigurationBase):
         class TaskSubType(Enum):
             GOAL_POPULATION = 0
             GOAL_PROJECTION = 1
+            GRADIENT_METHOD = 2
+            KROTOV_METHOD = 3
 
             @staticmethod
             def from_int(i):

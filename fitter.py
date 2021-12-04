@@ -170,7 +170,7 @@ class FittingSolver:
                     print("Imaginary part in dA/dt is negative but too small and has been replaces by -epsilon")
                     self.freq_mult_patched = Sdvge.imag / (self.conf.fitter.epsilon * freq_cm)
 
-                if (self.freq_mult_patched < 0.0):
+                if self.freq_mult_patched < 0.0:
                     self.freq_mult_patched = 0.0
 
                 res = propagation.PropagationSolver.StepReaction.CORRECT
