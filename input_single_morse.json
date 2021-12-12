@@ -2,7 +2,6 @@
   "output": {
     "table": {
       "lmin": 0,
-      "mod_stdout": 500,
       "mod_fileout": 100,
       "out_path": "output",
       "tab_abs": "fort.21",
@@ -47,6 +46,7 @@
       "t0": 300e-15,
       "sigma": 50e-15,
       "nu_L": 0.0
-    }
+    },
+    "mod_log": 500
   }
 }

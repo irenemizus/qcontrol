@@ -2,12 +2,11 @@ import unittest
 from math_base import *
 from phys_base import func
 
-
-class cood_grid_Tests(unittest.TestCase):
+class coord_grid_Tests(unittest.TestCase):
     def test_16(self):
-        self.assertTrue(numpy.allclose(coord_grid(0.2, 16), numpy.array([-1.5, -1.3, -1.1, -0.9, \
-                                                             -0.7, -0.5, -0.3, -0.1, \
-                                                              0.1,  0.3,  0.5,  0.7, \
+        self.assertTrue(numpy.allclose(coord_grid(0.2, 16), numpy.array([-1.5, -1.3, -1.1, -0.9,
+                                                             -0.7, -0.5, -0.3, -0.1,
+                                                              0.1,  0.3,  0.5,  0.7,
                                                               0.9,  1.1,  1.3,  1.5])))
 
 
@@ -49,17 +48,17 @@ class reorder_Tests(unittest.TestCase):
 
 class points_Tests(unittest.TestCase):
     def test_4(self):
-        self.assertTrue(numpy.allclose(points(4, 1, func)[0], \
-                                       numpy.array([1.8477590650225735, -0.7653668647301795, \
+        self.assertTrue(numpy.allclose(points(4, 1, func)[0],
+                                       numpy.array([1.8477590650225735, -0.7653668647301795,
                                                     0.7653668647301797, -1.8477590650225735])))
-        self.assertTrue(numpy.allclose(points(4, 1, func)[1], \
-                                       numpy.array([complex(-0.2734354014243603, -0.9618903686220686), \
-                                                    complex(-0.38060302857900286, -0.6332232027087304), \
-                                                    complex(-0.3516313481159491, 0.25126355493174846), \
+        self.assertTrue(numpy.allclose(points(4, 1, func)[1],
+                                       numpy.array([complex(-0.2734354014243603, -0.9618903686220686),
+                                                    complex(-0.38060302857900286, -0.6332232027087304),
+                                                    complex(-0.3516313481159491, 0.25126355493174846),
                                                     complex(-2.1243197887715325e-17, 0.135982856037932)])))
 
 
-class points_Tests(unittest.TestCase):
+class fft_Tests(unittest.TestCase):
     def test_fft(self):
         test = []
         for i in range(128):

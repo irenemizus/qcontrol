@@ -52,7 +52,6 @@ class RootConfiguration(ConfigurationBase):
             self._data["tab_real"] = "fort.22"
             self._data["tab_mom"] = "fort.23"
             self._data["lmin"] = 0
-            self._data["mod_stdout"] = 500
             self._data["mod_fileout"] = 100
 
     class OutputPlotConfiguration(ConfigurationBase):
@@ -188,9 +187,9 @@ class RootConfiguration(ConfigurationBase):
         class TaskSubType(Enum):
             GOAL_POPULATION = 0
             GOAL_PROJECTION = 1
-            GRADIENT_METHOD = 2
-            KROTOV_METHOD = 3
-
+            KROTOV_METHOD = 2
+            GRADIENT_METHOD = 3
+            
             @staticmethod
             def from_int(i):
                 return RootConfiguration.FitterConfiguration.TaskSubType(i)
@@ -212,6 +211,7 @@ class RootConfiguration(ConfigurationBase):
             self._data["epsilon"] = 1e-15
             self._data["impulses_number"] = 2
             self._data["delay"] = 600e-15   # s
+            self._data["mod_log"] = 500
 
 
     def __init__(self):

@@ -93,11 +93,12 @@ Options:
         "goal_population"   - a subtype of a "local control" task, when the goal operator is A = / 0  0 \  (by default)
                                                                                                  \ 0  1 /
         "goal_projection"   - a subtype of a "local control" task, when the goal operator is A = P_g + P_e
-        "gradient_method"   - a subtype of an "optimal control" task, when the propagation on a current time step
-                              is under an old field, calculated on the previous step
         "krotov_method"     - a subtype of an "optimal control" task, when the propagation on a current time step
                               is partially under the old field and partially - under the new field,
                               which is calculated "on the fly"
+        "gradient_method"   - a subtype of an "optimal control" task, when the propagation on a current time step
+                              is under an old field, calculated on the previous step
+
     k_E
         aspect ratio for the inertial "force" in equation for the laser field energy in sec^(-2).
         Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
@@ -271,10 +272,10 @@ def main(argv):
                          "interpolation points 'nch' must be positive integers and powers of 2")
 
     if conf.output.table.lmin < 0 or conf.output.plot.lmin < 0 or \
-            conf.output.table.mod_fileout < 0 or conf.output.table.mod_stdout < 0:
+            conf.output.table.mod_fileout <= 0:
         raise ValueError("The number 'lmin' of time iteration, from which the result"
                          "should be written to a file or plotted, as well as steps for output "
-                         "'mod_stdout' and 'mod_fileout' should be positive or 0")
+                         "'mod_fileout' should be positive")
 
     if conf.output.plot.mod_plotout < 0 or conf.output.plot.mod_update < 0:
         raise ValueError("The step for plotting graphs with x-axis = time 'mod_plotout' "
@@ -347,11 +348,14 @@ def main(argv):
         else:
             raise RuntimeError("Impossible case in the TaskType class")
 
+    if conf.fitter.mod_log <= 0:
+        raise ValueError("'mod_log' should be positive")
+
     task_manager_imp = task_manager.create(conf.fitter)
 
     # main calculation part
     with reporter.MultipleReporter(conf.output) as reporter_impl:
-        fitting_solver = fitter.FittingSolver(conf, task_manager_imp.psi_init, task_manager_imp, task_manager_imp.pot, reporter_impl,
+        fitting_solver = fitter.FittingSolver(conf.fitter, task_manager_imp.psi_init, task_manager_imp, task_manager_imp.pot, reporter_impl,
                                               _warning_collocation_points,
                                               _warning_time_steps
                                               )
