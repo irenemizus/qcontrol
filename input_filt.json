@@ -18,7 +18,6 @@
   },
   "fitter": {
     "task_type": "filtering",
-    "task_subtype": "goal_projection",
     "k_E": 1e29,
     "lamb": 8e14,
     "pow": 0.65,

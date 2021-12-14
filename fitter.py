@@ -134,10 +134,11 @@ class FittingSolver:
         self.milliseconds_full += milliseconds_per_step
 
         # local control algorithm
-        if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL:
+        if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION and \
+           self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
             res = propagation.PropagationSolver.StepReaction.OK
             dAdt = 0.0
-        elif self.conf_fitter.task_subtype == RootConfiguration.FitterConfiguration.TaskSubType.GOAL_POPULATION:
+        elif self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
             dAdt = self.dyn_ref.E * instr.psigc_psie.imag * coef
             if dAdt >= 0.0:
@@ -213,7 +214,8 @@ class FittingSolver:
             if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING and \
                self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
                 print("energy on the upper state = ", instr.cener_u.real)
-            if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL:
+            if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION or \
+               self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
                 print("Time derivation of the expectation value from the goal operator A = ", dAdt)
 
             print(
@@ -241,8 +243,7 @@ class FittingSolver:
                                             self.conf_fitter.propagation.sigma)
             E = self.E_patched
         # local control algorithm (with A = Pe)
-        elif self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL and \
-                self.conf_fitter.task_subtype == RootConfiguration.FitterConfiguration.TaskSubType.GOAL_POPULATION:
+        elif self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             if self.dyn_ref.E == 0.0:
                 self.dyn_ref.E = self.E_patched
 
@@ -271,8 +272,7 @@ class FittingSolver:
     # calculating a frequency multiplier value at the given time value
     def FreqMultiplier(self, stat: propagation.PropagationSolver.StaticState):
         # local control algorithm (with A = Pg + Pe)
-        if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL and \
-                self.conf_fitter.task_subtype == RootConfiguration.FitterConfiguration.TaskSubType.GOAL_PROJECTION:
+        if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
             if self.freq_mult_patched < 0:
                 raise RuntimeError("freq_mult_patched has to be positive or zero")
 

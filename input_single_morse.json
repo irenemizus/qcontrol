@@ -18,7 +18,6 @@
   },
   "fitter": {
     "task_type": "single_pot",
-    "task_subtype": "goal_population",
     "k_E": 1e29,
     "lamb": 4e14,
     "pow": 0.8,

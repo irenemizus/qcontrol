@@ -17,8 +17,7 @@
     }
   },
   "fitter": {
-    "task_type": "local_control",
-    "task_subtype": "goal_population",
+    "task_type": "local_control_population",
     "k_E": 1e29,
     "lamb": 4e14,
     "pow": 0.8,

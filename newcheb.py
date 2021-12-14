@@ -81,24 +81,26 @@ Options:
                               to the excited state and back to the ground one
                               under the influence of a sequence of equal laser pulses
                               with gaussian envelopes and a constant chirps
-        "local_control"     - calculation of transition from the ground state
-                              to the excited one under the influence of external
-                              laser field with controlled envelope form / chirp (by the local control
-                              algorithm)
-        "optimal_control"     - calculation of transition from the ground state
-                              to the excited one under the influence of a controlled external
-                              laser field with iterative optimal control algorithm
-    task_subtype
-        subtype of the calculation task:
-        "goal_population"   - a subtype of a "local control" task, when the goal operator is A = / 0  0 \  (by default)
-                                                                                                 \ 0  1 /
-        "goal_projection"   - a subtype of a "local control" task, when the goal operator is A = P_g + P_e
-        "krotov_method"     - a subtype of an "optimal control" task, when the propagation on a current time step
-                              is partially under the old field and partially - under the new field,
-                              which is calculated "on the fly"
-        "gradient_method"   - a subtype of an "optimal control" task, when the propagation on a current time step
-                              is under an old field, calculated on the previous step
-
+        "local_control_population" - calculation of transition from the ground state
+                                     to the excited one under the influence of external
+                                     laser field with controlled envelope form
+                                     by the local control algorithm, when the goal operator is A = / 0  0 \
+                                                                                                   \ 0  1 /
+        "local_control_projection" - calculation of transition from the ground state
+                                     to the excited one under the influence of external
+                                     laser field with controlled chirp
+                                     by the local control algorithm, when the goal operator is A = P_g + P_e
+        "optimal_control_krotov"   - calculation of transition from the ground state
+                                     to the excited one under the influence of a controlled external
+                                     laser field with an iterative Krotov algorithm,
+                                     when the propagation on a current time step
+                                     is partially under the old field and partially - under the new field,
+                                     which is calculated "on the fly"
+        "optimal_control_gradient" - calculation of transition from the ground state
+                                     to the excited one under the influence of a controlled external
+                                     laser field with an iterative gradient algorithm,
+                                     when the propagation on a current time step
+                                     is under an old field, calculated on the previous step
     k_E
         aspect ratio for the inertial "force" in equation for the laser field energy in sec^(-2).
         Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
@@ -271,11 +273,12 @@ def main(argv):
         raise ValueError("The number of collocation points 'np' and of Chebyshev "
                          "interpolation points 'nch' must be positive integers and powers of 2")
 
-    if conf.output.table.lmin < 0 or conf.output.plot.lmin < 0 or \
-            conf.output.table.mod_fileout <= 0:
+    if conf.output.table.lmin < 0 or conf.output.plot.lmin < 0:
         raise ValueError("The number 'lmin' of time iteration, from which the result"
-                         "should be written to a file or plotted, as well as steps for output "
-                         "'mod_fileout' should be positive")
+                         "should be written to a file or plotted should be positive or 0")
+
+    if conf.output.table.mod_fileout < 0 or conf.fitter.mod_log < 0:
+        raise ValueError("The numbers 'mod_fileout' and 'mod_log' should be positive or 0")
 
     if conf.output.plot.mod_plotout < 0 or conf.output.plot.mod_update < 0:
         raise ValueError("The step for plotting graphs with x-axis = time 'mod_plotout' "
@@ -325,31 +328,29 @@ def main(argv):
             if conf.fitter.impulses_number < 2:
                 print("For the task_type = 'intuitive_control' the impulses_number value will be replaced by 2")
                 conf.fitter.impulses_number = 2
-        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.LOCAL_CONTROL:
-            if conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GOAL_POPULATION:
-                print("A local control with goal population task begins...")
-            elif conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GOAL_PROJECTION:
-                print("A local control with goal projection task begins...")
-            else:
-                raise RuntimeError("Impossible case in the TaskSubType class")
+        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
+            print("A local control with goal population task begins...")
             if conf.fitter.impulses_number != 1:
-                print("For the task_type = 'local_control' the impulses_number value will be replaced by 1")
+                print("For the task_type = 'local_control_population' the impulses_number value will be replaced by 1")
                 conf.fitter.impulses_number = 1
-        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.OPTIMAL_CONTROL:
-            if conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.GRADIENT_METHOD:
-                print("An optimal control task with gradient method begins...")
-            elif conf.fitter.task_subtype == conf.FitterConfiguration.TaskSubType.KROTOV_METHOD:
-                print("An optimal control task with Krotov method begins...")
-            else:
-                raise RuntimeError("Impossible case in the TaskSubType class")
+        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
+            print("A local control with goal projection task begins...")
             if conf.fitter.impulses_number != 1:
-                print("For the task_type = 'optimal_control' the impulses_number value will be replaced by 1")
+                print("For the task_type = 'local_control_projection' the impulses_number value will be replaced by 1")
+                conf.fitter.impulses_number = 1
+        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
+            print("An optimal control task with Krotov method begins...")
+            if conf.fitter.impulses_number != 1:
+                print("For the task_type = 'optimal_control_krotov' the impulses_number value will be replaced by 1")
+                conf.fitter.impulses_number = 1
+        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
+            print("An optimal control task with gradient method begins...")
+            if conf.fitter.impulses_number != 1:
+                print("For the task_type = 'optimal_control_gradient' the impulses_number value will be replaced by 1")
                 conf.fitter.impulses_number = 1
         else:
             raise RuntimeError("Impossible case in the TaskType class")
 
-    if conf.fitter.mod_log <= 0:
-        raise ValueError("'mod_log' should be positive")
 
     task_manager_imp = task_manager.create(conf.fitter)
 

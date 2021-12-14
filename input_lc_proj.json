@@ -17,8 +17,7 @@
     }
   },
   "fitter": {
-    "task_type": "local_control",
-    "task_subtype": "goal_projection",
+    "task_type": "local_control_projection",
     "k_E": 1e29,
     "lamb": 8e14,
     "pow": 0.65,

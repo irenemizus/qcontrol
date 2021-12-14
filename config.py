@@ -168,12 +168,15 @@ class RootConfiguration(ConfigurationBase):
 
 
         class TaskType(Enum):
-            TRANS_WO_CONTROL = 0
+            SINGLE_POT = 0
             FILTERING = 1
-            INTUITIVE_CONTROL = 2
-            LOCAL_CONTROL = 3
-            SINGLE_POT = 4
-            OPTIMAL_CONTROL = 5
+            TRANS_WO_CONTROL = 2
+            INTUITIVE_CONTROL = 3
+            LOCAL_CONTROL_POPULATION = 4
+            LOCAL_CONTROL_PROJECTION = 5
+            OPTIMAL_CONTROL_KROTOV = 6
+            OPTIMAL_CONTROL_GRADIENT = 7
+
 
             @staticmethod
             def from_int(i):
@@ -184,26 +187,25 @@ class RootConfiguration(ConfigurationBase):
                 return RootConfiguration.FitterConfiguration.TaskType[s.upper()]
 
 
-        class TaskSubType(Enum):
-            GOAL_POPULATION = 0
-            GOAL_PROJECTION = 1
-            KROTOV_METHOD = 2
-            GRADIENT_METHOD = 3
+#        class TaskSubType(Enum):
+#            GOAL_POPULATION = 0
+#            GOAL_PROJECTION = 1
+#            KROTOV_METHOD = 2
+#            GRADIENT_METHOD = 3
             
-            @staticmethod
-            def from_int(i):
-                return RootConfiguration.FitterConfiguration.TaskSubType(i)
+#            @staticmethod
+#            def from_int(i):
+#                return RootConfiguration.FitterConfiguration.TaskSubType(i)
 
-            @staticmethod
-            def from_str(s):
-                return RootConfiguration.FitterConfiguration.TaskSubType[s.upper()]
+#            @staticmethod
+#            def from_str(s):
+#               return RootConfiguration.FitterConfiguration.TaskSubType[s.upper()]
 
 
         def __init__(self):
             super().__init__()
             # default input values
             self._data["task_type"] = RootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL
-            self._data["task_subtype"] = RootConfiguration.FitterConfiguration.TaskSubType.GOAL_POPULATION
             self._data["propagation"] = RootConfiguration.FitterConfiguration.PropagationConfiguration()
             self._data["k_E"] = 1e29    # 1 / (s*s)
             self._data["lamb"] = 4e14 # 1 / s
