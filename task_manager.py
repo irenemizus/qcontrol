@@ -210,7 +210,7 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
 
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
-        return self.psi_init(x, np, x0p, p0, m, De_e, a_e)
+        return self.psi_init(x, np, x0p + x0, p0, m, De_e, a_e)
 
     def ener_goal(self, psif, v, akx2, np):
         return phys_base.hamil(psif[0], v[1][1], akx2, np)
@@ -314,7 +314,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
-        return self.psi_init(x, np, x0p, p0, m, De_e, a_e)
+        return self.psi_init(x, np, x0p + x0, p0, m, De_e, a_e)
 
     def ener_goal(self, psif, v, akx2, np):
         return phys_base.hamil(psif[0], v[1][1], akx2, np)

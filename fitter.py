@@ -1,6 +1,7 @@
 import math
 import numpy
 
+import math_base
 import propagation
 import phys_base
 from config import RootConfiguration
@@ -49,8 +50,12 @@ class FittingSolver:
             dynamic_state_factory=self.fitter_dynamic_state_factory,
             conf_prop=conf_prop)
 
+
     def time_propagation(self):
-        self.solver.time_propagation()
+        self.solver.start()
+        # main propagation loop
+        while self.solver.step():
+            pass
 
 
     def report_static(self, stat: propagation.PropagationSolver.StaticState):
@@ -133,11 +138,12 @@ class FittingSolver:
         milliseconds_per_step = time_span.microseconds / 1000
         self.milliseconds_full += milliseconds_per_step
 
-        # local control algorithm
+        # algorithm without control
         if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION and \
            self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
             res = propagation.PropagationSolver.StepReaction.OK
             dAdt = 0.0
+        # local control algorithm with goal population
         elif self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
             dAdt = self.dyn_ref.E * instr.psigc_psie.imag * coef
@@ -151,6 +157,7 @@ class FittingSolver:
                     print("Imaginary part in dA/dt is too small and has been replaces by epsilon")
                     self.E_patched = self.dAdt_happy / (self.conf_fitter.epsilon * coef)
                 res = propagation.PropagationSolver.StepReaction.CORRECT
+        # local control algorithm with goal projection
         else:
             coef2 = -4.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
             Sge2 = instr.psigc_psie * instr.psigc_psie
@@ -263,6 +270,20 @@ class FittingSolver:
             E_acc = -self.conf_fitter.k_E * first - self.conf_fitter.lamb * second
             self.dyn_ref.E_vel += E_acc * stat.dt
             E = self.dyn_ref.E + self.dyn_ref.E_vel * stat.dt
+        # optimal control algorithm
+        elif self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
+             self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
+            conf_prop = self.conf_fitter.propagation
+            Enorm0 = math.sqrt(math.pi) * conf_prop.E0 * conf_prop.E0 * conf_prop.sigma * \
+                     (math.erf((conf_prop.T - conf_prop.t0) / conf_prop.sigma) +
+                      math.erf(conf_prop.T / conf_prop.sigma)) / 2.0
+
+            chiT = []
+            if dyn.l == self.conf_fitter.nt:
+                chiT.append(numpy.array([0.0] * self.conf_fitter.np).astype(complex))
+                coef = math_base.cprod(stat.psif[0], dyn.psi[1], stat.dx, conf_prop.np)
+                chiT.append(coef * stat.psif[0])
+            E = self.E_patched
         else:
             E = self.E_patched
 
