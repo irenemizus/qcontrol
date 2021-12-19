@@ -1,14 +1,10 @@
-import math
 import numpy
 
-import math_base
-import propagation
-import phys_base
 from config import RootConfiguration
-
+from propagation import *
 
 class FittingSolver:
-    class FitterDynamicState(propagation.PropagationSolver.DynamicState):
+    class FitterDynamicState(PropagationSolver.DynamicState):
         def __init__(self, l=0, psi=None, E=0.0, freq_mult = 1.0, E_vel=0.0, freq_mult_vel = 0.0):
             super().__init__(l, psi, E, freq_mult)
             self.E_vel = E_vel
@@ -32,7 +28,7 @@ class FittingSolver:
         self._warning_collocation_points=_warning_collocation_points
         self._warning_time_steps=_warning_time_steps
         self.dt = 0
-        self.stat_saved = propagation.PropagationSolver.StaticState()
+        self.stat_saved = PropagationSolver.StaticState()
         self.dyn_ref = FittingSolver.FitterDynamicState()
         self.milliseconds_full = 0
         self.E_patched = 0.0
@@ -40,7 +36,7 @@ class FittingSolver:
         self.dAdt_happy = 0.0
 
         conf_prop = conf_fitter.propagation
-        self.solver = propagation.PropagationSolver(
+        self.solver = PropagationSolver(
             self.psi_init, self.psi_goal, self.pot,
             report_static=self.report_static,
             report_dynamic=self.report_dynamic,
@@ -52,13 +48,13 @@ class FittingSolver:
 
 
     def time_propagation(self):
-        self.solver.start()
+        self.solver.start(PropagationSolver.Direction.FORWARD)
         # main propagation loop
         while self.solver.step():
             pass
 
 
-    def report_static(self, stat: propagation.PropagationSolver.StaticState):
+    def report_static(self, stat: PropagationSolver.StaticState):
         self.stat_saved = stat
         self.dt = stat.dt
 
@@ -120,8 +116,12 @@ class FittingSolver:
         self.dyn_ref = dyn
 
 
-    def process_instrumentation(self, instr: propagation.PropagationSolver.InstrumentationOutputData):
-        t = self.dt * self.dyn_ref.l
+    def process_instrumentation(self, instr: PropagationSolver.InstrumentationOutputData):
+        if self.dt >= 0.0:
+            t = self.dt * self.dyn_ref.l
+        else:
+            t = self.dt * self.dyn_ref.l + self.conf_fitter.propagation.T
+
 
         # calculating the minimum number of collocation points and time steps that are needed for convergence
         nt_min = int(math.ceil(
@@ -141,14 +141,14 @@ class FittingSolver:
         # algorithm without control
         if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION and \
            self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
-            res = propagation.PropagationSolver.StepReaction.OK
+            res = PropagationSolver.StepReaction.OK
             dAdt = 0.0
         # local control algorithm with goal population
         elif self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
             dAdt = self.dyn_ref.E * instr.psigc_psie.imag * coef
             if dAdt >= 0.0:
-                res = propagation.PropagationSolver.StepReaction.OK
+                res = PropagationSolver.StepReaction.OK
                 self.dAdt_happy = dAdt
             else:
                 if abs(instr.psigc_psie.imag) > self.conf_fitter.epsilon:
@@ -156,7 +156,7 @@ class FittingSolver:
                 else:
                     print("Imaginary part in dA/dt is too small and has been replaces by epsilon")
                     self.E_patched = self.dAdt_happy / (self.conf_fitter.epsilon * coef)
-                res = propagation.PropagationSolver.StepReaction.CORRECT
+                res = PropagationSolver.StepReaction.CORRECT
         # local control algorithm with goal projection
         else:
             coef2 = -4.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
@@ -166,7 +166,7 @@ class FittingSolver:
             body = Sdvge + freq_cm * self.dyn_ref.freq_mult * Sge2
             dAdt = body.imag * coef2
             if dAdt >= 0.0:
-                res = propagation.PropagationSolver.StepReaction.OK
+                res = PropagationSolver.StepReaction.OK
                 self.dAdt_happy = dAdt
             else:
                 if Sge2.imag > self.conf_fitter.epsilon:
@@ -183,7 +183,7 @@ class FittingSolver:
                 if self.freq_mult_patched < 0.0:
                     self.freq_mult_patched = 0.0
 
-                res = propagation.PropagationSolver.StepReaction.CORRECT
+                res = PropagationSolver.StepReaction.CORRECT
 
         max_ind_psi_l = numpy.argmax(abs(self.dyn_ref.psi[0]))
         max_ind_psi_u = numpy.argmax(abs(self.dyn_ref.psi[1]))
@@ -229,14 +229,18 @@ class FittingSolver:
                 "milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(
                     self.milliseconds_full / self.dyn_ref.l))
 
-            if res != propagation.PropagationSolver.StepReaction.OK:
+            if res != PropagationSolver.StepReaction.OK:
                 print("CORRECTING THE ITERATION")
 
 
     # calculating envelope of the laser field energy at the given time value
-    def LaserFieldEnvelope(self, stat: propagation.PropagationSolver.StaticState,
-                           dyn: propagation.PropagationSolver.DynamicState):
-        t = stat.dt * dyn.l
+    def LaserFieldEnvelope(self, stat: PropagationSolver.StaticState,
+                           dyn: PropagationSolver.DynamicState):
+        if stat.dt >= 0.0:
+            t = stat.dt * dyn.l
+        else:
+            t = stat.dt * dyn.l + self.conf_fitter.propagation.T
+
         self.E_patched = phys_base.laser_field(self.conf_fitter.propagation.E0, t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma)
 
         # transition without control
@@ -291,7 +295,7 @@ class FittingSolver:
 
 
     # calculating a frequency multiplier value at the given time value
-    def FreqMultiplier(self, stat: propagation.PropagationSolver.StaticState):
+    def FreqMultiplier(self, stat: PropagationSolver.StaticState):
         # local control algorithm (with A = Pg + Pe)
         if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
             if self.freq_mult_patched < 0:

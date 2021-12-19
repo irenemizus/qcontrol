@@ -72,6 +72,10 @@ class PropagationSolver:
         OK = 0
         CORRECT = 1
 
+    class Direction(Enum):
+        FORWARD = 1
+        BACKWARD = -1
+
     def __init__(
             self,
             psi_init,
@@ -118,7 +122,7 @@ class PropagationSolver:
         self.dyn = None
 
 
-    def start(self):
+    def start(self, dir: Direction):
         # calculating coordinate step of the problem
         dx = self.L / (self.np - 1)
 
@@ -160,7 +164,7 @@ class PropagationSolver:
         cenerf = math_base.cprod(phif, psif[0], dx, self.np)
 
         # time propagation
-        dt = self.T / (self.nt - 1)
+        dt = dir.value * self.T / (self.nt - 1)
         psi = copy.deepcopy(psi0)
 
         # initial laser field energy
@@ -193,7 +197,11 @@ class PropagationSolver:
         emax_u = self.stat.v[1][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
         emin_u = self.stat.v[1][0]
 
-        t = self.stat.dt * self.dyn.l
+        if self.stat.dt >= 0.0:
+            t = self.stat.dt * self.dyn.l
+        else:
+            t = self.stat.dt * self.dyn.l + self.T
+
         self.dyn.freq_mult = self.freq_multiplier(self.stat)
 
         # Here we're transforming the problem to the one for psi_omega
