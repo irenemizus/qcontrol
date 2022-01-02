@@ -33,7 +33,7 @@ class _PsiFunctions:
         psi = []
         psi_l = numpy.array(
             [cmath.exp(-(xi - x0) * (xi - x0) / 2.0 / a / a + 1j * p0 * xi) / pow(math.pi, 0.25) / math.sqrt(a) for xi
-             in x])
+             in x]).astype(complex)
         psi.append(psi_l)
 
         psi_u = numpy.array([0.0] * np).astype(complex)
@@ -67,7 +67,7 @@ class _PsiFunctions:
         y = [math.exp(-a * (xi - x0)) / xe for xi in x]
         arg = 1.0 / xe - 1.0
         psi_l = numpy.array(
-            [math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, float(arg / 2.0)) for yi in y])
+            [math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, float(arg / 2.0)) for yi in y]).astype(complex)
         psi.append(psi_l)
 
         psi_u = numpy.array([0.0] * np).astype(complex)

@@ -450,6 +450,8 @@ class PlotReporter(Reporter):
 
 class MultipleReporter(Reporter):
     def __init__(self, conf_output):
+        super(MultipleReporter, self).__init__()
+
         self.reps = []
         if not conf_output.plot.is_empty():
             self.reps.append(PlotReporter(conf_output.plot))

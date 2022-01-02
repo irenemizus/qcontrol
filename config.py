@@ -44,51 +44,57 @@ class ConfigurationBase:
 class RootConfiguration(ConfigurationBase):
 
     class OutputTableConfiguration(ConfigurationBase):
-        def __init__(self):
+        def __init__(self, suffix = None):
+            if suffix is not None and suffix != "":
+                suffix = "_" + suffix
+
             super().__init__()
             # default input values
             self._data["out_path"] = "output"
-            self._data["tab_abs"] = "fort.21"
-            self._data["tab_real"] = "fort.22"
-            self._data["tab_mom"] = "fort.23"
+            self._data["tab_abs"] = f"tab_abs{suffix}.csv"
+            self._data["tab_real"] = f"tab_real{suffix}.csv"
+            self._data["tab_mom"] = f"tab_mom{suffix}.csv"
             self._data["lmin"] = 0
             self._data["mod_fileout"] = 100
 
     class OutputPlotConfiguration(ConfigurationBase):
-        def __init__(self):
+        def __init__(self, suffix = None):
             super().__init__()
+            if suffix is not None and suffix != "":
+                suffix = "_" + suffix
+
             # default input values
             self._data["out_path"] = "output/plots"
             self._data["lmin"] = 0
             self._data["mod_plotout"] = 500
             self._data["mod_update"] = 50
             self._data["number_plotout"] = 10
-            self._data["gr_abs_grd"] = "fig_abs_grd.pdf"
-            self._data["gr_real_grd"] = "fig_real_grd.pdf"
-            self._data["gr_abs_exc"] = "fig_abs_exc.pdf"
-            self._data["gr_real_exc"] = "fig_real_exc.pdf"
-            self._data["gr_moms_low_grd"] = "fig_moms_low_grd.pdf"
-            self._data["gr_moms_grd"] = "fig_moms_grd.pdf"
-            self._data["gr_ener_grd"] = "fig_ener_grd.pdf"
-            self._data["gr_lf_en"] = "fig_lf_en.pdf"
-            self._data["gr_lf_fr"] = "fig_lf_fr.pdf"
-            self._data["gr_overlp_grd"] = "fig_overlp_grd.pdf"
-            self._data["gr_ener_tot"] = "fig_ener_tot.pdf"
-            self._data["gr_abs_max_grd"] = "fig_abs_max_grd.pdf"
-            self._data["gr_real_max_grd"] = "fig_real_max_grd.pdf"
-            self._data["gr_moms_low_exc"] = "fig_moms_low_exc.pdf"
-            self._data["gr_moms_exc"] = "fig_moms_exc.pdf"
-            self._data["gr_ener_exc"] = "fig_ener_exc.pdf"
-            self._data["gr_overlp_exc"] = "fig_overlp_exc.pdf"
-            self._data["gr_overlp_tot"] = "fig_overlp_tot.pdf"
-            self._data["gr_abs_max_exc"] = "fig_abs_max_exc.pdf"
-            self._data["gr_real_max_exc"] = "fig_real_max_exc.pdf"
+            self._data["gr_abs_grd"] = f"fig_abs_grd{suffix}.pdf"
+            self._data["gr_real_grd"] = f"fig_real_grd{suffix}.pdf"
+            self._data["gr_abs_exc"] = f"fig_abs_exc{suffix}.pdf"
+            self._data["gr_real_exc"] = f"fig_real_exc{suffix}.pdf"
+            self._data["gr_moms_low_grd"] = f"fig_moms_low_grd{suffix}.pdf"
+            self._data["gr_moms_grd"] = f"fig_moms_grd{suffix}.pdf"
+            self._data["gr_ener_grd"] = f"fig_ener_grd{suffix}.pdf"
+            self._data["gr_lf_en"] = f"fig_lf_en{suffix}.pdf"
+            self._data["gr_lf_fr"] = f"fig_lf_fr{suffix}.pdf"
+            self._data["gr_overlp_grd"] = f"fig_overlp_grd{suffix}.pdf"
+            self._data["gr_ener_tot"] = f"fig_ener_tot{suffix}.pdf"
+            self._data["gr_abs_max_grd"] = f"fig_abs_max_grd{suffix}.pdf"
+            self._data["gr_real_max_grd"] = f"fig_real_max_grd{suffix}.pdf"
+            self._data["gr_moms_low_exc"] = f"fig_moms_low_exc{suffix}.pdf"
+            self._data["gr_moms_exc"] = f"fig_moms_exc{suffix}.pdf"
+            self._data["gr_ener_exc"] = f"fig_ener_exc{suffix}.pdf"
+            self._data["gr_overlp_exc"] = f"fig_overlp_exc{suffix}.pdf"
+            self._data["gr_overlp_tot"] = f"fig_overlp_tot{suffix}.pdf"
+            self._data["gr_abs_max_exc"] = f"fig_abs_max_exc{suffix}.pdf"
+            self._data["gr_real_max_exc"] = f"fig_real_max_exc{suffix}.pdf"
 
     class OutputMultipleConfiguration(ConfigurationBase):
-        def __init__(self):
+        def __init__(self, suffix = None):
             super().__init__()
-            self._data['table'] = RootConfiguration.OutputTableConfiguration()
-            self._data['plot'] = RootConfiguration.OutputPlotConfiguration()
+            self._data['table'] = RootConfiguration.OutputTableConfiguration(suffix)
+            self._data['plot'] = RootConfiguration.OutputPlotConfiguration(suffix)
 
     class FitterConfiguration(ConfigurationBase):
         class PropagationConfiguration(ConfigurationBase):
@@ -214,6 +220,7 @@ class RootConfiguration(ConfigurationBase):
             self._data["impulses_number"] = 2
             self._data["delay"] = 600e-15   # s
             self._data["mod_log"] = 500
+            self._data["iter_max"] = 5
 
 
     def __init__(self):

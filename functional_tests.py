@@ -153,7 +153,6 @@ class fitter_Tests(unittest.TestCase):
 
         user_conf = {
             "task_type": "single_pot",
-            "task_subtype": "goal_population",
             "k_E": 1e29,
             "lamb": 4e14,
             "pow": 0.8,
@@ -221,7 +220,6 @@ class fitter_Tests(unittest.TestCase):
 
         user_conf = {
             "task_type": "single_pot",
-            "task_subtype": "goal_population",
             "k_E": 1e29,
             "lamb": 4e14,
             "pow": 0.8,
@@ -289,7 +287,6 @@ class fitter_Tests(unittest.TestCase):
 
         user_conf = {
             "task_type": "filtering",
-            "task_subtype": "goal_projection",
             "k_E": 1e29,
             "lamb": 8e14,
             "pow": 0.65,
@@ -357,7 +354,6 @@ class fitter_Tests(unittest.TestCase):
 
         user_conf = {
             "task_type": "trans_wo_control",
-            "task_subtype": "goal_population",
             "k_E": 1e29,
             "lamb": 4e14,
             "pow": 0.8,
@@ -425,7 +421,6 @@ class fitter_Tests(unittest.TestCase):
 
         user_conf = {
             "task_type": "intuitive_control",
-            "task_subtype": "goal_population",
             "k_E": 1e29,
             "lamb": 4e14,
             "pow": 0.8,
@@ -492,8 +487,7 @@ class fitter_Tests(unittest.TestCase):
         conf = RootConfiguration.FitterConfiguration()
 
         user_conf = {
-            "task_type": "local_control",
-            "task_subtype": "goal_population",
+            "task_type": "local_control_population",
             "k_E": 1e29,
             "lamb": 4e14,
             "pow": 0.8,
@@ -560,8 +554,7 @@ class fitter_Tests(unittest.TestCase):
         conf = RootConfiguration.FitterConfiguration()
 
         user_conf = {
-            "task_type": "local_control",
-            "task_subtype": "goal_projection",
+            "task_type": "local_control_projection",
             "k_E": 1e29,
             "lamb": 8e14,
             "pow": 0.65,

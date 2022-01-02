@@ -18,6 +18,9 @@ class PropagationSolver:
                      cener0=None, cener0_u=None, cenerf=None,
                      E00=0.0, overlp00=None, overlpf0=None,
                      dt=0.0, dx=0.0, x=None, v=None, akx2=None):
+            assert (psi0 is None and psif is None) or (psi0[0] is not psif[0] and psi0[1] is not psif[1]), \
+                "A single array is passed twice (as psi0 and psif). Clone it!"
+
             self.psi0 = psi0
             self.psif = psif
             self.moms0 = moms0
@@ -38,9 +41,13 @@ class PropagationSolver:
 
     # These parameters are updated on each calculation step
     class DynamicState:
-        def __init__(self, l=0, psi=None, E=0.0, freq_mult = 1.0):
+        def __init__(self, l=0, t=0.0, psi=None, psi_omega=None, E=0.0, freq_mult = 1.0):
+            assert (psi is None and psi_omega is None) or (psi[0] is not psi_omega[0] and psi[1] is not psi_omega[1] ), "A single array is passed twice (as psi and psi_omega). Clone it!"
+
             self.l = l
+            self.t = t
             self.psi = psi
+            self.psi_omega = psi_omega
             self.E = E
             self.freq_mult = freq_mult
 
@@ -67,10 +74,11 @@ class PropagationSolver:
             self.time_after = time_after
 
 
-    # The user's decision to correct or not to correct a step
+    # The user's decision to correct/iterate or not to correct/iterate a step
     class StepReaction(Enum):
         OK = 0
         CORRECT = 1
+        ITERATE = 2
 
     class Direction(Enum):
         FORWARD = 1
@@ -78,9 +86,7 @@ class PropagationSolver:
 
     def __init__(
             self,
-            psi_init,
             task_manager: task_manager.TaskManager,
-            pot,
             report_static,
             report_dynamic,
             process_instrumentation,
@@ -88,9 +94,6 @@ class PropagationSolver:
             freq_multiplier,
             dynamic_state_factory,
             conf_prop):
-
-        self.pot = pot
-        self.psi_init = psi_init
         self.task_manager = task_manager
         self.report_static = report_static
         self.report_dynamic = report_dynamic
@@ -122,24 +125,15 @@ class PropagationSolver:
         self.dyn = None
 
 
-    def start(self, dir: Direction):
-        # calculating coordinate step of the problem
-        dx = self.L / (self.np - 1)
-
-        # setting the coordinate grid
-        x = math_base.coord_grid(dx, self.np)
-
+    def start(self, dx, x, psi0, dir: Direction):
         # evaluating of potential(s)
-        v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du)
+        v = self.task_manager.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du)
 
         # evaluating of k vector
         akx2 = math_base.initak(self.np, dx, 2)
 
         # evaluating of kinetic energy
         akx2 *= -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
-
-        # evaluating of initial wavefunction
-        psi0 = self.psi_init(x, self.np, self.x0, self.p0, self.m, self.De, self.a)
 
         # initial normalization check
         cnorm0 = math_base.cprod(psi0[0], psi0[0], dx, self.np)
@@ -181,13 +175,13 @@ class PropagationSolver:
                      cener0, cener0_u, cenerf, E00, overlp00, overlpf0, dt, dx, x, v, akx2)
         self.report_static(self.stat)
 
-        self.dyn = self.dynamic_state_factory(0, psi, 0.0, 1.0)
+        self.dyn = self.dynamic_state_factory(0, 0.0, psi, psi, 0.0, 1.0)
         self.report_dynamic(self.dyn)
 
         self.dyn.l = 1
 
 
-    def step(self):
+    def step(self, t_start):
         time_before = datetime.datetime.now()
 
         # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_l
@@ -197,20 +191,16 @@ class PropagationSolver:
         emax_u = self.stat.v[1][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
         emin_u = self.stat.v[1][0]
 
-        if self.stat.dt >= 0.0:
-            t = self.stat.dt * self.dyn.l
-        else:
-            t = self.stat.dt * self.dyn.l + self.T
+        self.dyn.t = self.stat.dt * self.dyn.l + t_start
 
         self.dyn.freq_mult = self.freq_multiplier(self.stat)
 
         # Here we're transforming the problem to the one for psi_omega
-        psi_omega = []
-        exp_L = cmath.exp(1j * math.pi * self.nu_L * self.dyn.freq_mult * t)
+        exp_L = cmath.exp(1j * math.pi * self.nu_L * self.dyn.freq_mult * self.dyn.t)
         psi_omega_l = self.dyn.psi[0] / exp_L
-        psi_omega.append(psi_omega_l)
+        self.dyn.psi_omega[0][:] = psi_omega_l[:]
         psi_omega_u = self.dyn.psi[1] * exp_L
-        psi_omega.append(psi_omega_u)
+        self.dyn.psi_omega[1][:] = psi_omega_u[:]
 
         # New energy ranges
         eL = self.nu_L * self.dyn.freq_mult * phys_base.Hz_to_cm / 2.0
@@ -228,23 +218,23 @@ class PropagationSolver:
         self.dyn.E = self.laser_field_envelope(self.stat, self.dyn)
         E_full = self.dyn.E * exp_L * exp_L
 
-        psi_omega = phys_base.prop(psi_omega, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax, self.dyn.E, eL)
+        self.dyn.psi_omega = phys_base.prop(self.dyn.psi_omega, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax, self.dyn.E, eL)
 
-        cnorm_l = math_base.cprod(psi_omega[0], psi_omega[0], self.stat.dx, self.np)
-        cnorm_u = math_base.cprod(psi_omega[1], psi_omega[1], self.stat.dx, self.np)
+        cnorm_l = math_base.cprod(self.dyn.psi_omega[0], self.dyn.psi_omega[0], self.stat.dx, self.np)
+        cnorm_u = math_base.cprod(self.dyn.psi_omega[1], self.dyn.psi_omega[1], self.stat.dx, self.np)
         cnorm = cnorm_l + cnorm_u
 
         # renormalization
         if cnorm > 0.0:
-            psi_omega[0] /= math.sqrt(abs(cnorm))
-            psi_omega[1] /= math.sqrt(abs(cnorm))
+            self.dyn.psi_omega[0] /= math.sqrt(abs(cnorm))
+            self.dyn.psi_omega[1] /= math.sqrt(abs(cnorm))
 
-        psigc_psie = math_base.cprod(psi_omega[1], psi_omega[0], self.stat.dx, self.np)
-        psigc_dv_psie = math_base.cprod3(psi_omega[1], self.stat.v[0][1] - self.stat.v[1][1], psi_omega[0], self.stat.dx, self.np)
+        psigc_psie = math_base.cprod(self.dyn.psi_omega[1], self.dyn.psi_omega[0], self.stat.dx, self.np)
+        psigc_dv_psie = math_base.cprod3(self.dyn.psi_omega[1], self.stat.v[0][1] - self.stat.v[1][1], self.dyn.psi_omega[0], self.stat.dx, self.np)
 
         # converting back to psi
-        self.dyn.psi[0] = psi_omega[0] * exp_L
-        self.dyn.psi[1] = psi_omega[1] / exp_L
+        self.dyn.psi[0] = self.dyn.psi_omega[0] * exp_L
+        self.dyn.psi[1] = self.dyn.psi_omega[1] / exp_L
 
         # calculating of a current energy
         phi = phys_base.hamil2D_orig(self.dyn.psi, self.stat.v, self.stat.akx2, self.np, E_full)

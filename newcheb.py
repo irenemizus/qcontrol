@@ -31,13 +31,13 @@ Options:
             By default, is equal to 100
         tab_abs
             output file name, to which absolute values of wavefunctions should be written.
-            By default, is equal to "output/fort.21"
+            By default, is equal to "output/tab_abs.csv"
         tab_real
             output file name, to which real parts of wavefunctions should be written.
-            By default, is equal to "output/fort.22"
+            By default, is equal to "output/tab_real.csv"
         tab_mom
             output file name, to which expectation values of x, x*x, p, p*p should be written.
-            By default, is equal to "output/fort.23"
+            By default, is equal to "output/tab_mom.csv"
         out_path
             a path name for the output tables.
             By default, is equal to "output"
@@ -114,8 +114,9 @@ Options:
         Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
         By default, is equal to 0.8
     epsilon
-        small parameter for cutting of an imaginary part in dA/dt.
-        Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
+        small parameter, which is used for cutting of an imaginary part in dA/dt
+        (applicable for the task_type = "local_control"), or as a divergence criteria for
+        the task_type = "optimal_control_...". For all other cases is a dummy variable.
         By default, is equal to 1e-15
     impulses_number
         number of laser pulses in the "intuitive_control" task type.
@@ -128,6 +129,10 @@ Options:
         time delay between the laser pulses in sec.
         Is a dummy variable for impulses_number less than 2.
         By default, is equal to 600e-15
+    iter_max
+        maximum iteration number for the "optimal_control_..." task_type in case if a divergence with the
+        given criteria hasn't been reached. Is a dummy variable for all other task types.
+        By default, is equal to 5
     propagation
         a dictionary that contains the parameters, which are used in a simple propagation task with laser field:
         m
@@ -219,6 +224,7 @@ import getopt
 import json
 import math
 
+import grid_setup
 import fitter
 import reporter
 import task_manager
@@ -291,6 +297,9 @@ def main(argv):
     if conf.fitter.impulses_number < 0:
         raise ValueError("The number of laser pulses 'impulses_number' should be positive or 0")
 
+    if conf.fitter.iter_max < 0:
+        raise ValueError("The maximum number of iterations in the optimal control task 'iter_max' should be positive or 0")
+
     if conf.fitter.propagation.L <= 0.0 or conf.fitter.propagation.T <= 0.0:
         raise ValueError("The value of spatial range 'L' and of time range 'T' of the problem"
                          "must be positive")
@@ -354,13 +363,23 @@ def main(argv):
 
     task_manager_imp = task_manager.create(conf.fitter)
 
+    # setup of the grid
+    grid = grid_setup.GridConstructor(conf.fitter.propagation)
+    dx, x = grid.grid_setup()
+
+    # evaluating of initial wavefunction
+    psi0 = task_manager_imp.psi_init(x, conf.fitter.propagation.np, conf.fitter.propagation.x0,
+                                     conf.fitter.propagation.p0, conf.fitter.propagation.m,
+                                     conf.fitter.propagation.De, conf.fitter.propagation.a)
+
+
     # main calculation part
-    with reporter.MultipleReporter(conf.output) as reporter_impl:
-        fitting_solver = fitter.FittingSolver(conf.fitter, task_manager_imp.psi_init, task_manager_imp, task_manager_imp.pot, reporter_impl,
+    with reporter.MultipleReporter(conf.output) as reporter_imp:
+        fitting_solver = fitter.FittingSolver(conf.fitter, psi0, task_manager_imp, reporter_imp,
                                               _warning_collocation_points,
                                               _warning_time_steps
                                               )
-        fitting_solver.time_propagation()
+        fitting_solver.time_propagation(dx, x)
 
 
 if __name__ == "__main__":
