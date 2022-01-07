@@ -1,6 +1,5 @@
 import cmath
 import math
-import math_base
 import phys_base
 import numpy
 from config import RootConfiguration
@@ -16,6 +15,11 @@ are probably wrong :)
 """
 class _PsiFunctions:
     @staticmethod
+    def zero(np):
+        return numpy.array([0.0] * np).astype(complex)
+
+
+    @staticmethod
     def harmonic(x, np, x0, p0, m, De, a):
         """ Initial wave function generator
             INPUT
@@ -30,14 +34,9 @@ class _PsiFunctions:
             OUTPUT
             psi     complex vector of length np describing the dimensionless wavefunction """
 
-        psi = []
-        psi_l = numpy.array(
+        psi = numpy.array(
             [cmath.exp(-(xi - x0) * (xi - x0) / 2.0 / a / a + 1j * p0 * xi) / pow(math.pi, 0.25) / math.sqrt(a) for xi
              in x]).astype(complex)
-        psi.append(psi_l)
-
-        psi_u = numpy.array([0.0] * np).astype(complex)
-        psi.append(psi_u)
 
         return psi
 
@@ -63,15 +62,10 @@ class _PsiFunctions:
         # anharmonicity factor of the system on the lower PEC
         xe = omega_0 / 4.0 / De
 
-        psi = []
         y = [math.exp(-a * (xi - x0)) / xe for xi in x]
         arg = 1.0 / xe - 1.0
-        psi_l = numpy.array(
+        psi = numpy.array(
             [math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, float(arg / 2.0)) for yi in y]).astype(complex)
-        psi.append(psi_l)
-
-        psi_u = numpy.array([0.0] * np).astype(complex)
-        psi.append(psi_u)
 
         return psi
 
@@ -101,16 +95,16 @@ class TaskManager:
         raise NotImplementedError()
 
     def ener_goal(self, psif, v, akx2, np):
-        raise NotImplementedError()
-
-    def init_proximity_to_goal(self, psif, psi, dx, np):
-        raise NotImplementedError()
+        phif = []
+        phif.append(phys_base.hamil(psif[0], v[0][1], akx2, np))
+        phif.append(phys_base.hamil(psif[1], v[1][1], akx2, np))
+        return phif
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         raise NotImplementedError()
 
     def psi_init(self, x, np, x0, p0, m, De, a):
-        return self.psi_init_impl(x, np, x0, p0, m, De, a)
+        return [self.psi_init_impl(x, np, x0, p0, m, De, a), _PsiFunctions.zero(np)]
 
 
 class HarmonicSingleStateTaskManager(TaskManager):
@@ -164,15 +158,8 @@ class HarmonicSingleStateTaskManager(TaskManager):
 
         return v
 
-
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
-        return _PsiFunctions.harmonic(x, np, x0, p0, m, De, a)
-
-    def ener_goal(self, psif, v, akx2, np):
-        return phys_base.hamil(psif[0], v[0][1], akx2, np)
-
-    def init_proximity_to_goal(self, psif, psi, dx, np):
-        return math_base.cprod(psif[0], psi[0], dx, np)
+        return [_PsiFunctions.harmonic(x, np, x0, p0, m, De, a), _PsiFunctions.zero(np)]
 
 
 class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
@@ -208,15 +195,8 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
 
         return v
 
-
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
-        return self.psi_init(x, np, x0p + x0, p0, m, De_e, a_e)
-
-    def ener_goal(self, psif, v, akx2, np):
-        return phys_base.hamil(psif[0], v[1][1], akx2, np)
-
-    def init_proximity_to_goal(self, psif, psi, dx, np):
-        return math_base.cprod(psif[0], psi[1], dx, np)
+        return [_PsiFunctions.zero(np), _PsiFunctions.harmonic(x, np, x0p + x0, p0, m, De_e, a_e)]
 
 
 class MorseSingleStateTaskManager(TaskManager):
@@ -272,19 +252,25 @@ class MorseSingleStateTaskManager(TaskManager):
 
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
-        return _PsiFunctions.morse(x, np, x0, p0, m, De, a)
-
-    def ener_goal(self, psif, v, akx2, np):
-        return phys_base.hamil(psif[0], v[0][1], akx2, np)
-
-    def init_proximity_to_goal(self, psif, psi, dx, np):
-        return math_base.cprod(psif[0], psi[0], dx, np)
+        return [_PsiFunctions.morse(x, np, x0, p0, m, De, a), _PsiFunctions.zero(np)]
 
 
 class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
     def __init__(self, wf_type: RootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
                  conf_fitter: RootConfiguration.FitterConfiguration):
         super().__init__(wf_type, conf_fitter)
+
+    @staticmethod
+    def _pot(x, np, m, De, a, x0p, De_e, a_e, Du):
+        # Lower morse potential
+        v = MorseSingleStateTaskManager._pot_level1(x, m, De, a)
+
+        # Upper morse potential
+        v_u = numpy.array(
+            [De_e * (1.0 - math.exp(-a_e * (xi - x0p))) * (1.0 - math.exp(-a_e * (xi - x0p))) + Du for xi in x])
+        v.append((Du, v_u))
+
+        return v
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         """ Potential energy vectors
@@ -302,25 +288,10 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
             OUTPUT
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
 
-        # Lower morse potential
-        v = MorseSingleStateTaskManager._pot_level1(x, m, De, a)
-
-        # Upper morse potential
-        v_u = numpy.array(
-            [De_e * (1.0 - math.exp(-a_e * (xi - x0p))) * (1.0 - math.exp(-a_e * (xi - x0p))) + Du for xi in x])
-        v.append((Du, v_u))
-
-        return v
-
+        return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du)
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
-        return self.psi_init(x, np, x0p + x0, p0, m, De_e, a_e)
-
-    def ener_goal(self, psif, v, akx2, np):
-        return phys_base.hamil(psif[0], v[1][1], akx2, np)
-
-    def init_proximity_to_goal(self, psif, psi, dx, np):
-        return math_base.cprod(psif[0], psi[1], dx, np)
+        return [_PsiFunctions.zero(np), _PsiFunctions.morse(x, np, x0p + x0, p0, m, De_e, a_e)]
 
 
 def create(conf_fitter: RootConfiguration.FitterConfiguration):

@@ -62,6 +62,8 @@ class RootConfiguration(ConfigurationBase):
             super().__init__()
             if suffix is not None and suffix != "":
                 suffix = "_" + suffix
+            else:
+                suffix = ""
 
             # default input values
             self._data["out_path"] = "output/plots"

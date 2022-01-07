@@ -297,7 +297,8 @@ def main(argv):
     if conf.fitter.impulses_number < 0:
         raise ValueError("The number of laser pulses 'impulses_number' should be positive or 0")
 
-    if conf.fitter.iter_max < 0:
+    if conf.fitter.iter_max < 0 and (conf.fitter.task_type == conf.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
+            conf.fitter.task_type == conf.fitter.TaskType.OPTIMAL_CONTROL_GRADIENT):
         raise ValueError("The maximum number of iterations in the optimal control task 'iter_max' should be positive or 0")
 
     if conf.fitter.propagation.L <= 0.0 or conf.fitter.propagation.T <= 0.0:
@@ -372,10 +373,16 @@ def main(argv):
                                      conf.fitter.propagation.p0, conf.fitter.propagation.m,
                                      conf.fitter.propagation.De, conf.fitter.propagation.a)
 
+    # evaluating of the final goal
+    psif = task_manager_imp.psi_goal(x, conf.fitter.propagation.np, conf.fitter.propagation.x0,
+                                     conf.fitter.propagation.p0, conf.fitter.propagation.x0p,
+                                     conf.fitter.propagation.m, conf.fitter.propagation.De,
+                                     conf.fitter.propagation.De_e, conf.fitter.propagation.Du,
+                                     conf.fitter.propagation.a, conf.fitter.propagation.a_e)
 
     # main calculation part
     with reporter.MultipleReporter(conf.output) as reporter_imp:
-        fitting_solver = fitter.FittingSolver(conf.fitter, psi0, task_manager_imp, reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf.fitter, psi0, psif, task_manager_imp.pot, reporter_imp,
                                               _warning_collocation_points,
                                               _warning_time_steps
                                               )
