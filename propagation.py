@@ -4,8 +4,11 @@ import copy
 from enum import Enum
 import datetime
 
+import numpy
+
 import math_base
 import phys_base
+from reporter import PropagationReporter
 
 
 class PropagationSolver:
@@ -76,27 +79,32 @@ class PropagationSolver:
         CORRECT = 1
         ITERATE = 2
 
+
     class Direction(Enum):
         FORWARD = 1
         BACKWARD = -1
 
+
     def __init__(
             self,
             pot,
-            report_static,
-            report_dynamic,
-            process_instrumentation,
+            _warning_collocation_points,
+            _warning_time_steps,
+            reporter: PropagationReporter,
             laser_field_envelope,
             freq_multiplier,
             dynamic_state_factory,
+            mod_log,
             conf_prop):
+        self.milliseconds_full = 0.0
         self.pot = pot
-        self.report_static = report_static
-        self.report_dynamic = report_dynamic
-        self.process_instrumentation = process_instrumentation
+        self._warning_collocation_points = _warning_collocation_points
+        self._warning_time_steps = _warning_time_steps
+        self.reporter = reporter
         self.laser_field_envelope = laser_field_envelope
         self.freq_multiplier = freq_multiplier
         self.dynamic_state_factory = dynamic_state_factory
+        self.mod_log = mod_log
 
         self.m = conf_prop.m
         self.L = conf_prop.L
@@ -119,6 +127,7 @@ class PropagationSolver:
 
         self.stat = None
         self.dyn = None
+        self.instr = None
 
 
     @staticmethod
@@ -149,6 +158,109 @@ class PropagationSolver:
         overlp.append(math_base.cprod(psi_goal[1], psi[1], dx, np))
 
         return overlp
+
+
+    def report_static(self):
+        # check if input data are correct in terms of the given problem
+        # calculating the initial energy range of the Hamiltonian operator H
+        emax0 = self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
+        emin0 = self.stat.v[0][0]
+
+        # calculating the initial minimum number of collocation points that is needed for convergence
+        np_min0 = int(
+            math.ceil(self.L * math.sqrt(
+                      2.0 * self.m * (emax0 - emin0) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi
+                      )
+        )
+
+        # calculating the initial minimum number of time steps that is needed for convergence
+        nt_min0 = int(
+            math.ceil((emax0 - emin0) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h
+                      )
+        )
+
+        if self.np < np_min0:
+            if self._warning_collocation_points:
+                self._warning_collocation_points(self.np, np_min0)
+        if self.nt < nt_min0:
+            if self._warning_time_steps:
+                self._warning_time_steps(self.nt, nt_min0)
+
+        cener0_tot = self.stat.cener0[0] + self.stat.cener0[1]
+        overlp0 =  self.stat.overlp00[0] + self.stat.overlp00[1]
+        overlpf = self.stat.overlpf0[0] + self.stat.overlpf0[1]
+        overlp0_abs = abs(overlp0) + abs(overlpf)
+        max_ind_psi_l = numpy.argmax(self.stat.psi0[0])
+        max_ind_psi_u = numpy.argmax(self.stat.psi0[1])
+
+        # plotting initial values
+        self.reporter.print_time_point_prop(0, self.stat.psi0, 0.0, self.stat.x, self.np, self.stat.moms0,
+                                       self.stat.cener0[0].real, self.stat.cener0[1].real,
+                                       overlp0, overlpf, overlp0_abs, cener0_tot.real,
+                                       abs(self.stat.psi0[0][max_ind_psi_l]), self.stat.psi0[0][max_ind_psi_l].real,
+                                       abs(self.stat.psi0[1][max_ind_psi_u]), self.stat.psi0[1][max_ind_psi_u].real)
+
+        print("Initial emax = ", emax0)
+
+        print(" Initial state features: ")
+        print("Initial normalization (ground state): ", abs(self.stat.cnorm0[0]))
+        print("Initial energy (ground state): ", abs(self.stat.cener0[0]))
+        print("Initial normalization (excited state): ", abs(self.stat.cnorm0[1]))
+        print("Initial energy (excited state): ", abs(self.stat.cener0[1]))
+
+        print(" Final goal features: ")
+        print("Final goal normalization (ground state): ", abs(self.stat.cnormf[0]))
+        print("Final goal energy (ground state): ", abs(self.stat.cenerf[0]))
+        print("Final goal normalization (excited state): ", abs(self.stat.cnormf[1]))
+        print("Final goal energy (excited state): ", abs(self.stat.cenerf[1]))
+
+
+    def report_dynamic(self):
+        # calculating the minimum number of collocation points and time steps that are needed for convergence
+        nt_min = int(math.ceil(
+            (self.instr.emax - self.instr.emin) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
+        np_min = int(math.ceil(
+            self.L * math.sqrt(2.0 * self.m *
+                    (self.instr.emax - self.instr.emin) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
+
+        cener_tot = self.instr.cener[0] + self.instr.cener[1]
+        overlp0 = self.instr.overlp0[0] + self.instr.overlp0[1]
+        overlpf = self.instr.overlpf[0] + self.instr.overlpf[1]
+        overlp_abs = abs(overlp0) + abs(overlpf)
+
+        time_span = self.instr.time_after - self.instr.time_before
+        milliseconds_per_step = time_span.microseconds / 1000
+        self.milliseconds_full += milliseconds_per_step
+
+        max_ind_psi_l = numpy.argmax(abs(self.dyn.psi[0]))
+        max_ind_psi_u = numpy.argmax(abs(self.dyn.psi[1]))
+
+        self.reporter.print_time_point_prop(self.dyn.l, self.dyn.psi, self.dyn.t, self.stat.x, self.np,
+                                            self.instr.moms, self.instr.cener[0].real, self.instr.cener[1].real,
+                                            overlp0, overlpf, overlp_abs, cener_tot.real,
+                                            abs(self.dyn.psi[0][max_ind_psi_l]), self.dyn.psi[0][max_ind_psi_l].real,
+                                            abs(self.dyn.psi[1][max_ind_psi_u]), self.dyn.psi[1][max_ind_psi_u].real)
+
+        if self.dyn.l % self.mod_log == 0:
+            if self.np < np_min:
+                if self._warning_collocation_points:
+                    self._warning_collocation_points(self.np, np_min)
+            if self.nt < nt_min:
+                if self._warning_time_steps:
+                    self._warning_time_steps(self.nt, nt_min)
+
+            print("l = ", self.dyn.l)
+            print("t = ", self.dyn.t * 1e15, "fs")
+
+            print("normalized scaled time interval = ", self.instr.t_sc)
+            print("normalization on the ground state = ", abs(self.instr.cnorm[0]))
+            print("energy on the ground state = ", self.instr.cener[0].real)
+            print("overlap with initial wavefunction = ", abs(overlp0))
+            print("overlap with final goal wavefunction = ", abs(overlpf))
+
+            print(
+                "milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(
+                    self.milliseconds_full / self.dyn.l))
 
 
     def start(self, dx, x, psi0, psif, dir: Direction):
@@ -189,10 +301,10 @@ class PropagationSolver:
 
         self.stat = PropagationSolver.StaticState(psi0, psif, moms0, cnorm0, cnormf,
                      cener0, cenerf, E00, overlp00, overlpf0, dt, dx, x, v, akx2)
-        self.report_static(self.stat)
+
+        self.report_static()
 
         self.dyn = self.dynamic_state_factory(0, 0.0, psi, psi, 0.0, 1.0)
-        self.report_dynamic(self.dyn)
 
         self.dyn.l = 1
 
@@ -273,13 +385,13 @@ class PropagationSolver:
 
         time_after = datetime.datetime.now()
 
-        instr = PropagationSolver.InstrumentationOutputData(moms, cnorm, psigc_psie, psigc_dv_psie,
+        self.instr = PropagationSolver.InstrumentationOutputData(moms, cnorm, psigc_psie, psigc_dv_psie,
                      cener, E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after)
 
-        self.process_instrumentation(instr)
-        self.report_dynamic(self.dyn)
-
         self.dyn.l += 1
+
+        self.report_dynamic()
+
         if self.dyn.l <= self.nt:
             return True
         else:

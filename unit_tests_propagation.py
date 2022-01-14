@@ -1,12 +1,39 @@
 import unittest
 
 import test_data
-import test_tools
 from propagation import *
 import grid_setup
 import task_manager
 from config import RootConfiguration
 from test_tools import *
+
+
+class test_facilities_Tests(unittest.TestCase):
+    def test_table_comparer_trivial(self):
+        cmp = TableComparer((3.5, 0.2, np.complex(5.0, 1.0)), 1.e-20)
+        tab1 = [
+            (3.01, 5.0, np.array([np.complex(1.0, 1.0), np.complex(2.01, 2.001)]))
+        ]
+        tab2 = [
+            (3.0, 5.0, np.array([np.complex(1.0, 1.0), np.complex(2.0, 2.0)]))
+        ]
+
+        self.assertTrue(cmp.compare(tab1, tab2))
+
+    def test_table_comparer(self):
+        psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
+        tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
+                                        0.0000001, complex(0.001, 0.001), 0.0000001,
+                                        0.0001, 0.0001), 1.e-51)
+        tvals_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
+                                           0.0000001, complex(0.001, 0.001), 0.001,
+                                           0.0001, 0.0001), 1.e-51)
+
+        self.assertTrue(psi_comparer.compare(test_data.prop_trans_woc.psi_tab, test_data.prop_trans_woc.psi_tab))
+        self.assertTrue(psi_comparer.compare(test_data.prop_trans_woc.psi_up_tab, test_data.prop_trans_woc.psi_up_tab))
+
+        self.assertTrue(tvals_comparer.compare(test_data.prop_trans_woc.tvals_tab, test_data.prop_trans_woc.tvals_tab))
+        self.assertTrue(tvals_up_comparer.compare(test_data.prop_trans_woc.tvals_up_tab, test_data.prop_trans_woc.tvals_up_tab))
 
 
 class propagation_Tests(unittest.TestCase):
@@ -48,9 +75,6 @@ class propagation_Tests(unittest.TestCase):
         }
 
         conf.load(conf_fitter)
-        print(conf)
-
-        conf_prop = conf.propagation
 
         # setup of the grid
         grid = grid_setup.GridConstructor(conf.propagation)
@@ -80,16 +104,16 @@ class propagation_Tests(unittest.TestCase):
                                               conf.propagation.a_e)
         ]
 
-        return conf_prop, dx, x, psi0, psif
+        return conf, dx, x, psi0, psif
 
 
     def test_prop_forward(self):
-        conf_prop, dx, x, psi0, psif = self._test_setup()
+        conf, dx, x, psi0, psif = self._test_setup()
 
-        def report_static(stat: PropagationSolver.StaticState):
+        def _warning_collocation_points(np, np_min):
             pass
 
-        def report_dynamic(dyn: PropagationSolver.DynamicState):
+        def _warning_time_steps(nt, nt_min):
             pass
 
         def process_instrumentation(instr: PropagationSolver.InstrumentationOutputData):
@@ -100,46 +124,120 @@ class propagation_Tests(unittest.TestCase):
 
         def laser_field_envelope(stat: PropagationSolver.StaticState,
                                dyn: PropagationSolver.DynamicState):
-            return phys_base.laser_field(conf_prop.E0, dyn.t,
-                                         conf_prop.t0, conf_prop.sigma)
+            return phys_base.laser_field(conf.propagation.E0, dyn.t,
+                                         conf.propagation.t0, conf.propagation.sigma)
 
         def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult):
             psi_omega_copy = copy.deepcopy(psi_omega)
             return PropagationSolver.DynamicState(l, t, psi, psi_omega_copy, E, freq_mult)
 
-        solver = PropagationSolver(pot=task_manager.MorseMultipleStateTaskManager._pot,
-                                report_static=report_static,
-                                report_dynamic=report_dynamic,
-                                process_instrumentation=process_instrumentation,
-                                laser_field_envelope=laser_field_envelope,
-                                freq_multiplier=freq_multiplier,
-                                dynamic_state_factory=dynamic_state_factory,
-                                conf_prop=conf_prop)
 
         mod_fileout = 10000
         lmin = 0
 
-        with TestReporter(mod_fileout, lmin) as reporter_impl:
-            solver.start(dx, x, psi0, psif, PropagationSolver.Direction.FORWARD)
+        reporter_impl = TestPropagationReporter(mod_fileout, lmin)
+        reporter_impl.open()
 
-            # main propagation loop
-            while solver.step(0.0):
-                pass
+        solver = PropagationSolver(
+            pot=task_manager.MorseMultipleStateTaskManager._pot,
+            _warning_collocation_points=_warning_collocation_points,
+            _warning_time_steps=_warning_time_steps,
+            reporter=reporter_impl,
+            laser_field_envelope=laser_field_envelope,
+            freq_multiplier=freq_multiplier,
+            dynamic_state_factory=dynamic_state_factory,
+            mod_log=conf.mod_log,
+            conf_prop=conf.propagation)
+
+        solver.start(dx, x, psi0, psif, PropagationSolver.Direction.FORWARD)
+
+        # main propagation loop
+        while solver.step(0.0):
+            pass
+
+        reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        reporter_impl.print_all("test_data/prop_trans_woc.py")
+        #reporter_impl.print_all("test_data/prop_trans_woc_forw.py")
 
-        psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001))
-        mom_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, 0.00001, 0.0001, complex(0.001, 0.001), 0.0000001,
-                                      0.0001, 0.0001))
-        mom_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, 0.00001, 0.0001, complex(0.001, 0.001), 0.001,
-                                      0.0001, 0.0001))
+        psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
+        tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
+                                      0.0000001, complex(0.001, 0.001), 0.0000001,
+                                      0.0001, 0.0001), 1.e-51)
+        tvals_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
+                                      0.0000001, complex(0.001, 0.001), 0.001,
+                                      0.0001, 0.0001), 1.e-51)
 
-        self.assertTrue(psi_comparer.compare(reporter_impl.psi_tab, test_data.fitter_trans_woc.psi_tab))
-        self.assertTrue(psi_comparer.compare(reporter_impl.psi_up_tab, test_data.fitter_trans_woc.psi_up_tab))
+        self.assertTrue(psi_comparer.compare(reporter_impl.psi_tab, test_data.prop_trans_woc_forw.psi_tab))
+        self.assertTrue(psi_comparer.compare(reporter_impl.psi_up_tab, test_data.prop_trans_woc_forw.psi_up_tab))
 
-        self.assertTrue(mom_comparer.compare(reporter_impl.mom_tab, test_data.fitter_trans_woc.mom_tab))
-        self.assertTrue(mom_up_comparer.compare(reporter_impl.mom_up_tab, test_data.fitter_trans_woc.mom_up_tab))
+        self.assertTrue(tvals_comparer.compare(reporter_impl.tvals_tab, test_data.prop_trans_woc_forw.tvals_tab))
+        self.assertTrue(tvals_up_comparer.compare(reporter_impl.tvals_up_tab, test_data.prop_trans_woc_forw.tvals_up_tab))
 
+
+    def test_prop_backward(self):
+        conf, dx, x, psi0, psif = self._test_setup()
+
+        def _warning_collocation_points(np, np_min):
+            pass
+
+        def _warning_time_steps(nt, nt_min):
+            pass
+
+        def process_instrumentation(instr: PropagationSolver.InstrumentationOutputData):
+            pass
+
+        def freq_multiplier(stat: PropagationSolver.StaticState):
+            return 1.0
+
+        def laser_field_envelope(stat: PropagationSolver.StaticState,
+                               dyn: PropagationSolver.DynamicState):
+            return phys_base.laser_field(conf.propagation.E0, dyn.t,
+                                         conf.propagation.t0, conf.propagation.sigma)
+
+        def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult):
+            psi_omega_copy = copy.deepcopy(psi_omega)
+            return PropagationSolver.DynamicState(l, t, psi, psi_omega_copy, E, freq_mult)
+
+
+        mod_fileout = 10000
+        lmin = 0
+
+        reporter_impl = TestPropagationReporter(mod_fileout, lmin)
+        reporter_impl.open()
+
+        solver = PropagationSolver(
+            pot=task_manager.MorseMultipleStateTaskManager._pot,
+            _warning_collocation_points=_warning_collocation_points,
+            _warning_time_steps=_warning_time_steps,
+            reporter=reporter_impl,
+            laser_field_envelope=laser_field_envelope,
+            freq_multiplier=freq_multiplier,
+            dynamic_state_factory=dynamic_state_factory,
+            mod_log=conf.mod_log,
+            conf_prop=conf.propagation)
+
+        solver.start(dx, x, psif, psi0, PropagationSolver.Direction.BACKWARD)
+
+        # main propagation loop
+        while solver.step(conf.propagation.T):
+            pass
+
+        reporter_impl.close()
+
+        # Uncomment in case of emergency :)
+        #reporter_impl.print_all("test_data/prop_trans_woc_back.py")
+
+        psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
+        tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
+                                      0.0000001, complex(0.001, 0.001), 0.0000001,
+                                      0.0001, 0.0001), 1.e-51)
+        tvals_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
+                                      0.0000001, complex(0.001, 0.001), 0.001,
+                                      0.0001, 0.0001), 1.e-51)
+
+        self.assertTrue(psi_comparer.compare(reporter_impl.psi_tab, test_data.prop_trans_woc_back.psi_tab))
+        self.assertTrue(psi_comparer.compare(reporter_impl.psi_up_tab, test_data.prop_trans_woc_back.psi_up_tab))
+
+        self.assertTrue(tvals_comparer.compare(reporter_impl.tvals_tab, test_data.prop_trans_woc_back.tvals_tab))
+        self.assertTrue(tvals_up_comparer.compare(reporter_impl.tvals_up_tab, test_data.prop_trans_woc_back.tvals_up_tab))

@@ -1,5 +1,3 @@
-import numpy
-
 import reporter
 from config import RootConfiguration
 from propagation import *
@@ -19,7 +17,7 @@ class FittingSolver:
             psi_init,
             psi_goal,
             pot,
-            reporter,
+            reporter: reporter.FitterReporter,
             _warning_collocation_points,
             _warning_time_steps
     ):
@@ -31,9 +29,6 @@ class FittingSolver:
         self.dyn = None
         self._warning_collocation_points = _warning_collocation_points
         self._warning_time_steps = _warning_time_steps
-        self.dt = 0
-        self.stat_saved = PropagationSolver.StaticState()
-        self.milliseconds_full = 0
         self.E_patched = 0.0
         self.freq_mult_patched = 1.0
         self.dAdt_happy = 0.0
@@ -45,29 +40,36 @@ class FittingSolver:
         self.E_tlist = []
 
         conf_prop = conf_fitter.propagation
+        self.propagation_reporter = self.reporter.create_propagation_reporter("one_and_only")
+        self.propagation_reporter.open()
         self.solver = PropagationSolver(
-            self.pot,
-            report_static=self.report_static,
-            report_dynamic=self.report_dynamic,
-            process_instrumentation=self.process_instrumentation,
+            pot=self.pot,
+            _warning_collocation_points=self._warning_collocation_points,
+            _warning_time_steps=self._warning_time_steps,
+            reporter=self.propagation_reporter,
             laser_field_envelope=self.LaserFieldEnvelope,
             freq_multiplier=self.FreqMultiplier,
             dynamic_state_factory=self.propagation_dynamic_state_factory,
+            mod_log=conf_fitter.mod_log,
             conf_prop=conf_prop)
 
 
     def time_propagation(self, dx, x):
         self.dyn = FittingSolver.FitterDynamicState(0.0, 0.0, 0)
 
-        with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration("0f")) as reporter_imp:
-            self.reporter = reporter_imp
-            self.solver.laser_field_envelope = self.LaserFieldEnvelope
-            self.solver.start(dx, x, self.psi_init, self.psi_goal, PropagationSolver.Direction.FORWARD)
-            self.dyn.propagation_dyn_ref = self.solver.dyn
-            self.E_tlist.append(0.0)
-            # main propagation loop
-            while self.solver.step(0.0):
-                pass
+        #with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration("0f")) as reporter_imp:
+        if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
+                self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
+            print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
+    #    self.reporter = reporter_imp
+        self.solver.laser_field_envelope = self.LaserFieldEnvelope
+        self.solver.start(dx, x, self.psi_init, self.psi_goal, PropagationSolver.Direction.FORWARD)
+        self.dyn.propagation_dyn_ref = self.solver.dyn
+        self.E_tlist.append(0.0)
+
+        # main propagation loop
+        while self.solver.step(0.0):
+            self.do_the_thing(self.solver.instr)
 
         if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
            self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
@@ -77,20 +79,23 @@ class FittingSolver:
                                                   self.conf_fitter.propagation.np)
 
             if abs(self.goal_close - 1.0) > self.conf_fitter.epsilon:
+                print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
                 self.res = PropagationSolver.StepReaction.ITERATE
+
                 chiT = []
                 chiT.append(numpy.array([0.0] * self.conf_fitter.propagation.np).astype(complex))
                 chiT.append(self.goal_close * self.solver.stat.psif[1])
                 self.chi_tlist.append(chiT)
 
-                with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration("0b")) as reporter_imp:
-                    self.reporter = reporter_imp
-                    self.solver.laser_field_envelope = self.LaserFieldEnvelopeBackward
-                    self.solver.start(dx, x, chiT, self.psi_init, PropagationSolver.Direction.BACKWARD)
-                    self.dyn.propagation_dyn_ref = self.solver.dyn
-                    # propagation loop for the 0-th back iteration
-                    while self.solver.step(self.conf_fitter.propagation.T):
-                        self.chi_tlist.append(self.solver.dyn.psi_omega)
+                ##with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration("0b")) as reporter_imp:
+                #    self.reporter = reporter_imp
+                self.solver.laser_field_envelope = self.LaserFieldEnvelopeBackward
+                self.solver.start(dx, x, chiT, self.psi_init, PropagationSolver.Direction.BACKWARD)
+                self.dyn.propagation_dyn_ref = self.solver.dyn
+                # propagation loop for the 0-th back iteration
+                while self.solver.step(self.conf_fitter.propagation.T):
+                    self.chi_tlist.append(self.solver.dyn.psi_omega)
+                    self.do_the_thing(self.solver.instr)
             else:
                 print("The goal has been reached on the very first iteration. You don't need the control!")
                 self.res = PropagationSolver.StepReaction.OK
@@ -98,21 +103,24 @@ class FittingSolver:
             # iterative procedure
             while abs(self.goal_close - 1.0) > self.conf_fitter.epsilon or \
                     self.dyn.iter_step <= self.conf_fitter.iter_max:
-                self.res = PropagationSolver.StepReaction.ITERATE
                 self.dyn.iter_step += 1
+                print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
+                self.res = PropagationSolver.StepReaction.ITERATE
 
-                with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration(f"{self.dyn.iter_step}f")) as reporter_imp:
-                    self.reporter = reporter_imp
-                    self.solver.laser_field_envelope = self.LaserFieldEnvelope
-                    self.solver.start(dx, x, self.psi_init, self.psi_goal, PropagationSolver.Direction.FORWARD)
-                    self.dyn.propagation_dyn_ref = self.solver.dyn
+                #with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration(f"{self.dyn.iter_step}f")) as reporter_imp:
+                #    self.reporter = reporter_imp
+                self.solver.laser_field_envelope = self.LaserFieldEnvelope
+                self.solver.start(dx, x, self.psi_init, self.psi_goal, PropagationSolver.Direction.FORWARD)
+                self.dyn.propagation_dyn_ref = self.solver.dyn
 
-                    # propagation loop for the next forward iterations
-                    self.E_int = 0.0
-                    self.E_tlist = []
-                    self.E_tlist.append(0.0)
-                    while self.solver.step(0.0):
-                        pass
+                # propagation loop for the next forward iterations
+                self.E_int = 0.0
+                self.E_tlist = []
+                self.E_tlist.append(0.0)
+                while self.solver.step(0.0):
+                    self.do_the_thing(self.solver.instr)
+
+                print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
 
                 chiT = []
                 assert self.solver.dyn.l - 1 == self.conf_fitter.propagation.nt
@@ -121,83 +129,21 @@ class FittingSolver:
                 chiT.append(numpy.array([0.0] * self.conf_fitter.propagation.np).astype(complex))
                 chiT.append(self.goal_close * self.solver.stat.psif[1])
 
-                with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration(f"{self.dyn.iter_step}b")) as reporter_imp:
-                    self.reporter = reporter_imp
-                    self.solver.laser_field_envelope = self.LaserFieldEnvelopeBackward
-                    self.solver.start(dx, x, chiT, self.psi_init, PropagationSolver.Direction.BACKWARD)
-                    self.dyn.propagation_dyn_ref = self.solver.dyn
-                    # propagation loop for the next backward iterations
-                    chi_tlist_new = []
-                    chi_tlist_new.append(chiT)
-                    while self.solver.step(self.conf_fitter.propagation.T):
-                        chi_tlist_new.append(self.solver.dyn.psi_omega)
+                #with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration(f"{self.dyn.iter_step}b")) as reporter_imp:
+                #    self.reporter = reporter_imp
+                self.solver.laser_field_envelope = self.LaserFieldEnvelopeBackward
+                self.solver.start(dx, x, chiT, self.psi_init, PropagationSolver.Direction.BACKWARD)
+                self.dyn.propagation_dyn_ref = self.solver.dyn
+                # propagation loop for the next backward iterations
+                chi_tlist_new = []
+                chi_tlist_new.append(chiT)
+                while self.solver.step(self.conf_fitter.propagation.T):
+                    chi_tlist_new.append(self.solver.dyn.psi_omega)
+                    self.do_the_thing(self.solver.instr)
 
                 self.chi_tlist[:] = chi_tlist_new[:]
             self.res = PropagationSolver.StepReaction.OK
-
-
-    def report_static(self, stat: PropagationSolver.StaticState):
-        self.stat_saved = stat
-        self.dt = stat.dt
-
-        # check if input data are correct in terms of the given problem
-        # calculating the initial energy range of the Hamiltonian operator H
-        emax0 = stat.v[0][1][0] + abs(stat.akx2[int(self.conf_fitter.propagation.np / 2 - 1)]) + 2.0
-        emin0 = stat.v[0][0]
-
-        # calculating the initial minimum number of collocation points that is needed for convergence
-        np_min0 = int(
-            math.ceil(self.conf_fitter.propagation.L *
-                      math.sqrt(
-                          2.0 * self.conf_fitter.propagation.m * (emax0 - emin0) * phys_base.dalt_to_au / phys_base.hart_to_cm) /
-                      math.pi
-                      )
-        )
-
-        # calculating the initial minimum number of time steps that is needed for convergence
-        nt_min0 = int(
-            math.ceil((emax0 - emin0) * self.conf_fitter.propagation.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h
-                      )
-        )
-
-        if self.conf_fitter.propagation.np < np_min0:
-            if self._warning_collocation_points:
-                self._warning_collocation_points(self.conf_fitter.propagation.np, np_min0)
-        if self.conf_fitter.propagation.nt < nt_min0:
-            if self._warning_time_steps:
-                self._warning_time_steps(self.conf_fitter.propagation.nt, nt_min0)
-
-        cener0_tot = stat.cener0[0] + stat.cener0[1]
-        overlp0 =  stat.overlp00[0] + stat.overlp00[1]
-        overlpf = stat.overlpf0[0] + stat.overlpf0[1]
-        overlp0_abs = abs(overlp0) + abs(overlpf)
-        max_ind_psi_l = numpy.argmax(stat.psi0[0])
-        max_ind_psi_u = numpy.argmax(stat.psi0[1])
-
-        # plotting initial values
-        self.reporter.print_time_point(0, stat.psi0, 0.0, stat.x, self.conf_fitter.propagation.np, stat.moms0,
-                                       stat.cener0[0].real, stat.cener0[1].real, stat.E00.real, 1.0,
-                                       overlp0, overlpf, overlp0_abs, cener0_tot.real,
-                                       abs(stat.psi0[0][max_ind_psi_l]), stat.psi0[0][max_ind_psi_l].real,
-                                       abs(stat.psi0[1][max_ind_psi_u]), stat.psi0[1][max_ind_psi_u].real)
-
-        if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
-             self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
-            print("Iteration = ", self.dyn.iter_step)
-
-        print("Initial emax = ", emax0)
-
-        print(" Initial state features: ")
-        print("Initial normalization (ground state): ", abs(stat.cnorm0[0]))
-        print("Initial energy (ground state): ", abs(stat.cener0[0]))
-        print("Initial normalization (excited state): ", abs(stat.cnorm0[1]))
-        print("Initial energy (excited state): ", abs(stat.cener0[1]))
-
-        print(" Final goal features: ")
-        print("Final goal normalization (ground state): ", abs(stat.cnormf[0]))
-        print("Final goal energy (ground state): ", abs(stat.cenerf[0]))
-        print("Final goal normalization (excited state): ", abs(stat.cnormf[1]))
-        print("Final goal energy (excited state): ", abs(stat.cenerf[1]))
+        self.propagation_reporter.close()
 
 
     def propagation_dynamic_state_factory(self, l, t, psi, psi_omega, E, freq_mult):
@@ -205,28 +151,7 @@ class FittingSolver:
         return PropagationSolver.DynamicState(l, t, psi, psi_omega_copy, E, freq_mult)
 
 
-    def report_dynamic(self, dyn: FitterDynamicState):
-        pass
-
-
-    def process_instrumentation(self, instr: PropagationSolver.InstrumentationOutputData):
-        # calculating the minimum number of collocation points and time steps that are needed for convergence
-        nt_min = int(math.ceil(
-            (instr.emax - instr.emin) * self.conf_fitter.propagation.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h))
-        np_min = int(math.ceil(
-            self.conf_fitter.propagation.L * math.sqrt(
-                2.0 * self.conf_fitter.propagation.m * (
-                            instr.emax - instr.emin) * phys_base.dalt_to_au / phys_base.hart_to_cm) / math.pi))
-
-        cener_tot = instr.cener[0] + instr.cener[1]
-        overlp0 = instr.overlp0[0] + instr.overlp0[1]
-        overlpf = instr.overlpf[0] + instr.overlpf[1]
-        overlp_abs = abs(overlp0) + abs(overlpf)
-
-        time_span = instr.time_after - instr.time_before
-        milliseconds_per_step = time_span.microseconds / 1000
-        self.milliseconds_full += milliseconds_per_step
-
+    def do_the_thing(self, instr: PropagationSolver.InstrumentationOutputData):
         # algorithm without control
         if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION and \
            self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
@@ -274,49 +199,23 @@ class FittingSolver:
 
                 self.res = PropagationSolver.StepReaction.CORRECT
 
-        max_ind_psi_l = numpy.argmax(abs(self.dyn.propagation_dyn_ref.psi[0]))
-        max_ind_psi_u = numpy.argmax(abs(self.dyn.propagation_dyn_ref.psi[1]))
-
         # plotting the result
-        self.reporter.print_time_point(self.dyn.propagation_dyn_ref.l, self.dyn.propagation_dyn_ref.psi, self.dyn.propagation_dyn_ref.t, self.stat_saved.x,
-                                       self.conf_fitter.propagation.np, instr.moms,
-                                       instr.cener[0].real, instr.cener[1].real, self.dyn.propagation_dyn_ref.E, self.dyn.propagation_dyn_ref.freq_mult,
-                                       overlp0, overlpf, overlp_abs, cener_tot.real,
-                                       abs(self.dyn.propagation_dyn_ref.psi[0][max_ind_psi_l]), self.dyn.propagation_dyn_ref.psi[0][max_ind_psi_l].real,
-                                       abs(self.dyn.propagation_dyn_ref.psi[1][max_ind_psi_u]), self.dyn.propagation_dyn_ref.psi[1][max_ind_psi_u].real)
+        self.reporter.print_time_point_fitter(self.dyn.propagation_dyn_ref.l, self.dyn.propagation_dyn_ref.t,
+                                              self.dyn.propagation_dyn_ref.E, self.dyn.propagation_dyn_ref.freq_mult)
 
         if self.dyn.propagation_dyn_ref.l % self.conf_fitter.mod_log == 0:
-            if self.conf_fitter.propagation.np < np_min:
-                if self._warning_collocation_points:
-                    self._warning_collocation_points(self.conf_fitter.propagation.np, np_min)
-            if self.conf_fitter.propagation.nt < nt_min:
-                if self._warning_time_steps:
-                    self._warning_time_steps(self.conf_fitter.propagation.nt, nt_min)
-
-            print("l = ", self.dyn.propagation_dyn_ref.l)
-            print("t = ", self.dyn.propagation_dyn_ref.t * 1e15, "fs")
-
             if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING:
                 print("emax = ", instr.emax)
                 print("emin = ", instr.emin)
-            print("normalized scaled time interval = ", instr.t_sc)
-            print("normalization on the ground state = ", abs(instr.cnorm[0]))
             if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING and \
                self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
                 print("normalization on the excited state = ", abs(instr.cnorm[1]))
-            print("overlap with initial wavefunction = ", abs(overlp0))
-            print("overlap with final goal wavefunction = ", abs(overlpf))
-            print("energy on the ground state = ", instr.cener[0].real)
             if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING and \
                self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
                 print("energy on the excited state = ", instr.cener[1].real)
             if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION or \
                self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
                 print("Time derivation of the expectation value from the goal operator A = ", dAdt)
-
-            print(
-                "milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(
-                    self.milliseconds_full / self.dyn.propagation_dyn_ref.l))
 
             if self.res == PropagationSolver.StepReaction.CORRECT:
                 print("CORRECTING THE ITERATION")

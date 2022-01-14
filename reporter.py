@@ -1,61 +1,62 @@
+import copy
+
 import plotly.graph_objects as go
 import os.path
 
 from tools import print_err
 
-class Reporter:
+
+class PropagationReporter:
     def __init__(self):
         pass
 
-    def plot(self, psi, t, x, np):
+    def open(self):
         raise NotImplementedError()
 
-    def plot_mom(self, t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max):
+    def close(self):
         raise NotImplementedError()
 
-    def plot_up(self, psi, t, x, np):
-        raise NotImplementedError()
-
-    def plot_mom_up(self, t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max):
-        raise NotImplementedError()
-
-    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         raise NotImplementedError()
 
 
-class TableReporter(Reporter):
+class TablePropagationReporter(PropagationReporter):
     def __init__(self, conf_output):
+        super().__init__()
         self.conf_output = conf_output
         self.f_abs = None
         self.f_real = None
-        self.f_mom = None
+        self.f_prop = None
         self.f_abs_up = None
         self.f_real_up = None
-        self.f_mom_up = None
+        self.f_prop_up = None
 
-    def __enter__(self):
+
+    def open(self):
         self.f_abs = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_abs), 'w')
         self.f_real = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_real), 'w')
-        self.f_mom = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_mom), 'w')
+        self.f_prop = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_mom + "_prop"), 'w')
         self.f_abs_up = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_abs + "_exc"), 'w')
         self.f_real_up = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_real + "_exc"), 'w')
-        self.f_mom_up = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_mom + "_exc"), 'w')
+        self.f_prop_up = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_mom + "_prop_exc"), 'w')
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+
+    def close(self):
         self.f_abs.close()
         self.f_abs = None
         self.f_real.close()
         self.f_real = None
-        self.f_mom.close()
-        self.f_mom = None
+        self.f_prop.close()
+        self.f_prop = None
         self.f_abs_up.close()
         self.f_abs_up = None
         self.f_real_up.close()
         self.f_real_up = None
-        self.f_mom_up.close()
-        self.f_mom_up = None
+        self.f_prop_up.close()
+        self.f_prop_up = None
+
 
     @staticmethod
     def __plot_file(psi, t, x, np, f_abs, f_real):
@@ -66,27 +67,31 @@ class TableReporter(Reporter):
             f_abs.flush()
             f_real.flush()
 
+
     @staticmethod
-    def __plot_mom_file(t, momx, momx2, momp, momp2, ener, E, freq_mult, overlp, tot, abs_psi_max, real_psi_max, file_mom):
-        """ Plots expectation values of the current x, x*x, p and p*p """
-        file_mom.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(
-            t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, E, freq_mult, abs(overlp), tot, abs_psi_max,
+    def __plot_t_file_prop(t, momx, momx2, momp, momp2, ener, overlp, tot, abs_psi_max, real_psi_max, file_prop):
+        """ Plots expectation values of the current x, x*x, p and p*p, and other values,
+        which are modified by propagation, as a function of time """
+        file_prop.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(
+            t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, abs(overlp), tot, abs_psi_max,
             real_psi_max))
-        file_mom.flush()
+        file_prop.flush()
+
 
     def plot(self, psi, t, x, np):
         self.__plot_file(psi[0], t, x, np, self.f_abs, self.f_real)
 
-    def plot_mom(self, t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max):
-        self.__plot_mom_file(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, E, freq_mult, overlp,
-                             ener_tot, abs_psi_max, real_psi_max, self.f_mom)
+    def plot_prop(self, t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max):
+        self.__plot_t_file_prop(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, overlp,
+                             ener_tot, abs_psi_max, real_psi_max, self.f_prop)
 
     def plot_up(self, psi, t, x, np):
         self.__plot_file(psi[1], t, x, np, self.f_abs_up, self.f_real_up)
 
-    def plot_mom_up(self, t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max):
-        self.__plot_mom_file(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, E, freq_mult, overlp,
-                             overlp_tot, abs_psi_max, real_psi_max, self.f_mom_up)
+    def plot_prop_up(self, t, moms, ener, overlp, overlp_tot, abs_psi_max, real_psi_max):
+        self.__plot_t_file_prop(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, overlp,
+                             overlp_tot, abs_psi_max, real_psi_max, self.f_prop_up)
+
 
     @staticmethod
     def __plot_test_file(l, phi_l, phi_u, f):
@@ -99,21 +104,21 @@ class TableReporter(Reporter):
             f.write("{0}\n".format(phi_u[i]))
 
 
-    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         if l % self.conf_output.mod_fileout == 0 and l >= self.conf_output.lmin:
             self.plot(psi, t, x, np)
             self.plot_up(psi, t, x, np)
-            self.plot_mom(t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max)
-            self.plot_mom_up(t, moms, ener_u, E, freq_mult, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+            self.plot_prop(t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max)
+            self.plot_prop_up(t, moms, ener_u, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
 
 
-class PlotReporter(Reporter):
+class PlotPropagationReporter(PropagationReporter):
     def __init__(self, conf_output):
+        super().__init__()
         self.conf_output = conf_output
 
-
-    def __enter__(self):
+    def open(self):
         # Time
         self.t_list = []
         self.t_u_list = []
@@ -132,8 +137,6 @@ class PlotReporter(Reporter):
         self.p2_u_list = []
         self.ener_list = []
         self.ener_u_list = []
-        self.E_list = []
-        self.freq_mult_list = []
         self.overlp_list = []
         self.overlp_u_list = []
         self.ener_tot_list = []
@@ -145,7 +148,6 @@ class PlotReporter(Reporter):
         self.p_u_list = []
         self.p2_u_list = []
         self.ener_u_list = []
-        self.E_list = []
         self.overlp_list = []
         self.overlp_u_list = []
         self.overlp_tot = []
@@ -165,8 +167,7 @@ class PlotReporter(Reporter):
 
         return self
 
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def close(self):
         pass
 
 
@@ -246,6 +247,7 @@ class PlotReporter(Reporter):
 
         fig_mom.write_image(plot_name)
 
+
     @staticmethod
     def __plot_tvals_update_graph(t_list, val_list, title_plot, title_y, plot_name):
         fig = go.Figure()
@@ -316,15 +318,13 @@ class PlotReporter(Reporter):
                                      "Re(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_exc))
 
 
-    def plot_mom(self, t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max):
+    def plot_prop(self, t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max):
         self.t_list.append(t)
         self.x_l_list.append(moms.x_l.real)
         self.x2_l_list.append(moms.x2_l.real)
         self.p_l_list.append(moms.p_l.real)
         self.p2_l_list.append(moms.p2_l.real)
         self.ener_list.append(ener)
-        self.E_list.append(E)
-        self.freq_mult_list.append(freq_mult)
         self.overlp_list.append(abs(overlp))
         self.ener_tot_list.append(ener_tot)
         self.abs_psi_max_list.append(abs_psi_max)
@@ -350,16 +350,6 @@ class PlotReporter(Reporter):
                                            "Energy on the ground state", "Energy",
                                            os.path.join(self.conf_output.out_path, self.conf_output.gr_ener_grd))
 
-            # Updating the graph for laser field energy
-            self.__plot_tvals_update_graph(self.t_list, self.E_list,
-                                           "Laser field energy envelope", "E",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_lf_en))
-
-            # Updating the graph for laser field frequency multiplier
-            self.__plot_tvals_update_graph(self.t_list, self.freq_mult_list,
-                                           "Laser field frequency multiplier", "f",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_lf_fr))
-
             # Updating the graph for lower state population
             self.__plot_tvals_update_graph(self.t_list, self.overlp_list,
                                            "Ground state population", "abs((psi0, psi))",
@@ -381,7 +371,7 @@ class PlotReporter(Reporter):
                                            "real(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_max_grd))
 
 
-    def plot_mom_up(self, t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max):
+    def plot_prop_up(self, t, moms, ener, overlp, overlp_tot, abs_psi_max, real_psi_max):
         self.t_u_list.append(t)
         self.x_u_list.append(moms.x_u.real)
         self.x2_u_list.append(moms.x2_u.real)
@@ -434,64 +424,207 @@ class PlotReporter(Reporter):
                                            "real(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_max_exc))
 
 
-    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         try:
             if l % self.conf_output.mod_plotout == 0 and l >= self.conf_output.lmin:
                 self.plot(psi, t, x, np)
                 self.plot_up(psi, t, x, np)
-                self.plot_mom(t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max)
-                self.plot_mom_up(t, moms, ener_u, E, freq_mult, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+                self.plot_prop(t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max)
+                self.plot_prop_up(t, moms, ener_u, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
                 self.i += 1
         except ValueError as err:
             print_err("A nasty error has occurred during the reporting: ", err)
             print_err("Hopefully that doesn't affect the calculations, so the application is going on...")
 
 
-class MultipleReporter(Reporter):
+class MultiplePropagationReporter(PropagationReporter):
     def __init__(self, conf_output):
-        super(MultipleReporter, self).__init__()
+        super(MultiplePropagationReporter, self).__init__()
 
         self.reps = []
         if not conf_output.plot.is_empty():
-            self.reps.append(PlotReporter(conf_output.plot))
+            self.reps.append(PlotPropagationReporter(conf_output.plot))
         if not conf_output.table.is_empty():
-            self.reps.append(TableReporter(conf_output.table))
+            self.reps.append(TablePropagationReporter(conf_output.table))
 
-
-    def __enter__(self):
+    def open(self):
         for rep in self.reps:
-            rep.__enter__()
+            rep.open()
         return self
 
+    def close(self):
+        pass
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
+        for rep in self.reps:
+            rep.print_time_point_prop(l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u)
+
+
+# FitterReporter
+
+class FitterReporter:
+    def __init__(self):
+        pass
+
+    def open(self):
+        raise NotImplementedError()
+
+    def close(self):
+        raise NotImplementedError()
+
+    def print_time_point_fitter(self, l, t, E, freq_mult):
+        raise NotImplementedError()
+
+    def create_propagation_reporter(self, prop_id: str):
+        raise NotImplementedError()
+
+
+class TableFitterReporter(FitterReporter):
+    def __init__(self, conf_output):
+        super().__init__()
+        self.conf_output = conf_output
+        self.f_fit = None
+
+    def create_propagation_reporter(self, prop_id: str):
+        prop_conf_output = copy.deepcopy(self.conf_output)
+        prop_conf_output.out_path = os.path.join(prop_conf_output.out_path, prop_id)
+        return TablePropagationReporter(prop_conf_output)
+
+    def open(self):
+        self.f_fit = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_mom + "_fit"), 'w')
+        return self
+
+    def close(self):
+        self.f_fit.close()
+        self.f_fit = None
+
+
+    @staticmethod
+    def __plot_t_file_fitter(t, E, freq_mult, file_fit):
+        """ Plots the values, which are modified by fitter, as a function of time """
+        file_fit.write("{:.6f} {:.6f} {:.6f} \n".format(t * 1e+15, E, freq_mult))
+        file_fit.flush()
+
+
+    def plot_fitter(self, t, E, freq_mult):
+        self.__plot_t_file_fitter(t, E, freq_mult, self.f_fit)
+
+    def print_time_point_fitter(self, l, t, E, freq_mult):
+        if l % self.conf_output.mod_fileout == 0 and l >= self.conf_output.lmin:
+            self.plot_fitter(t, E, freq_mult)
+
+
+class PlotFitterReporter(FitterReporter):
+    def __init__(self, conf_output):
+        super().__init__()
+        self.conf_output = conf_output
+
+    def create_propagation_reporter(self, prop_id: str):
+        prop_conf_output = copy.deepcopy(self.conf_output)
+        prop_conf_output.out_path = os.path.join(prop_conf_output.out_path, prop_id)
+        return PlotPropagationReporter(prop_conf_output)
+
+    def open(self):
+        # Time
+        self.t_list = []
+        self.E_list = []
+        self.freq_mult_list = []
+
+        self.i_fit = 0
+
+        return self
+
+    def close(self):
         pass
 
 
-    def plot(self, psi, t, x, np):
+    @staticmethod
+    def __plot_tvals_update_graph(t_list, val_list, title_plot, title_y, plot_name):
+        fig = go.Figure()
+
+        sc = go.Scatter(x=t_list, y=val_list, mode="lines")
+        fig.add_trace(sc)
+
+        fig.update_layout(
+            title={
+                'text': title_plot,
+                'y': 0.9,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
+            xaxis_title={
+                'text': 'time'
+            },
+            yaxis_title={
+                'text': title_y
+            }
+        )
+
+        fig.write_image(plot_name)
+
+
+    def plot_fitter(self, t, E, freq_mult):
+        self.t_list.append(t)
+        self.E_list.append(E)
+        self.freq_mult_list.append(freq_mult)
+
+        if self.i_fit % self.conf_output.mod_update == 0:
+            # Updating the graph for laser field energy
+            self.__plot_tvals_update_graph(self.t_list, self.E_list,
+                                           "Laser field energy envelope", "E",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_lf_en))
+
+            # Updating the graph for laser field frequency multiplier
+            self.__plot_tvals_update_graph(self.t_list, self.freq_mult_list,
+                                           "Laser field frequency multiplier", "f",
+                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_lf_fr))
+
+
+    def print_time_point_fitter(self, l, t, E, freq_mult):
+        try:
+            if l % self.conf_output.mod_plotout == 0 and l >= self.conf_output.lmin:
+                self.plot_fitter(t, E, freq_mult)
+        except ValueError as err:
+            print_err("A nasty error has occurred during the reporting: ", err)
+            print_err("Hopefully that doesn't affect the calculations, so the application is going on...")
+
+
+class MultipleFitterReporter(FitterReporter):
+    def __init__(self, conf_output):
+        super(MultipleFitterReporter, self).__init__()
+
+        self.reps = []
+        if not conf_output.plot.is_empty():
+            self.reps.append(PlotFitterReporter(conf_output.plot))
+        if not conf_output.table.is_empty():
+            self.reps.append(TableFitterReporter(conf_output.table))
+        self.conf_output = conf_output
+
+    def create_propagation_reporter(self, prop_id: str):
+        prop_conf_output = copy.deepcopy(self.conf_output)
+        if not prop_conf_output.plot.is_empty():
+            prop_conf_output.plot.out_path = os.path.join(prop_conf_output.plot.out_path, prop_id)
+            if not os.path.exists(prop_conf_output.plot.out_path):
+                os.mkdir(prop_conf_output.plot.out_path)
+        if not prop_conf_output.table.is_empty():
+            prop_conf_output.table.out_path = os.path.join(prop_conf_output.table.out_path, prop_id)
+            if not os.path.exists(prop_conf_output.table.out_path):
+                os.mkdir(prop_conf_output.table.out_path)
+
+        return MultiplePropagationReporter(prop_conf_output)
+
+    def open(self):
         for rep in self.reps:
-            rep.plot(psi, t, x, np)
+            rep.open()
+        return self
 
+    def close(self):
+        pass
 
-    def plot_mom(self, t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max):
+    def print_time_point_fitter(self, l, t, E, freq_mult):
         for rep in self.reps:
-            rep.plot_mom(t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max)
-
-
-    def plot_up(self, psi, t, x, np):
-        for rep in self.reps:
-            rep.plot_up(psi, t, x, np)
-
-
-    def plot_mom_up(self, t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max):
-        for rep in self.reps:
-            rep.plot_mom(t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max)
-
-
-    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
-        for rep in self.reps:
-            rep.print_time_point(l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u)
-
+            rep.print_time_point_fitter(l, t, E, freq_mult)

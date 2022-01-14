@@ -381,12 +381,15 @@ def main(argv):
                                      conf.fitter.propagation.a, conf.fitter.propagation.a_e)
 
     # main calculation part
-    with reporter.MultipleReporter(conf.output) as reporter_imp:
-        fitting_solver = fitter.FittingSolver(conf.fitter, psi0, psif, task_manager_imp.pot, reporter_imp,
-                                              _warning_collocation_points,
-                                              _warning_time_steps
-                                              )
-        fitting_solver.time_propagation(dx, x)
+    fit_reporter_imp = reporter.MultipleFitterReporter(conf.output)
+    fit_reporter_imp.open()
+
+    fitting_solver = fitter.FittingSolver(conf.fitter, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
+                                          _warning_collocation_points,
+                                          _warning_time_steps
+                                          )
+    fitting_solver.time_propagation(dx, x)
+    fit_reporter_imp.close()
 
 
 if __name__ == "__main__":

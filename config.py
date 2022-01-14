@@ -1,3 +1,4 @@
+import copy
 from enum import Enum
 
 class ConfigurationBase:
@@ -37,7 +38,20 @@ class ConfigurationBase:
 
     # redefinition of the dot operator for a field
     def __getattr__(self, key):
-        return self._data[key]
+        try:
+            return self._data[key]
+        except KeyError:
+            raise AttributeError(key)
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        #result._data = copy.deepcopy(self._data)
+        #result._empty = copy.deepcopy(self._empty)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, copy.deepcopy(v, memo))
+        return result
 
 ##########################################
 

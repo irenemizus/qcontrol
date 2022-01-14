@@ -1,12 +1,13 @@
 #from __future__ import print_function
 import sys
 import numpy as np
-from reporter import Reporter
+from reporter import *
 
 
 class TableComparer:
-    def __init__(self, epsilon):
+    def __init__(self, epsilon, delta: float):
         self.epsilon = epsilon
+        self.delta = delta
 
     def compare(self, tab1, tab2):
         # Comparing tables length
@@ -29,9 +30,9 @@ class TableComparer:
 
                 if isinstance(el1, float) and isinstance(el2, float) and isinstance(eps, float):
                     # Trivially comparing two floats
-                    if el2 == 0.0 and el1 == 0.0:
+                    if abs(el2) < self.delta and abs(el1) < self.delta:
                         return True
-                    elif el2 == 0.0 and el1 != 0.0:
+                    elif abs(el2) < self.delta and abs(el1) >= self.delta:
                         return False
                     elif abs(el1 - el2) / abs(el2) * 100.0 >= abs(eps):
                         return False
@@ -43,12 +44,13 @@ class TableComparer:
                         raise RuntimeError("Complex arrays have different lengths")
 
                     for l in range(len(el1)):
-                        if el2[l].real == 0.0 and el1[l].real == 0.0 and \
-                           el2[l].imag == 0.0 and el1[l].imag == 0.0:
+                        print(l)
+                        if abs(el2[l].real) < self.delta and abs(el1[l].real) < self.delta and \
+                           abs(el2[l].imag) < self.delta and abs(el1[l].imag) < self.delta:
                             return True
-                        elif el2[l].real == 0.0 and el1[l].real != 0.0:
+                        elif abs(el2[l].real) < self.delta and abs(el1[l].real) >= self.delta:
                             return False
-                        elif el2[l].imag == 0.0 and el1[l].imag != 0.0:
+                        elif abs(el2[l].imag) < self.delta and abs(el1[l].imag) >= self.delta:
                             return False
                         elif abs(el1[l].real - el2[l].real) / abs(el2[l].real) * 100.0 >= eps.real or \
                            abs(el1[l].imag - el2[l].imag) / abs(el2[l].imag) * 100.0 >= eps.imag:
@@ -56,21 +58,21 @@ class TableComparer:
         return True
 
 
-class TestReporter(Reporter):
+class TestPropagationReporter(PropagationReporter):
     def __init__(self, mod_fileout, lmin):
         super().__init__()
         self.mod_fileout = mod_fileout
         self.lmin = lmin
 
         self.psi_tab = []
-        self.mom_tab = []
+        self.tvals_tab = []
         self.psi_up_tab = []
-        self.mom_up_tab = []
+        self.tvals_up_tab = []
 
-    def __enter__(self):
+    def open(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def close(self):
         pass
 
     def plot(self, psi, t, x, np):
@@ -78,11 +80,11 @@ class TestReporter(Reporter):
             psi[0], t, x
         ))
 
-    def plot_mom(self, t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max):
-        self.mom_tab.append((
+    def plot_tvals(self, t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max):
+        self.tvals_tab.append((
             t,
             moms.x_l.real, moms.x2_l.real, moms.p_l.real, moms.p2_l.real,
-            ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max
+            ener, overlp, ener_tot, abs_psi_max, real_psi_max
         ))
 
     def plot_up(self, psi, t, x, np):
@@ -90,20 +92,20 @@ class TestReporter(Reporter):
             psi[1], t, x
         ))
 
-    def plot_mom_up(self, t, moms, ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max):
-        self.mom_up_tab.append((
+    def plot_tvals_up(self, t, moms, ener, overlp, overlp_tot, abs_psi_max, real_psi_max):
+        self.tvals_up_tab.append((
             t,
             moms.x_u.real, moms.x2_u.real, moms.p_u.real, moms.p2_u.real,
-            ener, E, freq_mult, overlp, overlp_tot, abs_psi_max, real_psi_max
+            ener, overlp, overlp_tot, abs_psi_max, real_psi_max
         ))
 
-    def print_time_point(self, l, psi, t, x, np, moms, ener, ener_u, E, freq_mult, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         if l % self.mod_fileout == 0 and l >= self.lmin:
             self.plot(psi, t, x, np)
             self.plot_up(psi, t, x, np)
-            self.plot_mom(t, moms, ener, E, freq_mult, overlp, ener_tot, abs_psi_max, real_psi_max)
-            self.plot_mom_up(t, moms, ener_u, E, freq_mult, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+            self.plot_tvals(t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max)
+            self.plot_tvals_up(t, moms, ener_u, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
 
     def print_all(self, filename):
         # To print the whole arrays without truncation ('...')
@@ -116,8 +118,8 @@ class TestReporter(Reporter):
                 f.write("    " + str(l) + ",\n")
             f.write("]\n")
 
-            f.write("mom_tab = [\n")
-            for l in self.mom_tab:
+            f.write("tvals_tab = [\n")
+            for l in self.tvals_tab:
                 f.write("    " + str(l) + ",\n")
             f.write("]\n\n")
 
@@ -126,7 +128,49 @@ class TestReporter(Reporter):
                 f.write("    " + str(l) + ",\n")
             f.write("]\n\n")
 
-            f.write("mom_up_tab = [\n")
-            for l in self.mom_up_tab:
+            f.write("tvals_up_tab = [\n")
+            for l in self.tvals_up_tab:
                 f.write("    " + str(l) + ",\n")
             f.write("]\n\n")
+
+
+class TestFitterReporter(FitterReporter):
+    def __init__(self, mod_fileout, lmin):
+        super().__init__()
+        self.mod_fileout = mod_fileout
+        self.lmin = lmin
+
+        self.tvals_tab = []
+
+        self.prop_reporters = {}
+
+    def open(self):
+        return self
+
+    def close(self):
+        pass
+
+    def plot_tvals(self, t, E, freq_mult):
+        self.tvals_tab.append((
+            t, E, freq_mult
+        ))
+
+    def print_time_point_fitter(self, l, t, E, freq_mult):
+        if l % self.mod_fileout == 0 and l >= self.lmin:
+            self.plot_tvals(t, E, freq_mult)
+
+    def print_all(self, filename):
+        # To print the whole arrays without truncation ('...')
+        np.set_printoptions(threshold=sys.maxsize)
+
+        with open(filename, "w") as f:
+            f.write("from numpy import array\n\n")
+            f.write("tvals_tab = [\n")
+            for l in self.tvals_tab:
+                f.write("    " + str(l) + ",\n")
+            f.write("]\n\n")
+
+    def create_propagation_reporter(self, prop_id: str):
+        new_prop_rep = TestPropagationReporter(self.mod_fileout, self.lmin)
+        self.prop_reporters[prop_id] = new_prop_rep
+        return new_prop_rep
