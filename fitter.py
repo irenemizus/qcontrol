@@ -1,5 +1,5 @@
 import reporter
-from config import RootConfiguration
+from config import TaskRootConfiguration
 from propagation import *
 
 
@@ -57,9 +57,9 @@ class FittingSolver:
     def time_propagation(self, dx, x):
         self.dyn = FittingSolver.FitterDynamicState(0.0, 0.0, 0)
 
-        #with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration("0f")) as reporter_imp:
-        if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
-                self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
+        #with reporter.PlotReporter(TaskRootConfiguration.OutputPlotConfiguration("0f")) as reporter_imp:
+        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
+                self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
             print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
     #    self.reporter = reporter_imp
         self.solver.laser_field_envelope = self.LaserFieldEnvelope
@@ -71,8 +71,8 @@ class FittingSolver:
         while self.solver.step(0.0):
             self.do_the_thing(self.solver.instr)
 
-        if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
-           self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
+        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
+           self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
 
             assert self.solver.dyn.l - 1 == self.conf_fitter.propagation.nt
             self.goal_close = math_base.cprod(self.solver.stat.psif[1], self.solver.dyn.psi[1], self.solver.stat.dx,
@@ -87,7 +87,7 @@ class FittingSolver:
                 chiT.append(self.goal_close * self.solver.stat.psif[1])
                 self.chi_tlist.append(chiT)
 
-                ##with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration("0b")) as reporter_imp:
+                ##with reporter.PlotReporter(TaskRootConfiguration.OutputPlotConfiguration("0b")) as reporter_imp:
                 #    self.reporter = reporter_imp
                 self.solver.laser_field_envelope = self.LaserFieldEnvelopeBackward
                 self.solver.start(dx, x, chiT, self.psi_init, PropagationSolver.Direction.BACKWARD)
@@ -107,7 +107,7 @@ class FittingSolver:
                 print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
                 self.res = PropagationSolver.StepReaction.ITERATE
 
-                #with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration(f"{self.dyn.iter_step}f")) as reporter_imp:
+                #with reporter.PlotReporter(TaskRootConfiguration.OutputPlotConfiguration(f"{self.dyn.iter_step}f")) as reporter_imp:
                 #    self.reporter = reporter_imp
                 self.solver.laser_field_envelope = self.LaserFieldEnvelope
                 self.solver.start(dx, x, self.psi_init, self.psi_goal, PropagationSolver.Direction.FORWARD)
@@ -129,7 +129,7 @@ class FittingSolver:
                 chiT.append(numpy.array([0.0] * self.conf_fitter.propagation.np).astype(complex))
                 chiT.append(self.goal_close * self.solver.stat.psif[1])
 
-                #with reporter.PlotReporter(RootConfiguration.OutputPlotConfiguration(f"{self.dyn.iter_step}b")) as reporter_imp:
+                #with reporter.PlotReporter(TaskRootConfiguration.OutputPlotConfiguration(f"{self.dyn.iter_step}b")) as reporter_imp:
                 #    self.reporter = reporter_imp
                 self.solver.laser_field_envelope = self.LaserFieldEnvelopeBackward
                 self.solver.start(dx, x, chiT, self.psi_init, PropagationSolver.Direction.BACKWARD)
@@ -153,12 +153,12 @@ class FittingSolver:
 
     def do_the_thing(self, instr: PropagationSolver.InstrumentationOutputData):
         # algorithm without control
-        if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION and \
-           self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
+        if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION and \
+           self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
             self.res = PropagationSolver.StepReaction.OK
             dAdt = 0.0
         # local control algorithm with goal population
-        elif self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
+        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
             dAdt = self.dyn.propagation_dyn_ref.E * instr.psigc_psie.imag * coef
             if dAdt >= 0.0:
@@ -204,17 +204,17 @@ class FittingSolver:
                                               self.dyn.propagation_dyn_ref.E, self.dyn.propagation_dyn_ref.freq_mult)
 
         if self.dyn.propagation_dyn_ref.l % self.conf_fitter.mod_log == 0:
-            if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING:
+            if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING:
                 print("emax = ", instr.emax)
                 print("emin = ", instr.emin)
-            if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING and \
-               self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
+            if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING and \
+               self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
                 print("normalization on the excited state = ", abs(instr.cnorm[1]))
-            if self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.FILTERING and \
-               self.conf_fitter.task_type != RootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
+            if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING and \
+               self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
                 print("energy on the excited state = ", instr.cener[1].real)
-            if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION or \
-               self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
+            if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION or \
+               self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
                 print("Time derivation of the expectation value from the goal operator A = ", dAdt)
 
             if self.res == PropagationSolver.StepReaction.CORRECT:
@@ -232,17 +232,17 @@ class FittingSolver:
         self.E_patched = phys_base.laser_field(self.conf_fitter.propagation.E0, dyn.t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma)
 
         # transition without control
-        if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL:
+        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL:
             E = self.E_patched
         # intuitive control algorithm
-        elif self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
+        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
             for npul in range(1, self.conf_fitter.impulses_number):
                 self.E_patched += phys_base.laser_field(self.conf_fitter.propagation.E0, dyn.t,
                                             self.conf_fitter.propagation.t0 + (npul * self.conf_fitter.delay),
                                             self.conf_fitter.propagation.sigma)
             E = self.E_patched
         # local control algorithm (with A = Pe)
-        elif self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
+        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             if self.dyn.propagation_dyn_ref.E == 0.0:
                 self.dyn.propagation_dyn_ref.E = self.E_patched
 
@@ -263,8 +263,8 @@ class FittingSolver:
             self.dyn.E_vel += E_acc * stat.dt
             E = self.dyn.propagation_dyn_ref.E + self.dyn.E_vel * stat.dt
         # optimal control algorithm
-        elif self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
-             self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
+        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
+             self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
             if self.dyn.iter_step == 0:
                 E = self.E_patched
                 self.E_tlist.append(E)
@@ -300,7 +300,7 @@ class FittingSolver:
     # calculating a frequency multiplier value at the given time value
     def FreqMultiplier(self, stat: PropagationSolver.StaticState):
         # local control algorithm (with A = Pg + Pe)
-        if self.conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
+        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
             if self.freq_mult_patched < 0:
                 raise RuntimeError("freq_mult_patched has to be positive or zero")
 

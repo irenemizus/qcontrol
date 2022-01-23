@@ -2,7 +2,7 @@ import cmath
 import math
 import phys_base
 import numpy
-from config import RootConfiguration
+from config import TaskRootConfiguration
 
 from phys_base import dalt_to_au, hart_to_cm
 
@@ -78,12 +78,12 @@ For example: The calculating and fitting lasses should NOT be aware of if they a
 Morse or Harmonic problem. It lays on this class. 
 """
 class TaskManager:
-    def __init__(self, wf_type: RootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: RootConfiguration.FitterConfiguration):
-        if wf_type == RootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE:
+    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
+        if wf_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE:
             print("Morse wavefunctions are used")
             self.psi_init_impl = _PsiFunctions.morse
-        elif wf_type == RootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.HARMONIC:
+        elif wf_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.HARMONIC:
             print("Harmonic wavefunctions are used")
             self.psi_init_impl = _PsiFunctions.harmonic
         else:
@@ -108,8 +108,8 @@ class TaskManager:
 
 
 class HarmonicSingleStateTaskManager(TaskManager):
-    def __init__(self, wf_type: RootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: RootConfiguration.FitterConfiguration):
+    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
         super().__init__(wf_type, conf_fitter)
 
     @staticmethod
@@ -163,8 +163,8 @@ class HarmonicSingleStateTaskManager(TaskManager):
 
 
 class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
-    def __init__(self, wf_type: RootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: RootConfiguration.FitterConfiguration):
+    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
         super().__init__(wf_type, conf_fitter)
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
@@ -200,8 +200,8 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
 
 
 class MorseSingleStateTaskManager(TaskManager):
-    def __init__(self, wf_type: RootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: RootConfiguration.FitterConfiguration):
+    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
         super().__init__(wf_type, conf_fitter)
 
     @staticmethod
@@ -256,8 +256,8 @@ class MorseSingleStateTaskManager(TaskManager):
 
 
 class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
-    def __init__(self, wf_type: RootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: RootConfiguration.FitterConfiguration):
+    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
         super().__init__(wf_type, conf_fitter)
 
     @staticmethod
@@ -294,23 +294,23 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
         return [_PsiFunctions.zero(np), _PsiFunctions.morse(x, np, x0p + x0, p0, m, De_e, a_e)]
 
 
-def create(conf_fitter: RootConfiguration.FitterConfiguration):
-    if conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.FILTERING or \
-        conf_fitter.task_type == RootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
+def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
+    if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING or \
+        conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
 
-        if conf_fitter.propagation.pot_type == RootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
+        if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
             print("Morse potentials are used")
             task_manager_imp = MorseSingleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
-        elif conf_fitter.propagation.pot_type == RootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
+        elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
             print("Harmonic potentials are used")
             task_manager_imp = HarmonicSingleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
         else:
             raise RuntimeError("Impossible PotentialType")
     else:
-        if conf_fitter.propagation.pot_type == RootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
+        if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
             print("Morse potentials are used")
             task_manager_imp = MorseMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
-        elif conf_fitter.propagation.pot_type == RootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
+        elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
             print("Harmonic potentials are used")
             task_manager_imp = HarmonicMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
         else:

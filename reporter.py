@@ -5,10 +5,12 @@ import os.path
 
 from tools import print_err
 
+import config
+
 
 class PropagationReporter:
-    def __init__(self):
-        pass
+    def __init__(self, out_path: str):
+        self._out_path = out_path
 
     def open(self):
         raise NotImplementedError()
@@ -22,9 +24,10 @@ class PropagationReporter:
 
 
 class TablePropagationReporter(PropagationReporter):
-    def __init__(self, conf_output):
-        super().__init__()
-        self.conf_output = conf_output
+    def __init__(self, out_path: str,
+                 conf: config.ReportRootConfiguration.ReportFitterConfiguration.ReportTablePropagationConfiguration):
+        super().__init__(out_path=out_path)
+        self.conf = conf
         self.f_abs = None
         self.f_real = None
         self.f_prop = None
@@ -34,12 +37,15 @@ class TablePropagationReporter(PropagationReporter):
 
 
     def open(self):
-        self.f_abs = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_abs), 'w')
-        self.f_real = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_real), 'w')
-        self.f_prop = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_mom + "_prop"), 'w')
-        self.f_abs_up = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_abs + "_exc"), 'w')
-        self.f_real_up = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_real + "_exc"), 'w')
-        self.f_prop_up = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_mom + "_prop_exc"), 'w')
+        if not os.path.exists(self._out_path):
+            os.mkdir(self._out_path)
+
+        self.f_abs = open(os.path.join(self._out_path, self.conf.tab_abs + ".csv"), 'w')
+        self.f_real = open(os.path.join(self._out_path, self.conf.tab_real + ".csv"), 'w')
+        self.f_prop = open(os.path.join(self._out_path, self.conf.tab_tvals + ".csv"), 'w')
+        self.f_abs_up = open(os.path.join(self._out_path, self.conf.tab_abs + "_exc.csv"), 'w')
+        self.f_real_up = open(os.path.join(self._out_path, self.conf.tab_real + "_exc.csv"), 'w')
+        self.f_prop_up = open(os.path.join(self._out_path, self.conf.tab_tvals + "_exc.csv"), 'w')
         return self
 
 
@@ -106,7 +112,7 @@ class TablePropagationReporter(PropagationReporter):
 
     def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
-        if l % self.conf_output.mod_fileout == 0 and l >= self.conf_output.lmin:
+        if l % self.conf.mod_fileout == 0 and l >= self.conf.lmin:
             self.plot(psi, t, x, np)
             self.plot_up(psi, t, x, np)
             self.plot_prop(t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max)
@@ -114,11 +120,15 @@ class TablePropagationReporter(PropagationReporter):
 
 
 class PlotPropagationReporter(PropagationReporter):
-    def __init__(self, conf_output):
-        super().__init__()
-        self.conf_output = conf_output
+    def __init__(self, out_path: str,
+                 conf: config.ReportRootConfiguration.ReportFitterConfiguration.ReportPlotPropagationConfiguration):
+        super().__init__(out_path=out_path)
+        self.conf = conf
 
     def open(self):
+        if not os.path.exists(self._out_path):
+            os.mkdir(self._out_path)
+
         # Time
         self.t_list = []
         self.t_u_list = []
@@ -284,16 +294,16 @@ class PlotPropagationReporter(PropagationReporter):
         self.psi_abs[t] = {'x': x, 'y': psi0_abs}
         self.psi_real[t] = {'x': x, 'y': psi0_real}
 
-        if self.i % self.conf_output.mod_update == 0:
+        if self.i % self.conf.mod_update == 0:
             # Updating the graph for psi_abs
-            self.__plot_update_graph(self.psi_abs, self.conf_output.number_plotout,
+            self.__plot_update_graph(self.psi_abs, self.conf.number_plotout,
                                      "Absolute value of the wave function on the ground state",
-                                     "abs(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_grd))
+                                     "abs(Ψ)", os.path.join(self._out_path, self.conf.gr_abs_grd))
 
             # Updating the graph for psi_real
-            self.__plot_update_graph(self.psi_real, self.conf_output.number_plotout,
+            self.__plot_update_graph(self.psi_real, self.conf.number_plotout,
                                      "Real value of the wave function on the ground state",
-                                     "Re(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_grd))
+                                     "Re(Ψ)", os.path.join(self._out_path, self.conf.gr_real_grd))
 
 
     def plot_up(self, psi, t, x, np):
@@ -306,16 +316,16 @@ class PlotPropagationReporter(PropagationReporter):
         self.psi_abs_u[t] = {'x': x, 'y': psi1_abs}
         self.psi_real_u[t] = {'x': x, 'y': psi1_real}
 
-        if self.i % self.conf_output.mod_update == 0:
+        if self.i % self.conf.mod_update == 0:
             # Updating the graph for psi_abs
-            self.__plot_update_graph(self.psi_abs_u, self.conf_output.number_plotout,
+            self.__plot_update_graph(self.psi_abs_u, self.conf.number_plotout,
                                      "Absolute value of the wave function on the excited state",
-                                     "abs(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_exc))
+                                     "abs(Ψ)", os.path.join(self._out_path, self.conf.gr_abs_exc))
 
             # Updating the graph for psi_real
-            self.__plot_update_graph(self.psi_real_u, self.conf_output.number_plotout,
+            self.__plot_update_graph(self.psi_real_u, self.conf.number_plotout,
                                      "Real value of the wave function on the excited state",
-                                     "Re(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_exc))
+                                     "Re(Ψ)", os.path.join(self._out_path, self.conf.gr_real_exc))
 
 
     def plot_prop(self, t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max):
@@ -333,42 +343,42 @@ class PlotPropagationReporter(PropagationReporter):
         namem = ["<x>", "<x^2>", "<p>", "<p^2>"]
         moms_list = [self.x_l_list, self.x2_l_list, self.p_l_list]
 
-        if self.i % self.conf_output.mod_update == 0:
+        if self.i % self.conf.mod_update == 0:
             # Updating the graph for moms without <p^2>
             self.__plot_moms_update_graph(self.t_list, moms_list, namem,
                                           "Expectation values for the ground state", "",
-                                          os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_low_grd))
+                                          os.path.join(self._out_path, self.conf.gr_moms_low_grd))
 
             moms_list.append(self.p2_l_list)
             # Updating the graph for moms
             self.__plot_moms_update_graph(self.t_list, moms_list, namem,
                                           "Expectation values for the ground state", "",
-                                          os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_grd))
+                                          os.path.join(self._out_path, self.conf.gr_moms_grd))
 
             # Updating the graph for ener
             self.__plot_tvals_update_graph(self.t_list, self.ener_list,
                                            "Energy on the ground state", "Energy",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_ener_grd))
+                                           os.path.join(self._out_path, self.conf.gr_ener_grd))
 
             # Updating the graph for lower state population
             self.__plot_tvals_update_graph(self.t_list, self.overlp_list,
                                            "Ground state population", "abs((psi0, psi))",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_overlp_grd))
+                                           os.path.join(self._out_path, self.conf.gr_overlp_grd))
 
             # Updating the graph for total energy
             self.__plot_tvals_update_graph(self.t_list, self.ener_tot_list,
                                            "Total energy", "Total energy",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_ener_tot))
+                                           os.path.join(self._out_path, self.conf.gr_ener_tot))
 
             # Updating the graph for maximum absolute value of ground state wavefunction
             self.__plot_tvals_update_graph(self.t_list, self.abs_psi_max_list,
                                            "Time dependence of max|Ψ| for the ground state wavefunction", "max|Ψ|",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_max_grd))
+                                           os.path.join(self._out_path, self.conf.gr_abs_max_grd))
 
             # Updating the graph for maximum real value of ground state wavefunction
             self.__plot_tvals_update_graph(self.t_list, self.real_psi_max_list,
                                            "Time dependence of maximum value of real(Ψ) for the ground state wavefunction",
-                                           "real(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_max_grd))
+                                           "real(Ψ)", os.path.join(self._out_path, self.conf.gr_real_max_grd))
 
 
     def plot_prop_up(self, t, moms, ener, overlp, overlp_tot, abs_psi_max, real_psi_max):
@@ -386,48 +396,48 @@ class PlotPropagationReporter(PropagationReporter):
         namem = ["<x>", "<x^2>", "<p>", "<p^2>"]
         moms_list = [self.x_u_list, self.x2_u_list, self.p_u_list]
 
-        if self.i % self.conf_output.mod_update == 0:
+        if self.i % self.conf.mod_update == 0:
             # Updating the graph for moms
             self.__plot_moms_update_graph(self.t_u_list, moms_list, namem,
                                           "Expectation values for the excited state", "",
-                                          os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_low_exc))
+                                          os.path.join(self._out_path, self.conf.gr_moms_low_exc))
 
             moms_list.append(self.p2_u_list)
             # Updating the graph for moms without <p^2>
             self.__plot_moms_update_graph(self.t_u_list, moms_list, namem,
                                           "Expectation values for the excited state", "",
-                                          os.path.join(self.conf_output.out_path, self.conf_output.gr_moms_exc))
+                                          os.path.join(self._out_path, self.conf.gr_moms_exc))
 
             # Updating the graph for ener
             self.__plot_tvals_update_graph(self.t_u_list, self.ener_u_list,
                                            "Energy on the excited state", "Energy",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_ener_exc))
+                                           os.path.join(self._out_path, self.conf.gr_ener_exc))
 
             # Updating the graph for excited state population
             self.__plot_tvals_update_graph(self.t_u_list, self.overlp_u_list,
                                            "Excited state population", "abs((psi1, psi))",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_overlp_exc))
+                                           os.path.join(self._out_path, self.conf.gr_overlp_exc))
 
             # Updating the graph for total population
             self.__plot_tvals_update_graph(self.t_u_list, self.overlp_tot_list,
                                            "Total population", "Total population",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_overlp_tot))
+                                           os.path.join(self._out_path, self.conf.gr_overlp_tot))
 
             # Updating the graph for maximum absolute value of excited state wavefunction
             self.__plot_tvals_update_graph(self.t_u_list, self.abs_psi_max_u_list,
                                            "Time dependence of max|Ψ| for the excited state wavefunction", "max|Ψ|",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_abs_max_exc))
+                                           os.path.join(self._out_path, self.conf.gr_abs_max_exc))
 
             # Updating the graph for maximum real value of excited state wavefunction
             self.__plot_tvals_update_graph(self.t_u_list, self.real_psi_max_u_list,
                                            "Time dependence of maximum value of real(Ψ) for the excited state wavefunction",
-                                           "real(Ψ)", os.path.join(self.conf_output.out_path, self.conf_output.gr_real_max_exc))
+                                           "real(Ψ)", os.path.join(self._out_path, self.conf.gr_real_max_exc))
 
 
     def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
         try:
-            if l % self.conf_output.mod_plotout == 0 and l >= self.conf_output.lmin:
+            if l % self.conf.mod_plotout == 0 and l >= self.conf.lmin:
                 self.plot(psi, t, x, np)
                 self.plot_up(psi, t, x, np)
                 self.plot_prop(t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max)
@@ -439,14 +449,13 @@ class PlotPropagationReporter(PropagationReporter):
 
 
 class MultiplePropagationReporter(PropagationReporter):
-    def __init__(self, conf_output):
-        super(MultiplePropagationReporter, self).__init__()
-
+    def __init__(self, out_path: str, conf_rep_table, conf_rep_plot):
+        super(MultiplePropagationReporter, self).__init__(out_path=out_path)
         self.reps = []
-        if not conf_output.plot.is_empty():
-            self.reps.append(PlotPropagationReporter(conf_output.plot))
-        if not conf_output.table.is_empty():
-            self.reps.append(TablePropagationReporter(conf_output.table))
+        if not conf_rep_plot.is_empty():
+            self.reps.append(PlotPropagationReporter(conf=conf_rep_plot, out_path=os.path.join(self._out_path, "plots")))
+        if not conf_rep_table.is_empty():
+            self.reps.append(TablePropagationReporter(conf=conf_rep_table, out_path=os.path.join(self._out_path, "tables")))
 
     def open(self):
         for rep in self.reps:
@@ -483,18 +492,18 @@ class FitterReporter:
 
 
 class TableFitterReporter(FitterReporter):
-    def __init__(self, conf_output):
+    def __init__(self, conf: config.ReportRootConfiguration.ReportTableFitterConfiguration):
         super().__init__()
-        self.conf_output = conf_output
+        self.conf = conf
         self.f_fit = None
 
     def create_propagation_reporter(self, prop_id: str):
-        prop_conf_output = copy.deepcopy(self.conf_output)
-        prop_conf_output.out_path = os.path.join(prop_conf_output.out_path, prop_id)
-        return TablePropagationReporter(prop_conf_output)
+        prop_conf_output = copy.deepcopy(self.conf)
+        return TablePropagationReporter(out_path=os.path.join(prop_conf_output.out_path, prop_id),
+                                        conf=prop_conf_output.propagation)
 
     def open(self):
-        self.f_fit = open(os.path.join(self.conf_output.out_path, self.conf_output.tab_mom + "_fit"), 'w')
+        self.f_fit = open(os.path.join(self.conf.out_path, self.conf.tab_tvals) + ".csv", 'w')
         return self
 
     def close(self):
@@ -513,19 +522,19 @@ class TableFitterReporter(FitterReporter):
         self.__plot_t_file_fitter(t, E, freq_mult, self.f_fit)
 
     def print_time_point_fitter(self, l, t, E, freq_mult):
-        if l % self.conf_output.mod_fileout == 0 and l >= self.conf_output.lmin:
+        if l % self.conf.mod_fileout == 0 and l >= self.conf.lmin:
             self.plot_fitter(t, E, freq_mult)
 
 
 class PlotFitterReporter(FitterReporter):
-    def __init__(self, conf_output):
+    def __init__(self, conf: config.ReportRootConfiguration.ReportPlotFitterConfiguration):
         super().__init__()
-        self.conf_output = conf_output
+        self.conf = conf
 
     def create_propagation_reporter(self, prop_id: str):
-        prop_conf_output = copy.deepcopy(self.conf_output)
-        prop_conf_output.out_path = os.path.join(prop_conf_output.out_path, prop_id)
-        return PlotPropagationReporter(prop_conf_output)
+        prop_conf_output = copy.deepcopy(self.conf)
+        return PlotPropagationReporter(out_path=os.path.join(prop_conf_output.out_path, prop_id),
+                                       conf=prop_conf_output.propagation)
 
     def open(self):
         # Time
@@ -572,21 +581,21 @@ class PlotFitterReporter(FitterReporter):
         self.E_list.append(E)
         self.freq_mult_list.append(freq_mult)
 
-        if self.i_fit % self.conf_output.mod_update == 0:
+        if self.i_fit % self.conf.mod_update == 0:
             # Updating the graph for laser field energy
             self.__plot_tvals_update_graph(self.t_list, self.E_list,
                                            "Laser field energy envelope", "E",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_lf_en))
+                                           os.path.join(self.conf.out_path, self.conf.gr_lf_en))
 
             # Updating the graph for laser field frequency multiplier
             self.__plot_tvals_update_graph(self.t_list, self.freq_mult_list,
                                            "Laser field frequency multiplier", "f",
-                                           os.path.join(self.conf_output.out_path, self.conf_output.gr_lf_fr))
+                                           os.path.join(self.conf.out_path, self.conf.gr_lf_fr))
 
 
     def print_time_point_fitter(self, l, t, E, freq_mult):
         try:
-            if l % self.conf_output.mod_plotout == 0 and l >= self.conf_output.lmin:
+            if l % self.conf.mod_plotout == 0 and l >= self.conf.lmin:
                 self.plot_fitter(t, E, freq_mult)
         except ValueError as err:
             print_err("A nasty error has occurred during the reporting: ", err)
@@ -594,28 +603,30 @@ class PlotFitterReporter(FitterReporter):
 
 
 class MultipleFitterReporter(FitterReporter):
-    def __init__(self, conf_output):
+    def __init__(self, conf_rep_table, conf_rep_plot):
         super(MultipleFitterReporter, self).__init__()
 
         self.reps = []
-        if not conf_output.plot.is_empty():
-            self.reps.append(PlotFitterReporter(conf_output.plot))
-        if not conf_output.table.is_empty():
-            self.reps.append(TableFitterReporter(conf_output.table))
-        self.conf_output = conf_output
+        if not conf_rep_plot.is_empty():
+            self.reps.append(PlotFitterReporter(conf_rep_plot))
+        if not conf_rep_table.is_empty():
+            self.reps.append(TableFitterReporter(conf_rep_table))
+        self.conf_rep_table = conf_rep_table
+        self.conf_rep_plot = conf_rep_plot
 
     def create_propagation_reporter(self, prop_id: str):
-        prop_conf_output = copy.deepcopy(self.conf_output)
-        if not prop_conf_output.plot.is_empty():
-            prop_conf_output.plot.out_path = os.path.join(prop_conf_output.plot.out_path, prop_id)
-            if not os.path.exists(prop_conf_output.plot.out_path):
-                os.mkdir(prop_conf_output.plot.out_path)
-        if not prop_conf_output.table.is_empty():
-            prop_conf_output.table.out_path = os.path.join(prop_conf_output.table.out_path, prop_id)
-            if not os.path.exists(prop_conf_output.table.out_path):
-                os.mkdir(prop_conf_output.table.out_path)
+        prop_conf_rep_table = copy.deepcopy(self.conf_rep_table)
+        prop_conf_rep_plot = copy.deepcopy(self.conf_rep_plot)
 
-        return MultiplePropagationReporter(prop_conf_output)
+        assert(prop_conf_rep_plot.out_path == prop_conf_rep_table.out_path)
+        out_path = prop_conf_rep_table.out_path
+        prop_out_path = os.path.join(out_path, prop_id)
+        if not os.path.exists(prop_out_path):
+            os.mkdir(prop_out_path)
+
+        return MultiplePropagationReporter(out_path=prop_out_path,
+                                           conf_rep_table=prop_conf_rep_table.propagation,
+                                           conf_rep_plot=prop_conf_rep_plot.propagation)
 
     def open(self):
         for rep in self.reps:

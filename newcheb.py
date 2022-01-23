@@ -7,66 +7,93 @@ Usage: python newcheb.py [options]
 Options:
     -h, --help
         print this usage info and exit
-    -f, --jsonfile
-        input json file name, in which all the following data should be provided
-        if something is not provided in the file or this option is missing at all,
+    --json_rep
+        input json file name, in which all the following reporting options should be provided.
+        If something is not provided in the file or this option is missing at all,
+        the following default values will be used
+    --json_task
+        input json file name, in which all the following calculation parameters should be provided.
+        If something is not provided in the file or this option is missing at all,
         the following default values will be used
 
 
-    Content of the json file
+    Content of the json_rep file
 
-    in key "output":
-    key "table"
-        a subsection, which has to be specified if writing of the resulting tables is needed.
-        In the key "table":
-        lmin
+    In key "fitter":
+        out_path
+            a path name for the output files.
+            By default, is equal to "output"
+
+        parameters, which has to be specified if writing of the resulting tables for controlled values is needed.
+        table.lmin
             number of a time step, from which the result should be written to a file.
             A negative value will be considered as 0.
             By default, is equal to 0
-        mod_stdout
-            step of output to stdout (to write to stdout each <val>-th time step).
-            By default, is equal to 500
-        mod_fileout
-            step of writing in file (to write in file each <val>-th time step).
+        table.mod_fileout
+            step of writing to file (to write to file each <val>-th time step).
             By default, is equal to 100
-        tab_abs
-            output file name, to which absolute values of wavefunctions should be written.
-            By default, is equal to "output/tab_abs.csv"
-        tab_real
-            output file name, to which real parts of wavefunctions should be written.
-            By default, is equal to "output/tab_real.csv"
-        tab_mom
-            output file name, to which expectation values of x, x*x, p, p*p should be written.
-            By default, is equal to "output/tab_mom.csv"
-        out_path
-            a path name for the output tables.
-            By default, is equal to "output"
+        table.tab_tvals
+            output file name, to which the time dependencies of the controlled values should be written.
+            By default, is equal to "tab_tvals_fit"
 
-    key "plot"
-        a subsection, which has to be specified if plotting of the resulting figures is needed.
-        In the key "plot":
-        lmin
+        parameters, which has to be specified if plotting of the resulting figures for controlled values is needed.
+        plot.lmin
             number of a time step, from which the result should be plotted.
             A negative value will be considered as 0.
             By default, is equal to 0
-        mod_plotout
+        plot.mod_plotout
             step of plotting graphs with x-axis = time (to plot to file each <val>-th time step).
-            By default, is equal to 500
-        mod_update
-            step for updating the plots
-            By default, is equal to 50
-        number_plotout
-            maximum number of graphs for different time points to plot on one canvas
-            for the absolute and real values of wavefunctions. Must be larger than 1
-            By default, is equal to 15
-        out_path
-            a path name for the output plots.
-            By default, is equal to "output/plots"
-        gr_*
+            By default, is equal to 100
+        plot.mod_update
+            step for updating the plots.
+            By default, is equal to 20
+        plot.gr_*
             output file name, to which the corresponding result should be plotted.
-            By default, is equal to "output/plots/fig_*.pdf"
+            By default, is equal to "fig_*.pdf"
 
-    in key "fitter":
+        In key "propagation":
+            parameters, which has to be specified if writing of the resulting propagation tables is needed.
+            table.lmin
+                number of a time step, from which the result should be written to a file.
+                A negative value will be considered as 0.
+                By default, is equal to 0
+            table.mod_fileout
+                step of writing to file (to write to file each <val>-th time step).
+                By default, is equal to 100
+            table.tab_abs
+                output file name, to which absolute values of wavefunctions should be written.
+                By default, is equal to "tab_abs"
+            table.tab_real
+                output file name, to which real parts of wavefunctions should be written.
+                By default, is equal to "tab_real"
+            table.tab_tvals
+                output file name, to which expectation values of x, x*x, p, p*p and other
+                time-dependent values should be written.
+                By default, is equal to "tab_tvals"
+
+            parameters, which has to be specified if plotting of the resulting propagation figures is needed.
+            plot.lmin
+                number of a time step, from which the result should be plotted.
+                A negative value will be considered as 0.
+                By default, is equal to 0
+            plot.mod_plotout
+                step of plotting graphs with x-axis = time (to plot to file each <val>-th time step).
+                By default, is equal to 100
+            plot.mod_update
+                step for updating the plots
+                By default, is equal to 20
+            plot.number_plotout
+                maximum number of graphs for different time points to plot on one canvas
+                for the absolute and real values of wavefunctions. Must be larger than 1
+                By default, is equal to 15
+            plot.gr_*
+                output file name, to which the corresponding result should be plotted.
+                By default, is equal to "fig_*.pdf"
+
+
+    Content of the json_task file
+
+    In key "fitter":
     task_type
         type of the calculation task:
         "trans_wo_control"  - calculation of transition from the ground state
@@ -133,6 +160,10 @@ Options:
         maximum iteration number for the "optimal_control_..." task_type in case if a divergence with the
         given criteria hasn't been reached. Is a dummy variable for all other task types.
         By default, is equal to 5
+    mod_log
+        step of output to stdout (to write to stdout each <val>-th time step).
+        By default, is equal to 500
+
     propagation
         a dictionary that contains the parameters, which are used in a simple propagation task with laser field:
         m
@@ -209,9 +240,9 @@ Options:
                         is identically equated to zero for filtering / single morse / single harmonic tasks
 
 Examples:
-    python newcheb.py --jsonfile "input.json"
-            perform a propagation task using the parameter values specified in the json file
-            "input.json" or the default ones if something wasn't provided in the file
+    python newcheb.py --json_task "input_task.json" --json_rep "input_report.json"
+        perform a propagation task using the parameter values specified in the json files
+        "input_task.json" and "input_report.json" or the default ones if something wasn't provided in the file
 """
 
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
@@ -249,142 +280,158 @@ def main(argv):
     """ The main() function """
     # analyze cmdline:
     try:
-        options, arguments = getopt.getopt(argv, 'hf:', ['help', 'jsonfile='])
+        options, arguments = getopt.getopt(argv, 'h', ['help', 'json_rep=', 'json_task='])
     except getopt.GetoptError:
         print_err("\tThere are unrecognized options!")
         print_err("\tRun this script with '-h' option to see the usage info and available options.")
         sys.exit(2)
 
-    file_json = None
+    file_json_rep = None
+    file_json_task = None
+
     # analyze provided options and their values (if any):
     for opt, val in options:
         if opt in ("-h", "--help"):
             usage()
             sys.exit()
-        elif opt in ("-f", "--jsonfile"):
-            file_json = val
+        elif opt in ("--json_rep"):
+            file_json_rep = val
+        elif opt in ("--json_task"):
+            file_json_task = val
 
-    if 'file_json' not in locals():
-        print("\tNo input json file was provided. The default values of calculation parameters will be used")
+    if 'file_json_rep' not in locals():
+        print("\tNo input json file with reporting options was provided. The default values of options will be used")
     else:
-        with open(file_json, "r") as read_file:
-            json_data = {}
-            data = json.load(read_file)
+        with open(file_json_rep, "r") as read_file:
+            data_rep = json.load(read_file)
 
-    conf = RootConfiguration()
-    conf.load(data)
+    conf_rep_table = ReportTableRootConfiguration()
+    conf_rep_table.load(data_rep)
+
+    conf_rep_plot = ReportPlotRootConfiguration()
+    conf_rep_plot.load(data_rep)
+
+    if 'file_json_task' not in locals():
+        print("\tNo input json file with calculation parameters was provided. The default values of parameters will be used")
+    else:
+        with open(file_json_task, "r") as read_file:
+            data_task = json.load(read_file)
+
+    conf_task = TaskRootConfiguration()
+    conf_task.load(data_task)
 
     # analyze provided json data
-    if not math.log2(conf.fitter.propagation.np).is_integer() or not math.log2(conf.fitter.propagation.nch).is_integer():
+    if not math.log2(conf_task.fitter.propagation.np).is_integer() or not math.log2(conf_task.fitter.propagation.nch).is_integer():
         raise ValueError("The number of collocation points 'np' and of Chebyshev "
                          "interpolation points 'nch' must be positive integers and powers of 2")
 
-    if conf.output.table.lmin < 0 or conf.output.plot.lmin < 0:
+    if conf_rep_table.fitter.lmin < 0 or conf_rep_plot.fitter.lmin < 0:
         raise ValueError("The number 'lmin' of time iteration, from which the result"
                          "should be written to a file or plotted should be positive or 0")
 
-    if conf.output.table.mod_fileout < 0 or conf.fitter.mod_log < 0:
+    if conf_rep_table.fitter.mod_fileout < 0 or conf_task.fitter.mod_log < 0:
         raise ValueError("The numbers 'mod_fileout' and 'mod_log' should be positive or 0")
 
-    if conf.output.plot.mod_plotout < 0 or conf.output.plot.mod_update < 0:
+    if conf_rep_plot.fitter.mod_plotout < 0 or conf_rep_plot.fitter.mod_update < 0:
         raise ValueError("The step for plotting graphs with x-axis = time 'mod_plotout' "
                          "and for updating the plots 'mod_update' should be positive or 0")
 
-    if conf.output.plot.number_plotout < 2:
+    if conf_rep_plot.fitter.propagation.number_plotout < 2:
         raise ValueError("The maximum number of graphs 'number_plotout' to be plotted on one canvas"
                          "must be larger than 1!")
 
-    if conf.fitter.impulses_number < 0:
+
+    if conf_task.fitter.impulses_number < 0:
         raise ValueError("The number of laser pulses 'impulses_number' should be positive or 0")
 
-    if conf.fitter.iter_max < 0 and (conf.fitter.task_type == conf.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
-            conf.fitter.task_type == conf.fitter.TaskType.OPTIMAL_CONTROL_GRADIENT):
+    if conf_task.fitter.iter_max < 0 and (conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
+            conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_GRADIENT):
         raise ValueError("The maximum number of iterations in the optimal control task 'iter_max' should be positive or 0")
 
-    if conf.fitter.propagation.L <= 0.0 or conf.fitter.propagation.T <= 0.0:
+    if conf_task.fitter.propagation.L <= 0.0 or conf_task.fitter.propagation.T <= 0.0:
         raise ValueError("The value of spatial range 'L' and of time range 'T' of the problem"
                          "must be positive")
 
-    if conf.fitter.propagation.m <= 0.0 or conf.fitter.propagation.a <= 0.0 or conf.fitter.propagation.De <= 0.0:
+    if conf_task.fitter.propagation.m <= 0.0 or conf_task.fitter.propagation.a <= 0.0 or conf_task.fitter.propagation.De <= 0.0:
         raise ValueError("The value of a reduced mass 'm/mass', of a scaling factor 'a'"
                          "and of a dissociation energy 'De' must be positive")
 
-    if not conf.fitter.propagation.E0 >= 0.0 or not conf.fitter.propagation.sigma > 0.0 or not conf.fitter.propagation.nu_L >= 0.0:
+    if not conf_task.fitter.propagation.E0 >= 0.0 or not conf_task.fitter.propagation.sigma > 0.0 or not conf_task.fitter.propagation.nu_L >= 0.0:
         raise ValueError("The value of an amplitude value of the laser field energy envelope 'E0',"
                          "of a scaling parameter of the laser field envelope 'sigma'"
                          "and of a basic frequency of the laser field 'nu_L' must be positive")
 
 
-    if conf.fitter.task_type == conf.FitterConfiguration.TaskType.FILTERING or \
-            conf.fitter.task_type == conf.FitterConfiguration.TaskType.SINGLE_POT:
+    if conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.FILTERING or \
+            conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.SINGLE_POT:
 
         print("A '%s' task begins. E0 and nu_L values are zeroed..."
-              % str(conf.fitter.task_type).split(".")[-1].lower())
-        conf.fitter.propagation.E0 = 0.0
-        conf.fitter.propagation.nu_L = 0.0
+              % str(conf_task.fitter.task_type).split(".")[-1].lower())
+        conf_task.fitter.propagation.E0 = 0.0
+        conf_task.fitter.propagation.nu_L = 0.0
 
-        if conf.fitter.impulses_number != 0:
+        if conf_task.fitter.impulses_number != 0:
             print("For the task_type = '%s' the impulses_number value will be replaced by zero"
-                  % str(conf.fitter.task_type).split(".")[-1].lower())
-            conf.fitter.impulses_number = 0
+                  % str(conf_task.fitter.task_type).split(".")[-1].lower())
+            conf_task.fitter.impulses_number = 0
     else:
-        if conf.fitter.task_type == conf.fitter.TaskType.TRANS_WO_CONTROL:
+        if conf_task.fitter.task_type == conf_task.fitter.TaskType.TRANS_WO_CONTROL:
             print("An ordinary transition task begins...")
-            if conf.fitter.impulses_number != 1:
+            if conf_task.fitter.impulses_number != 1:
                 print("For the task_type = 'trans_wo_control' the impulses_number value will be replaced by 1")
-                conf.fitter.impulses_number = 1
-        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
+                conf_task.fitter.impulses_number = 1
+        elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
             print("An intuitive control task begins...")
-            if conf.fitter.impulses_number < 2:
+            if conf_task.fitter.impulses_number < 2:
                 print("For the task_type = 'intuitive_control' the impulses_number value will be replaced by 2")
-                conf.fitter.impulses_number = 2
-        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
+                conf_task.fitter.impulses_number = 2
+        elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             print("A local control with goal population task begins...")
-            if conf.fitter.impulses_number != 1:
+            if conf_task.fitter.impulses_number != 1:
                 print("For the task_type = 'local_control_population' the impulses_number value will be replaced by 1")
-                conf.fitter.impulses_number = 1
-        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
+                conf_task.fitter.impulses_number = 1
+        elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
             print("A local control with goal projection task begins...")
-            if conf.fitter.impulses_number != 1:
+            if conf_task.fitter.impulses_number != 1:
                 print("For the task_type = 'local_control_projection' the impulses_number value will be replaced by 1")
-                conf.fitter.impulses_number = 1
-        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
+                conf_task.fitter.impulses_number = 1
+        elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
             print("An optimal control task with Krotov method begins...")
-            if conf.fitter.impulses_number != 1:
+            if conf_task.fitter.impulses_number != 1:
                 print("For the task_type = 'optimal_control_krotov' the impulses_number value will be replaced by 1")
-                conf.fitter.impulses_number = 1
-        elif conf.fitter.task_type == conf.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
+                conf_task.fitter.impulses_number = 1
+        elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
             print("An optimal control task with gradient method begins...")
-            if conf.fitter.impulses_number != 1:
+            if conf_task.fitter.impulses_number != 1:
                 print("For the task_type = 'optimal_control_gradient' the impulses_number value will be replaced by 1")
-                conf.fitter.impulses_number = 1
+                conf_task.fitter.impulses_number = 1
         else:
             raise RuntimeError("Impossible case in the TaskType class")
 
 
-    task_manager_imp = task_manager.create(conf.fitter)
+    task_manager_imp = task_manager.create(conf_task.fitter)
 
     # setup of the grid
-    grid = grid_setup.GridConstructor(conf.fitter.propagation)
+    grid = grid_setup.GridConstructor(conf_task.fitter.propagation)
     dx, x = grid.grid_setup()
 
     # evaluating of initial wavefunction
-    psi0 = task_manager_imp.psi_init(x, conf.fitter.propagation.np, conf.fitter.propagation.x0,
-                                     conf.fitter.propagation.p0, conf.fitter.propagation.m,
-                                     conf.fitter.propagation.De, conf.fitter.propagation.a)
+    psi0 = task_manager_imp.psi_init(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
+                                     conf_task.fitter.propagation.p0, conf_task.fitter.propagation.m,
+                                     conf_task.fitter.propagation.De, conf_task.fitter.propagation.a)
 
     # evaluating of the final goal
-    psif = task_manager_imp.psi_goal(x, conf.fitter.propagation.np, conf.fitter.propagation.x0,
-                                     conf.fitter.propagation.p0, conf.fitter.propagation.x0p,
-                                     conf.fitter.propagation.m, conf.fitter.propagation.De,
-                                     conf.fitter.propagation.De_e, conf.fitter.propagation.Du,
-                                     conf.fitter.propagation.a, conf.fitter.propagation.a_e)
+    psif = task_manager_imp.psi_goal(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
+                                     conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
+                                     conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
+                                     conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
+                                     conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e)
 
     # main calculation part
-    fit_reporter_imp = reporter.MultipleFitterReporter(conf.output)
+    fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
     fit_reporter_imp.open()
 
-    fitting_solver = fitter.FittingSolver(conf.fitter, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
+    fitting_solver = fitter.FittingSolver(conf_task.fitter, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
                                           _warning_collocation_points,
                                           _warning_time_steps
                                           )

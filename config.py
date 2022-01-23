@@ -2,8 +2,9 @@ import copy
 from enum import Enum
 
 class ConfigurationBase:
-    def __init__(self):
+    def __init__(self, key_prefix: str):
         self._empty = True
+        self._key_prefix = key_prefix
         self._data = {
         }
 
@@ -14,22 +15,30 @@ class ConfigurationBase:
         self._empty = False  # Even loading an empty configuration means the object isn't empty anymore
         # analyze provided input json user_data
         for key in self._data:
-            if key in user_data:
+            key_with_prefix = self._key_prefix + key
+            actual_key = ""
+            if key_with_prefix in user_data:
+                actual_key = key_with_prefix
+            elif key in user_data:
+                actual_key = key
+
+            if actual_key != "":
                 if isinstance(self._data[key], str):
-                    self._data[key] = str(user_data[key])
+                    self._data[key] = str(user_data[actual_key])
                 elif isinstance(self._data[key], float):
-                    self._data[key] = float(user_data[key])
+                    self._data[key] = float(user_data[actual_key])
                 elif isinstance(self._data[key], int):
-                    self._data[key] = int(user_data[key])
-                elif isinstance(user_data[key], str):
-                    self._data[key] = type(self._data[key]).from_str(str(user_data[key]))
-                elif isinstance(user_data[key], int):
-                    self._data[key] = type(self._data[key]).from_int(int(user_data[key]))
-                elif isinstance(user_data[key], float):
-                    self._data[key] = type(self._data[key]).from_float(float(user_data[key]))
+                    self._data[key] = int(user_data[actual_key])
+                elif isinstance(user_data[actual_key], str):
+                    self._data[key] = type(self._data[key]).from_str(str(user_data[actual_key]))
+                elif isinstance(user_data[actual_key], int):
+                    self._data[key] = type(self._data[key]).from_int(int(user_data[actual_key]))
+                elif isinstance(user_data[actual_key], float):
+                    self._data[key] = type(self._data[key]).from_float(float(user_data[actual_key]))
                 elif isinstance(self._data[key], ConfigurationBase):
                     # Careful! Recursion here
-                    self._data[key].load(user_data[key])
+                    assert(self._data[key]._key_prefix == self._key_prefix)
+                    self._data[key].load(user_data[actual_key])
             else:
                 print(
                     "Parameter '%s' hasn't been provided in the input json file. "
@@ -46,8 +55,6 @@ class ConfigurationBase:
     def __deepcopy__(self, memo):
         cls = self.__class__
         result = cls.__new__(cls)
-        #result._data = copy.deepcopy(self._data)
-        #result._empty = copy.deepcopy(self._empty)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
             setattr(result, k, copy.deepcopy(v, memo))
@@ -55,62 +62,10 @@ class ConfigurationBase:
 
 ##########################################
 
-class RootConfiguration(ConfigurationBase):
-
-    class OutputTableConfiguration(ConfigurationBase):
-        def __init__(self, suffix = None):
-            if suffix is not None and suffix != "":
-                suffix = "_" + suffix
-
-            super().__init__()
-            # default input values
-            self._data["out_path"] = "output"
-            self._data["tab_abs"] = f"tab_abs{suffix}.csv"
-            self._data["tab_real"] = f"tab_real{suffix}.csv"
-            self._data["tab_mom"] = f"tab_mom{suffix}.csv"
-            self._data["lmin"] = 0
-            self._data["mod_fileout"] = 100
-
-    class OutputPlotConfiguration(ConfigurationBase):
-        def __init__(self, suffix = None):
-            super().__init__()
-            if suffix is not None and suffix != "":
-                suffix = "_" + suffix
-            else:
-                suffix = ""
-
-            # default input values
-            self._data["out_path"] = "output/plots"
-            self._data["lmin"] = 0
-            self._data["mod_plotout"] = 500
-            self._data["mod_update"] = 50
-            self._data["number_plotout"] = 10
-            self._data["gr_abs_grd"] = f"fig_abs_grd{suffix}.pdf"
-            self._data["gr_real_grd"] = f"fig_real_grd{suffix}.pdf"
-            self._data["gr_abs_exc"] = f"fig_abs_exc{suffix}.pdf"
-            self._data["gr_real_exc"] = f"fig_real_exc{suffix}.pdf"
-            self._data["gr_moms_low_grd"] = f"fig_moms_low_grd{suffix}.pdf"
-            self._data["gr_moms_grd"] = f"fig_moms_grd{suffix}.pdf"
-            self._data["gr_ener_grd"] = f"fig_ener_grd{suffix}.pdf"
-            self._data["gr_lf_en"] = f"fig_lf_en{suffix}.pdf"
-            self._data["gr_lf_fr"] = f"fig_lf_fr{suffix}.pdf"
-            self._data["gr_overlp_grd"] = f"fig_overlp_grd{suffix}.pdf"
-            self._data["gr_ener_tot"] = f"fig_ener_tot{suffix}.pdf"
-            self._data["gr_abs_max_grd"] = f"fig_abs_max_grd{suffix}.pdf"
-            self._data["gr_real_max_grd"] = f"fig_real_max_grd{suffix}.pdf"
-            self._data["gr_moms_low_exc"] = f"fig_moms_low_exc{suffix}.pdf"
-            self._data["gr_moms_exc"] = f"fig_moms_exc{suffix}.pdf"
-            self._data["gr_ener_exc"] = f"fig_ener_exc{suffix}.pdf"
-            self._data["gr_overlp_exc"] = f"fig_overlp_exc{suffix}.pdf"
-            self._data["gr_overlp_tot"] = f"fig_overlp_tot{suffix}.pdf"
-            self._data["gr_abs_max_exc"] = f"fig_abs_max_exc{suffix}.pdf"
-            self._data["gr_real_max_exc"] = f"fig_real_max_exc{suffix}.pdf"
-
-    class OutputMultipleConfiguration(ConfigurationBase):
-        def __init__(self, suffix = None):
-            super().__init__()
-            self._data['table'] = RootConfiguration.OutputTableConfiguration(suffix)
-            self._data['plot'] = RootConfiguration.OutputPlotConfiguration(suffix)
+class TaskRootConfiguration(ConfigurationBase):
+    def __init__(self):
+        super().__init__(key_prefix="")
+        self._data["fitter"] = TaskRootConfiguration.FitterConfiguration()
 
     class FitterConfiguration(ConfigurationBase):
         class PropagationConfiguration(ConfigurationBase):
@@ -120,12 +75,12 @@ class RootConfiguration(ConfigurationBase):
 
                 @staticmethod
                 def from_int(i):
-                    return RootConfiguration.FitterConfiguration.\
+                    return TaskRootConfiguration.FitterConfiguration.\
                         PropagationConfiguration.WaveFuncType(i)
 
                 @staticmethod
                 def from_str(s):
-                    return RootConfiguration.FitterConfiguration.\
+                    return TaskRootConfiguration.FitterConfiguration.\
                         PropagationConfiguration.WaveFuncType[s.upper()]
 
 
@@ -135,22 +90,22 @@ class RootConfiguration(ConfigurationBase):
 
                 @staticmethod
                 def from_int(i):
-                    return RootConfiguration.FitterConfiguration.\
+                    return TaskRootConfiguration.FitterConfiguration.\
                         PropagationConfiguration.PotentialType(i)
 
                 @staticmethod
                 def from_str(s):
-                    return RootConfiguration.FitterConfiguration.\
+                    return TaskRootConfiguration.FitterConfiguration.\
                         PropagationConfiguration.PotentialType[s.upper()]
 
 
             def __init__(self):
-                super().__init__()
+                super().__init__(key_prefix="")
                 # default input values
                 self._data["m"] = 0.5   # Dalton
                 # 1.0 -- for a model harmonic oscillator
-                self._data["wf_type"] = RootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE
-                self._data["pot_type"] = RootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE
+                self._data["wf_type"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE
+                self._data["pot_type"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE
                 self._data["a"] = 1.0   # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
                 self._data["De"] = 20000.0  # 1/cm
                 self._data["x0p"] = -0.17   # a_0
@@ -202,33 +157,17 @@ class RootConfiguration(ConfigurationBase):
 
             @staticmethod
             def from_int(i):
-                return RootConfiguration.FitterConfiguration.TaskType(i)
+                return TaskRootConfiguration.FitterConfiguration.TaskType(i)
 
             @staticmethod
             def from_str(s):
-                return RootConfiguration.FitterConfiguration.TaskType[s.upper()]
-
-
-#        class TaskSubType(Enum):
-#            GOAL_POPULATION = 0
-#            GOAL_PROJECTION = 1
-#            KROTOV_METHOD = 2
-#            GRADIENT_METHOD = 3
-            
-#            @staticmethod
-#            def from_int(i):
-#                return RootConfiguration.FitterConfiguration.TaskSubType(i)
-
-#            @staticmethod
-#            def from_str(s):
-#               return RootConfiguration.FitterConfiguration.TaskSubType[s.upper()]
-
+                return TaskRootConfiguration.FitterConfiguration.TaskType[s.upper()]
 
         def __init__(self):
-            super().__init__()
+            super().__init__(key_prefix="")
             # default input values
-            self._data["task_type"] = RootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL
-            self._data["propagation"] = RootConfiguration.FitterConfiguration.PropagationConfiguration()
+            self._data["task_type"] = TaskRootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL
+            self._data["propagation"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration()
             self._data["k_E"] = 1e29    # 1 / (s*s)
             self._data["lamb"] = 4e14 # 1 / s
             self._data["pow"] = 0.8
@@ -239,7 +178,105 @@ class RootConfiguration(ConfigurationBase):
             self._data["iter_max"] = 5
 
 
+class ReportRootConfiguration(ConfigurationBase):
+    def __init__(self, key_prefix: str):
+        super().__init__(key_prefix)
+        self._data["fitter"] = ReportRootConfiguration.ReportFitterConfiguration(key_prefix=key_prefix)
+
+    class ReportFitterConfiguration(ConfigurationBase):
+        def __init__(self, key_prefix: str):
+            super().__init__(key_prefix)
+            self._data["propagation"] = ReportRootConfiguration.ReportFitterConfiguration.ReportPropagationConfiguration(key_prefix=key_prefix)
+            self._data["out_path"] = "output"
+
+        class ReportPropagationConfiguration(ConfigurationBase):
+            def __init__(self, key_prefix: str):
+                super().__init__(key_prefix)
+
+        class ReportTablePropagationConfiguration(ReportPropagationConfiguration):
+            def __init__(self, suffix=None):
+                if suffix is not None and suffix != "":
+                    suffix = "_" + suffix
+
+                super().__init__(key_prefix="table.")
+                # default input values
+                self._data["tab_abs"] = f"tab_abs{suffix}.csv"
+                self._data["tab_real"] = f"tab_real{suffix}.csv"
+                self._data["tab_tvals"] = f"tab_tvals{suffix}.csv"
+                self._data["lmin"] = 0
+                self._data["mod_fileout"] = 100
+
+        class ReportPlotPropagationConfiguration(ReportPropagationConfiguration):
+            def __init__(self, suffix=None):
+                super().__init__(key_prefix="plot.")
+                if suffix is not None and suffix != "":
+                    suffix = "_" + suffix
+                else:
+                    suffix = ""
+
+                # default input values
+                self._data["lmin"] = 0
+                self._data["mod_plotout"] = 100
+                self._data["mod_update"] = 20
+                self._data["number_plotout"] = 15
+                self._data["gr_abs_grd"] = f"fig_abs_grd{suffix}.pdf"
+                self._data["gr_real_grd"] = f"fig_real_grd{suffix}.pdf"
+                self._data["gr_abs_exc"] = f"fig_abs_exc{suffix}.pdf"
+                self._data["gr_real_exc"] = f"fig_real_exc{suffix}.pdf"
+                self._data["gr_moms_low_grd"] = f"fig_moms_low_grd{suffix}.pdf"
+                self._data["gr_moms_grd"] = f"fig_moms_grd{suffix}.pdf"
+                self._data["gr_ener_grd"] = f"fig_ener_grd{suffix}.pdf"
+                self._data["gr_overlp_grd"] = f"fig_overlp_grd{suffix}.pdf"
+                self._data["gr_ener_tot"] = f"fig_ener_tot{suffix}.pdf"
+                self._data["gr_abs_max_grd"] = f"fig_abs_max_grd{suffix}.pdf"
+                self._data["gr_real_max_grd"] = f"fig_real_max_grd{suffix}.pdf"
+                self._data["gr_moms_low_exc"] = f"fig_moms_low_exc{suffix}.pdf"
+                self._data["gr_moms_exc"] = f"fig_moms_exc{suffix}.pdf"
+                self._data["gr_ener_exc"] = f"fig_ener_exc{suffix}.pdf"
+                self._data["gr_overlp_exc"] = f"fig_overlp_exc{suffix}.pdf"
+                self._data["gr_overlp_tot"] = f"fig_overlp_tot{suffix}.pdf"
+                self._data["gr_abs_max_exc"] = f"fig_abs_max_exc{suffix}.pdf"
+                self._data["gr_real_max_exc"] = f"fig_real_max_exc{suffix}.pdf"
+
+
+    class ReportTableFitterConfiguration(ReportFitterConfiguration):
+        def __init__(self, suffix=None):
+            super().__init__(key_prefix="table.")
+            self._data["propagation"] = ReportRootConfiguration.ReportFitterConfiguration.ReportTablePropagationConfiguration()
+
+            if suffix is not None and suffix != "":
+                suffix = "_" + suffix
+
+            # default input values
+            self._data["tab_tvals"] = f"tab_tvals_fit{suffix}.csv"
+            self._data["lmin"] = 0
+            self._data["mod_fileout"] = 100
+
+
+    class ReportPlotFitterConfiguration(ReportFitterConfiguration):
+        def __init__(self, suffix=None):
+            super().__init__(key_prefix="plot.")
+            self._data["propagation"] = ReportRootConfiguration.ReportFitterConfiguration.ReportPlotPropagationConfiguration()
+
+            if suffix is not None and suffix != "":
+                suffix = "_" + suffix
+            else:
+                suffix = ""
+
+            # default input values
+            self._data["lmin"] = 0
+            self._data["mod_plotout"] = 100
+            self._data["mod_update"] = 20
+            self._data["gr_lf_en"] = f"fig_lf_en{suffix}.pdf"
+            self._data["gr_lf_fr"] = f"fig_lf_fr{suffix}.pdf"
+
+
+class ReportTableRootConfiguration(ReportRootConfiguration):
     def __init__(self):
-        super().__init__()
-        self._data["output"] = RootConfiguration.OutputMultipleConfiguration()
-        self._data["fitter"] = RootConfiguration.FitterConfiguration()
+        super().__init__(key_prefix="table.")
+        self._data["fitter"] = ReportRootConfiguration.ReportTableFitterConfiguration()
+
+class ReportPlotRootConfiguration(ReportRootConfiguration):
+    def __init__(self):
+        super().__init__(key_prefix="plot.")
+        self._data["fitter"] = ReportRootConfiguration.ReportPlotFitterConfiguration()
