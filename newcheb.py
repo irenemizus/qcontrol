@@ -24,32 +24,30 @@ Options:
             a path name for the output files.
             By default, is equal to "output"
 
-        parameters, which has to be specified if writing of the resulting tables for controlled values is needed.
-        table.lmin
-            number of a time step, from which the result should be written to a file.
+        parameters, which has to be specified if writing of the resulting tables for "global" values as a function
+        of iteration number is needed.
+        table.imin
+            number of iteration, from which the result should be written to a file.
             A negative value will be considered as 0.
             By default, is equal to 0
-        table.mod_fileout
-            step of writing to file (to write to file each <val>-th time step).
-            By default, is equal to 100
-        table.tab_tvals
-            output file name, to which the time dependencies of the controlled values should be written.
-            By default, is equal to "tab_tvals_fit"
+        table.imod_fileout
+            step of writing to file (to write to file at each <val>-th iteration).
+            By default, is equal to 1
+        table.tab_iter
+            output file name, to which the iteration dependencies of the "global" values should be written.
+            By default, is equal to "tab_iter.csv"
 
         parameters, which has to be specified if plotting of the resulting figures for controlled values is needed.
-        plot.lmin
+        plot.imin
             number of a time step, from which the result should be plotted.
             A negative value will be considered as 0.
             By default, is equal to 0
-        plot.mod_plotout
-            step of plotting graphs with x-axis = time (to plot to file each <val>-th time step).
-            By default, is equal to 100
-        plot.mod_update
-            step for updating the plots.
-            By default, is equal to 20
-        plot.gr_*
+        plot.imod_plotout
+            step of plotting graphs with x-axis = number of iteration (to plot to file each <val>-th iteration).
+            By default, is equal to 1
+        plot.gr_iter
             output file name, to which the corresponding result should be plotted.
-            By default, is equal to "fig_*.pdf"
+            By default, is equal to "fig_iter.pdf"
 
         In key "propagation":
             parameters, which has to be specified if writing of the resulting propagation tables is needed.
@@ -62,14 +60,20 @@ Options:
                 By default, is equal to 100
             table.tab_abs
                 output file name, to which absolute values of wavefunctions should be written.
-                By default, is equal to "tab_abs"
+                By default, is equal to "tab_abs_{level}.csv"
+                ({level} is replaced automatically by "0" for the ground state and by "1" for the excited one)
             table.tab_real
                 output file name, to which real parts of wavefunctions should be written.
-                By default, is equal to "tab_real"
+                By default, is equal to "tab_real_{level}.csv"
+                ({level} is replaced automatically by "0" for the ground state and by "1" for the excited one)
             table.tab_tvals
                 output file name, to which expectation values of x, x*x, p, p*p and other
                 time-dependent values should be written.
-                By default, is equal to "tab_tvals"
+                By default, is equal to "tab_tvals_{level}.csv"
+                ({level} is replaced automatically by "0" for the ground state and by "1" for the excited one)
+            table.tab_tvals_fit
+                output file name, to which the time dependencies of the controlled values should be written.
+                By default, is equal to "tab_tvals_fit.csv"
 
             parameters, which has to be specified if plotting of the resulting propagation figures is needed.
             plot.lmin
@@ -321,25 +325,33 @@ def main(argv):
     conf_task.load(data_task)
 
     # analyze provided json data
-    if not math.log2(conf_task.fitter.propagation.np).is_integer() or not math.log2(conf_task.fitter.propagation.nch).is_integer():
-        raise ValueError("The number of collocation points 'np' and of Chebyshev "
-                         "interpolation points 'nch' must be positive integers and powers of 2")
-
-    if conf_rep_table.fitter.lmin < 0 or conf_rep_plot.fitter.lmin < 0:
+    if conf_rep_table.fitter.propagation.lmin < 0 or conf_rep_plot.fitter.propagation.lmin < 0:
         raise ValueError("The number 'lmin' of time iteration, from which the result"
                          "should be written to a file or plotted should be positive or 0")
 
-    if conf_rep_table.fitter.mod_fileout < 0 or conf_task.fitter.mod_log < 0:
-        raise ValueError("The numbers 'mod_fileout' and 'mod_log' should be positive or 0")
+    if conf_rep_table.fitter.imin < 0 or conf_rep_plot.fitter.imin < 0:
+        raise ValueError("The number 'imin' of iteration number, from which the result"
+                         "should be written to a file or plotted should be positive or 0")
 
-    if conf_rep_plot.fitter.mod_plotout < 0 or conf_rep_plot.fitter.mod_update < 0:
-        raise ValueError("The step for plotting graphs with x-axis = time 'mod_plotout' "
+    if conf_rep_table.fitter.propagation.mod_fileout < 0 or conf_task.fitter.mod_log < 0 or \
+            conf_rep_table.fitter.imod_fileout < 0:
+        raise ValueError("The numbers 'mod_fileout', 'imod_fileout', and 'mod_log' should be positive or 0")
+
+    if conf_rep_plot.fitter.propagation.mod_plotout < 0 or conf_rep_plot.fitter.propagation.mod_update < 0 or \
+        conf_rep_plot.fitter.imod_plotout < 0:
+        raise ValueError("The step for plotting graphs with x-axis = time 'mod_plotout', "
+                         "the step for plotting graphs with x-axis = number of iteration 'imod_plotout', "
                          "and for updating the plots 'mod_update' should be positive or 0")
 
     if conf_rep_plot.fitter.propagation.number_plotout < 2:
         raise ValueError("The maximum number of graphs 'number_plotout' to be plotted on one canvas"
                          "must be larger than 1!")
 
+
+    if not math.log2(conf_task.fitter.propagation.np).is_integer() or not math.log2(
+            conf_task.fitter.propagation.nch).is_integer():
+        raise ValueError("The number of collocation points 'np' and of Chebyshev "
+                         "interpolation points 'nch' must be positive integers and powers of 2")
 
     if conf_task.fitter.impulses_number < 0:
         raise ValueError("The number of laser pulses 'impulses_number' should be positive or 0")

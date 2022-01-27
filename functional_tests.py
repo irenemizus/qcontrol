@@ -4,13 +4,13 @@ import fitter
 import grid_setup
 import task_manager
 import test_data
-from config import RootConfiguration
+from config import TaskRootConfiguration
 from test_tools import *
 
 
 class fitter_Tests(unittest.TestCase):
     def test_single_harm(self):
-        conf = RootConfiguration.FitterConfiguration()
+        conf = TaskRootConfiguration.FitterConfiguration()
 
         user_conf = {
             "task_type": "single_pot",
@@ -50,6 +50,8 @@ class fitter_Tests(unittest.TestCase):
 
         mod_fileout = 1000
         lmin = 0
+        imod_fileout = 1
+        imin = 0
 
         task_manager_imp = task_manager.create(conf)
 
@@ -69,7 +71,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
-        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin)
+        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
@@ -77,11 +79,11 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["one_and_only"]
+        prop_reporter = fit_reporter_imp.prop_reporters["Iter_0f"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fitter_single_harm.py")
-        #prop_reporter.print_all("test_data/prop_single_harm.py")
+        fit_reporter_imp.print_all("test_data/fit_iter_single_harm.py")
+        #prop_reporter.print_all("test_data/prop_single_harm.py", "test_data/fitter_single_harm.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
@@ -92,6 +94,7 @@ class fitter_Tests(unittest.TestCase):
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001), 1.e-51)
+        iter_fit_comparer = TableComparer((0, 0.0001), 1.e-51)
 
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_single_harm.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_single_harm.psi_up_tab))
@@ -99,11 +102,12 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_single_harm.tvals_tab))
         self.assertTrue(tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_single_harm.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(fit_reporter_imp.tvals_tab, test_data.fitter_single_harm.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_single_harm.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_single_harm.iter_tab))
 
 
     def test_single_morse(self):
-        conf = RootConfiguration.FitterConfiguration()
+        conf = TaskRootConfiguration.FitterConfiguration()
 
         user_conf = {
             "task_type": "single_pot",
@@ -143,6 +147,8 @@ class fitter_Tests(unittest.TestCase):
 
         mod_fileout = 1000
         lmin = 0
+        imod_fileout = 1
+        imin = 0
 
         task_manager_imp = task_manager.create(conf)
 
@@ -162,7 +168,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
-        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin)
+        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
@@ -170,11 +176,11 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["one_and_only"]
+        prop_reporter = fit_reporter_imp.prop_reporters["Iter_0f"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fitter_single_morse.py")
-        #prop_reporter.print_all("test_data/prop_single_morse.py")
+        fit_reporter_imp.print_all("test_data/fit_iter_single_morse.py")
+        #prop_reporter.print_all("test_data/prop_single_morse.py", "test_data/fitter_single_morse.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.0001, 0.001, 0.001, 0.001, 0.000001,
@@ -185,6 +191,7 @@ class fitter_Tests(unittest.TestCase):
                                                 0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001), 1.e-51)
+        iter_fit_comparer = TableComparer((0, 0.0001), 1.e-51)
 
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_single_morse.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_single_morse.psi_up_tab))
@@ -193,11 +200,12 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_single_morse.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(fit_reporter_imp.tvals_tab, test_data.fitter_single_morse.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_single_morse.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_single_morse.iter_tab))
 
 
     def test_filter(self):
-        conf = RootConfiguration.FitterConfiguration()
+        conf = TaskRootConfiguration.FitterConfiguration()
 
         user_conf = {
             "task_type": "filtering",
@@ -237,6 +245,8 @@ class fitter_Tests(unittest.TestCase):
 
         mod_fileout = 20000
         lmin = 0
+        imod_fileout = 1
+        imin = 0
 
         task_manager_imp = task_manager.create(conf)
 
@@ -256,7 +266,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
-        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin)
+        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
@@ -264,11 +274,11 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["one_and_only"]
+        prop_reporter = fit_reporter_imp.prop_reporters["Iter_0f"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fitter_filter.py")
-        #prop_reporter.print_all("test_data/prop_filter.py")
+        fit_reporter_imp.print_all("test_data/fit_iter_filter.py")
+        #prop_reporter.print_all("test_data/prop_filter.py", "test_data/fitter_filter.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.0001, 0.000001,
@@ -279,6 +289,7 @@ class fitter_Tests(unittest.TestCase):
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.0001, 0.0001), 1.e-51)
+        iter_fit_comparer = TableComparer((0, 0.0001), 1.e-51)
 
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_filter.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_filter.psi_up_tab))
@@ -287,11 +298,12 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_filter.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(fit_reporter_imp.tvals_tab, test_data.fitter_filter.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_filter.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_filter.iter_tab))
 
 
     def test_trans_woc(self):
-        conf = RootConfiguration.FitterConfiguration()
+        conf = TaskRootConfiguration.FitterConfiguration()
 
         user_conf = {
             "task_type": "trans_wo_control",
@@ -331,6 +343,8 @@ class fitter_Tests(unittest.TestCase):
 
         mod_fileout = 10000
         lmin = 0
+        imod_fileout = 1
+        imin = 0
 
         task_manager_imp = task_manager.create(conf)
 
@@ -350,7 +364,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
-        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin)
+        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
@@ -358,11 +372,11 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["one_and_only"]
+        prop_reporter = fit_reporter_imp.prop_reporters["Iter_0f"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fitter_trans_woc.py")
-        #prop_reporter.print_all("test_data/prop_trans_woc.py")
+        fit_reporter_imp.print_all("test_data/fit_iter_trans_woc.py")
+        #prop_reporter.print_all("test_data/prop_trans_woc.py", "test_data/fitter_trans_woc.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -373,6 +387,7 @@ class fitter_Tests(unittest.TestCase):
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001), 1.e-51)
+        iter_fit_comparer = TableComparer((0, 0.0001), 1.e-51)
 
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_trans_woc.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_trans_woc.psi_up_tab))
@@ -381,11 +396,12 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_trans_woc.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(fit_reporter_imp.tvals_tab, test_data.fitter_trans_woc.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_trans_woc.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_trans_woc.iter_tab))
 
 
     def test_int_ctrl(self):
-        conf = RootConfiguration.FitterConfiguration()
+        conf = TaskRootConfiguration.FitterConfiguration()
 
         user_conf = {
             "task_type": "intuitive_control",
@@ -425,6 +441,8 @@ class fitter_Tests(unittest.TestCase):
 
         mod_fileout = 20000
         lmin = 0
+        imod_fileout = 1
+        imin = 0
 
         task_manager_imp = task_manager.create(conf)
 
@@ -444,7 +462,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
-        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin)
+        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
@@ -452,11 +470,11 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["one_and_only"]
+        prop_reporter = fit_reporter_imp.prop_reporters["Iter_0f"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fitter_int_ctrl.py")
-        #prop_reporter.print_all("test_data/prop_int_ctrl.py")
+        fit_reporter_imp.print_all("test_data/fit_iter_int_ctrl.py")
+        #prop_reporter.print_all("test_data/prop_int_ctrl.py", "test_data/fitter_int_ctrl.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -467,6 +485,7 @@ class fitter_Tests(unittest.TestCase):
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001), 1.e-51)
+        iter_fit_comparer = TableComparer((0, 0.0001), 1.e-51)
 
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_int_ctrl.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_int_ctrl.psi_up_tab))
@@ -475,11 +494,12 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_int_ctrl.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(fit_reporter_imp.tvals_tab, test_data.fitter_int_ctrl.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_int_ctrl.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_int_ctrl.iter_tab))
 
 
     def test_loc_ctrl_pop(self):
-        conf = RootConfiguration.FitterConfiguration()
+        conf = TaskRootConfiguration.FitterConfiguration()
 
         user_conf = {
             "task_type": "local_control_population",
@@ -519,6 +539,8 @@ class fitter_Tests(unittest.TestCase):
 
         mod_fileout = 10000
         lmin = 0
+        imod_fileout = 1
+        imin = 0
 
         task_manager_imp = task_manager.create(conf)
 
@@ -538,7 +560,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
-        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin)
+        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
@@ -546,11 +568,11 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["one_and_only"]
+        prop_reporter = fit_reporter_imp.prop_reporters["Iter_0f"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fitter_loc_ctrl_pop.py")
-        #prop_reporter.print_all("test_data/prop_loc_ctrl_pop.py")
+        fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_pop.py")
+        #prop_reporter.print_all("test_data/prop_loc_ctrl_pop.py", "test_data/fitter_loc_ctrl_pop.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -561,6 +583,7 @@ class fitter_Tests(unittest.TestCase):
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001), 1.e-51)
+        iter_fit_comparer = TableComparer((0, 0.0001), 1.e-51)
 
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_loc_ctrl_pop.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_loc_ctrl_pop.psi_up_tab))
@@ -569,11 +592,12 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_loc_ctrl_pop.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(fit_reporter_imp.tvals_tab, test_data.fitter_loc_ctrl_pop.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_loc_ctrl_pop.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_loc_ctrl_pop.iter_tab))
 
 
     def test_loc_ctrl_proj(self):
-        conf = RootConfiguration.FitterConfiguration()
+        conf = TaskRootConfiguration.FitterConfiguration()
 
         user_conf = {
             "task_type": "local_control_projection",
@@ -613,6 +637,8 @@ class fitter_Tests(unittest.TestCase):
 
         mod_fileout = 10000
         lmin = 0
+        imod_fileout = 1
+        imin = 0
 
         task_manager_imp = task_manager.create(conf)
 
@@ -632,7 +658,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
-        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin)
+        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
@@ -640,11 +666,11 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["one_and_only"]
+        prop_reporter = fit_reporter_imp.prop_reporters["Iter_0f"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fitter_loc_ctrl_proj.py")
-        #prop_reporter.print_all("test_data/prop_loc_ctrl_proj.py")
+        fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_proj.py")
+        #prop_reporter.print_all("test_data/prop_loc_ctrl_proj.py", "test_data/fitter_loc_ctrl_proj.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -655,6 +681,7 @@ class fitter_Tests(unittest.TestCase):
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001), 1.e-51)
+        iter_fit_comparer = TableComparer((0, 0.0001), 1.e-51)
 
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_loc_ctrl_proj.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_loc_ctrl_proj.psi_up_tab))
@@ -663,7 +690,8 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_loc_ctrl_proj.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(fit_reporter_imp.tvals_tab, test_data.fitter_loc_ctrl_proj.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_loc_ctrl_proj.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_loc_ctrl_proj.iter_tab))
 
 
 if __name__ == '__main__':

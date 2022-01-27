@@ -198,7 +198,8 @@ class PropagationSolver:
                                        self.stat.cener0[0].real, self.stat.cener0[1].real,
                                        overlp0, overlpf, overlp0_abs, cener0_tot.real,
                                        abs(self.stat.psi0[0][max_ind_psi_l]), self.stat.psi0[0][max_ind_psi_l].real,
-                                       abs(self.stat.psi0[1][max_ind_psi_u]), self.stat.psi0[1][max_ind_psi_u].real)
+                                       abs(self.stat.psi0[1][max_ind_psi_u]), self.stat.psi0[1][max_ind_psi_u].real,
+                                       0.0, 1.0)
 
         print("Initial emax = ", emax0)
 
@@ -239,7 +240,8 @@ class PropagationSolver:
                                             self.instr.moms, self.instr.cener[0].real, self.instr.cener[1].real,
                                             overlp0, overlpf, overlp_abs, cener_tot.real,
                                             abs(self.dyn.psi[0][max_ind_psi_l]), self.dyn.psi[0][max_ind_psi_l].real,
-                                            abs(self.dyn.psi[1][max_ind_psi_u]), self.dyn.psi[1][max_ind_psi_u].real)
+                                            abs(self.dyn.psi[1][max_ind_psi_u]), self.dyn.psi[1][max_ind_psi_u].real,
+                                            self.dyn.E, self.dyn.freq_mult)
 
         if self.dyn.l % self.mod_log == 0:
             if self.np < np_min:

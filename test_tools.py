@@ -44,7 +44,6 @@ class TableComparer:
                         raise RuntimeError("Complex arrays have different lengths")
 
                     for l in range(len(el1)):
-                        print(l)
                         if abs(el2[l].real) < self.delta and abs(el1[l].real) < self.delta and \
                            abs(el2[l].imag) < self.delta and abs(el1[l].imag) < self.delta:
                             return True
@@ -60,7 +59,7 @@ class TableComparer:
 
 class TestPropagationReporter(PropagationReporter):
     def __init__(self, mod_fileout, lmin):
-        super().__init__()
+        super().__init__("")
         self.mod_fileout = mod_fileout
         self.lmin = lmin
 
@@ -68,6 +67,7 @@ class TestPropagationReporter(PropagationReporter):
         self.tvals_tab = []
         self.psi_up_tab = []
         self.tvals_up_tab = []
+        self.tvals_tab_fit = []
 
     def open(self):
         return self
@@ -99,15 +99,22 @@ class TestPropagationReporter(PropagationReporter):
             ener, overlp, overlp_tot, abs_psi_max, real_psi_max
         ))
 
+    def plot_tvals_fit(self, t, E, freq_mult):
+        self.tvals_tab_fit.append((
+            t, E, freq_mult
+        ))
+
     def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         if l % self.mod_fileout == 0 and l >= self.lmin:
             self.plot(psi, t, x, np)
             self.plot_up(psi, t, x, np)
             self.plot_tvals(t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max)
             self.plot_tvals_up(t, moms, ener_u, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+            self.plot_tvals_fit(t, E, freq_mult)
 
-    def print_all(self, filename):
+
+    def print_all(self, filename, filename_fit):
         # To print the whole arrays without truncation ('...')
         np.set_printoptions(threshold=sys.maxsize)
 
@@ -133,14 +140,25 @@ class TestPropagationReporter(PropagationReporter):
                 f.write("    " + str(l) + ",\n")
             f.write("]\n\n")
 
+        if filename_fit:
+            with open(filename_fit, "w") as f_fit:
+                f_fit.write("from numpy import array\n\n")
+                f_fit.write("tvals_tab = [\n")
+                for l in self.tvals_tab_fit:
+                    f_fit.write("    " + str(l) + ",\n")
+                f_fit.write("]\n\n")
+
 
 class TestFitterReporter(FitterReporter):
-    def __init__(self, mod_fileout, lmin):
+    def __init__(self, mod_fileout, lmin, imod_fileout, imin):
         super().__init__()
         self.mod_fileout = mod_fileout
         self.lmin = lmin
 
-        self.tvals_tab = []
+        self.imod_fileout = imod_fileout
+        self.imin = imin
+
+        self.iter_tab = []
 
         self.prop_reporters = {}
 
@@ -150,14 +168,14 @@ class TestFitterReporter(FitterReporter):
     def close(self):
         pass
 
-    def plot_tvals(self, t, E, freq_mult):
-        self.tvals_tab.append((
-            t, E, freq_mult
+    def plot_iter(self, iter, goal_close):
+        self.iter_tab.append((
+            iter, goal_close
         ))
 
-    def print_time_point_fitter(self, l, t, E, freq_mult):
-        if l % self.mod_fileout == 0 and l >= self.lmin:
-            self.plot_tvals(t, E, freq_mult)
+    def print_iter_point_fitter(self, iter, goal_close):
+        if iter % self.imod_fileout == 0 and iter >= self.imin:
+            self.plot_iter(iter, goal_close)
 
     def print_all(self, filename):
         # To print the whole arrays without truncation ('...')
@@ -165,8 +183,8 @@ class TestFitterReporter(FitterReporter):
 
         with open(filename, "w") as f:
             f.write("from numpy import array\n\n")
-            f.write("tvals_tab = [\n")
-            for l in self.tvals_tab:
+            f.write("iter_tab = [\n")
+            for l in self.iter_tab:
                 f.write("    " + str(l) + ",\n")
             f.write("]\n\n")
 

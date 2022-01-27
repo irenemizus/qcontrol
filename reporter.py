@@ -19,7 +19,7 @@ class PropagationReporter:
         raise NotImplementedError()
 
     def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         raise NotImplementedError()
 
 
@@ -34,18 +34,23 @@ class TablePropagationReporter(PropagationReporter):
         self.f_abs_up = None
         self.f_real_up = None
         self.f_prop_up = None
+        self.f_fit = None
 
+    @staticmethod
+    def name_template(name: str, level: int):
+        return name.replace("{level}", str(level))
 
     def open(self):
         if not os.path.exists(self._out_path):
             os.mkdir(self._out_path)
 
-        self.f_abs = open(os.path.join(self._out_path, self.conf.tab_abs + ".csv"), 'w')
-        self.f_real = open(os.path.join(self._out_path, self.conf.tab_real + ".csv"), 'w')
-        self.f_prop = open(os.path.join(self._out_path, self.conf.tab_tvals + ".csv"), 'w')
-        self.f_abs_up = open(os.path.join(self._out_path, self.conf.tab_abs + "_exc.csv"), 'w')
-        self.f_real_up = open(os.path.join(self._out_path, self.conf.tab_real + "_exc.csv"), 'w')
-        self.f_prop_up = open(os.path.join(self._out_path, self.conf.tab_tvals + "_exc.csv"), 'w')
+        self.f_abs = open(os.path.join(self._out_path, self.name_template(self.conf.tab_abs, 0)), 'w')
+        self.f_real = open(os.path.join(self._out_path, self.name_template(self.conf.tab_real, 0)), 'w')
+        self.f_prop = open(os.path.join(self._out_path, self.name_template(self.conf.tab_tvals, 0)), 'w')
+        self.f_abs_up = open(os.path.join(self._out_path, self.name_template(self.conf.tab_abs, 1)), 'w')
+        self.f_real_up = open(os.path.join(self._out_path, self.name_template(self.conf.tab_real, 1)), 'w')
+        self.f_prop_up = open(os.path.join(self._out_path, self.name_template(self.conf.tab_tvals, 1)), 'w')
+        self.f_fit = open(os.path.join(self._out_path, self.conf.tab_tvals_fit), 'w')
         return self
 
 
@@ -62,6 +67,8 @@ class TablePropagationReporter(PropagationReporter):
         self.f_real_up = None
         self.f_prop_up.close()
         self.f_prop_up = None
+        self.f_fit.close()
+        self.f_fit = None
 
 
     @staticmethod
@@ -84,6 +91,13 @@ class TablePropagationReporter(PropagationReporter):
         file_prop.flush()
 
 
+    @staticmethod
+    def __plot_t_file_fitter(t, E, freq_mult, file_fit):
+        """ Plots the values, which are modified by fitter, as a function of time """
+        file_fit.write("{:.6f} {:.6f} {:.6f} \n".format(t * 1e+15, E, freq_mult))
+        file_fit.flush()
+
+
     def plot(self, psi, t, x, np):
         self.__plot_file(psi[0], t, x, np, self.f_abs, self.f_real)
 
@@ -98,6 +112,9 @@ class TablePropagationReporter(PropagationReporter):
         self.__plot_t_file_prop(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, overlp,
                              overlp_tot, abs_psi_max, real_psi_max, self.f_prop_up)
 
+    def plot_fitter(self, t, E, freq_mult):
+        self.__plot_t_file_fitter(t, E, freq_mult, self.f_fit)
+
 
     @staticmethod
     def __plot_test_file(l, phi_l, phi_u, f):
@@ -111,12 +128,13 @@ class TablePropagationReporter(PropagationReporter):
 
 
     def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         if l % self.conf.mod_fileout == 0 and l >= self.conf.lmin:
             self.plot(psi, t, x, np)
             self.plot_up(psi, t, x, np)
             self.plot_prop(t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max)
             self.plot_prop_up(t, moms, ener_u, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+            self.plot_fitter(t, E, freq_mult)
 
 
 class PlotPropagationReporter(PropagationReporter):
@@ -166,6 +184,10 @@ class PlotPropagationReporter(PropagationReporter):
         self.real_psi_max_list = []
         self.abs_psi_max_u_list = []
         self.real_psi_max_u_list = []
+
+        self.E_list = []
+        self.freq_mult_list = []
+
 
         # X = Coordinate
         self.psi_abs = {}  # key: t, value: {'x': [], 'y': []}
@@ -434,14 +456,32 @@ class PlotPropagationReporter(PropagationReporter):
                                            "real(Ψ)", os.path.join(self._out_path, self.conf.gr_real_max_exc))
 
 
+    def plot_fitter(self, t, E, freq_mult):
+        self.t_list.append(t)
+        self.E_list.append(E)
+        self.freq_mult_list.append(freq_mult)
+
+        if self.i % self.conf.mod_update == 0:
+            # Updating the graph for laser field energy
+            self.__plot_tvals_update_graph(self.t_list, self.E_list,
+                                           "Laser field energy envelope", "E",
+                                           os.path.join(self._out_path, self.conf.gr_lf_en))
+
+            # Updating the graph for laser field frequency multiplier
+            self.__plot_tvals_update_graph(self.t_list, self.freq_mult_list,
+                                           "Laser field frequency multiplier", "f",
+                                           os.path.join(self._out_path, self.conf.gr_lf_fr))
+
+
     def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         try:
             if l % self.conf.mod_plotout == 0 and l >= self.conf.lmin:
                 self.plot(psi, t, x, np)
                 self.plot_up(psi, t, x, np)
                 self.plot_prop(t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max)
                 self.plot_prop_up(t, moms, ener_u, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+                self.plot_fitter(t, E, freq_mult)
                 self.i += 1
         except ValueError as err:
             print_err("A nasty error has occurred during the reporting: ", err)
@@ -466,10 +506,10 @@ class MultiplePropagationReporter(PropagationReporter):
         pass
 
     def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u):
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         for rep in self.reps:
             rep.print_time_point_prop(l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u)
+                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult)
 
 
 # FitterReporter
@@ -484,7 +524,7 @@ class FitterReporter:
     def close(self):
         raise NotImplementedError()
 
-    def print_time_point_fitter(self, l, t, E, freq_mult):
+    def print_iter_point_fitter(self, iter, goal_close):
         raise NotImplementedError()
 
     def create_propagation_reporter(self, prop_id: str):
@@ -495,7 +535,7 @@ class TableFitterReporter(FitterReporter):
     def __init__(self, conf: config.ReportRootConfiguration.ReportTableFitterConfiguration):
         super().__init__()
         self.conf = conf
-        self.f_fit = None
+        self.f_ifit = None
 
     def create_propagation_reporter(self, prop_id: str):
         prop_conf_output = copy.deepcopy(self.conf)
@@ -503,27 +543,30 @@ class TableFitterReporter(FitterReporter):
                                         conf=prop_conf_output.propagation)
 
     def open(self):
-        self.f_fit = open(os.path.join(self.conf.out_path, self.conf.tab_tvals) + ".csv", 'w')
+        if not os.path.exists(self.conf.out_path):
+            os.mkdir(self.conf.out_path)
+
+        self.f_ifit = open(os.path.join(self.conf.out_path, self.conf.tab_iter), 'w')
         return self
 
     def close(self):
-        self.f_fit.close()
-        self.f_fit = None
-
+        self.f_ifit.close()
+        self.f_ifit = None
+        pass
 
     @staticmethod
-    def __plot_t_file_fitter(t, E, freq_mult, file_fit):
-        """ Plots the values, which are modified by fitter, as a function of time """
-        file_fit.write("{:.6f} {:.6f} {:.6f} \n".format(t * 1e+15, E, freq_mult))
-        file_fit.flush()
+    def __plot_i_file_fitter(iter, goal_close, file_ifit):
+        """ Plots the values, which are modified by fitter, as a function of iteration """
+        file_ifit.write("{:2d} {:.6f} \n".format(int(iter), goal_close))
+        file_ifit.flush()
 
 
-    def plot_fitter(self, t, E, freq_mult):
-        self.__plot_t_file_fitter(t, E, freq_mult, self.f_fit)
+    def plot_fitter(self, iter, goal_close):
+        self.__plot_i_file_fitter(iter, goal_close, self.f_ifit)
 
-    def print_time_point_fitter(self, l, t, E, freq_mult):
-        if l % self.conf.mod_fileout == 0 and l >= self.conf.lmin:
-            self.plot_fitter(t, E, freq_mult)
+    def print_iter_point_fitter(self, iter, goal_close):
+        if iter % self.conf.imod_fileout == 0 and iter >= self.conf.imin:
+            self.plot_fitter(iter, goal_close)
 
 
 class PlotFitterReporter(FitterReporter):
@@ -537,12 +580,9 @@ class PlotFitterReporter(FitterReporter):
                                        conf=prop_conf_output.propagation)
 
     def open(self):
-        # Time
-        self.t_list = []
-        self.E_list = []
-        self.freq_mult_list = []
-
-        self.i_fit = 0
+        # Iterations
+        self.i_list = []
+        self.gc_list = []
 
         return self
 
@@ -551,10 +591,10 @@ class PlotFitterReporter(FitterReporter):
 
 
     @staticmethod
-    def __plot_tvals_update_graph(t_list, val_list, title_plot, title_y, plot_name):
+    def __plot_iter_update_graph(i_list, val_list, title_plot, title_y, plot_name):
         fig = go.Figure()
 
-        sc = go.Scatter(x=t_list, y=val_list, mode="lines")
+        sc = go.Scatter(x=i_list, y=val_list, mode="lines")
         fig.add_trace(sc)
 
         fig.update_layout(
@@ -566,7 +606,7 @@ class PlotFitterReporter(FitterReporter):
                 'yanchor': 'top'
             },
             xaxis_title={
-                'text': 'time'
+                'text': 'Iteration'
             },
             yaxis_title={
                 'text': title_y
@@ -576,27 +616,20 @@ class PlotFitterReporter(FitterReporter):
         fig.write_image(plot_name)
 
 
-    def plot_fitter(self, t, E, freq_mult):
-        self.t_list.append(t)
-        self.E_list.append(E)
-        self.freq_mult_list.append(freq_mult)
+    def plot_fitter(self, iter, goal_close):
+        self.i_list.append(iter)
+        self.gc_list.append(goal_close)
 
-        if self.i_fit % self.conf.mod_update == 0:
-            # Updating the graph for laser field energy
-            self.__plot_tvals_update_graph(self.t_list, self.E_list,
-                                           "Laser field energy envelope", "E",
-                                           os.path.join(self.conf.out_path, self.conf.gr_lf_en))
-
-            # Updating the graph for laser field frequency multiplier
-            self.__plot_tvals_update_graph(self.t_list, self.freq_mult_list,
-                                           "Laser field frequency multiplier", "f",
-                                           os.path.join(self.conf.out_path, self.conf.gr_lf_fr))
+        # Updating the graph for closeness of the result to the goal
+        self.__plot_iter_update_graph(self.i_list, self.gc_list,
+                                       "Closeness of the current result to the goal", "(Ψ, Ψ_goal)",
+                                       os.path.join(self.conf.out_path, self.conf.gr_iter))
 
 
-    def print_time_point_fitter(self, l, t, E, freq_mult):
+    def print_iter_point_fitter(self, iter, goal_close):
         try:
-            if l % self.conf.mod_plotout == 0 and l >= self.conf.lmin:
-                self.plot_fitter(t, E, freq_mult)
+            if iter % self.conf.imod_plotout == 0 and iter >= self.conf.imin:
+                self.plot_fitter(iter, goal_close)
         except ValueError as err:
             print_err("A nasty error has occurred during the reporting: ", err)
             print_err("Hopefully that doesn't affect the calculations, so the application is going on...")
@@ -636,6 +669,6 @@ class MultipleFitterReporter(FitterReporter):
     def close(self):
         pass
 
-    def print_time_point_fitter(self, l, t, E, freq_mult):
+    def print_iter_point_fitter(self, iter, goal_close):
         for rep in self.reps:
-            rep.print_time_point_fitter(l, t, E, freq_mult)
+            rep.print_iter_point_fitter(iter, goal_close)

@@ -1,17 +1,24 @@
 # Nothing here
 
+from test_data import fit_iter_single_harm
 from test_data import fitter_single_harm
 from test_data import prop_single_harm
+from test_data import fit_iter_single_morse
 from test_data import fitter_single_morse
 from test_data import prop_single_morse
+from test_data import fit_iter_filter
 from test_data import fitter_filter
 from test_data import prop_filter
+from test_data import fit_iter_trans_woc
 from test_data import fitter_trans_woc
 from test_data import prop_trans_woc
+from test_data import fit_iter_int_ctrl
 from test_data import fitter_int_ctrl
 from test_data import prop_int_ctrl
+from test_data import fit_iter_loc_ctrl_pop
 from test_data import fitter_loc_ctrl_pop
 from test_data import prop_loc_ctrl_pop
+from test_data import fit_iter_loc_ctrl_proj
 from test_data import fitter_loc_ctrl_proj
 from test_data import prop_loc_ctrl_proj
 from test_data import prop_trans_woc_forw

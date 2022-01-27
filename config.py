@@ -200,9 +200,10 @@ class ReportRootConfiguration(ConfigurationBase):
 
                 super().__init__(key_prefix="table.")
                 # default input values
-                self._data["tab_abs"] = f"tab_abs{suffix}.csv"
-                self._data["tab_real"] = f"tab_real{suffix}.csv"
-                self._data["tab_tvals"] = f"tab_tvals{suffix}.csv"
+                self._data["tab_abs"] = "tab_abs_{level}.csv"
+                self._data["tab_real"] = "tab_real_{level}.csv"
+                self._data["tab_tvals"] = "tab_tvals_{level}.csv"
+                self._data["tab_tvals_fit"] = "tab_tvals_fit.csv"
                 self._data["lmin"] = 0
                 self._data["mod_fileout"] = 100
 
@@ -237,7 +238,8 @@ class ReportRootConfiguration(ConfigurationBase):
                 self._data["gr_overlp_tot"] = f"fig_overlp_tot{suffix}.pdf"
                 self._data["gr_abs_max_exc"] = f"fig_abs_max_exc{suffix}.pdf"
                 self._data["gr_real_max_exc"] = f"fig_real_max_exc{suffix}.pdf"
-
+                self._data["gr_lf_en"] = f"fig_lf_en{suffix}.pdf"
+                self._data["gr_lf_fr"] = f"fig_lf_fr{suffix}.pdf"
 
     class ReportTableFitterConfiguration(ReportFitterConfiguration):
         def __init__(self, suffix=None):
@@ -248,10 +250,9 @@ class ReportRootConfiguration(ConfigurationBase):
                 suffix = "_" + suffix
 
             # default input values
-            self._data["tab_tvals"] = f"tab_tvals_fit{suffix}.csv"
-            self._data["lmin"] = 0
-            self._data["mod_fileout"] = 100
-
+            self._data["tab_iter"] = "tab_iter.csv"
+            self._data["imin"] = 0
+            self._data["imod_fileout"] = 1
 
     class ReportPlotFitterConfiguration(ReportFitterConfiguration):
         def __init__(self, suffix=None):
@@ -264,12 +265,9 @@ class ReportRootConfiguration(ConfigurationBase):
                 suffix = ""
 
             # default input values
-            self._data["lmin"] = 0
-            self._data["mod_plotout"] = 100
-            self._data["mod_update"] = 20
-            self._data["gr_lf_en"] = f"fig_lf_en{suffix}.pdf"
-            self._data["gr_lf_fr"] = f"fig_lf_fr{suffix}.pdf"
-
+                self._data["imin"] = 0
+                self._data["imod_plotout"] = 1
+                self._data["gr_iter"] = f"fig_iter{suffix}.pdf"
 
 class ReportTableRootConfiguration(ReportRootConfiguration):
     def __init__(self):

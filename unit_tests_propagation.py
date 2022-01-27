@@ -4,7 +4,7 @@ import test_data
 from propagation import *
 import grid_setup
 import task_manager
-from config import RootConfiguration
+from config import TaskRootConfiguration
 from test_tools import *
 
 
@@ -39,7 +39,7 @@ class test_facilities_Tests(unittest.TestCase):
 class propagation_Tests(unittest.TestCase):
     @staticmethod
     def _test_setup():
-        conf = RootConfiguration.FitterConfiguration()
+        conf = TaskRootConfiguration.FitterConfiguration()
 
         conf_fitter = {
             "task_type": "trans_wo_control",
@@ -158,7 +158,7 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        #reporter_impl.print_all("test_data/prop_trans_woc_forw.py")
+        #reporter_impl.print_all("test_data/prop_trans_woc_forw.py", None)
 
         psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -226,7 +226,7 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        #reporter_impl.print_all("test_data/prop_trans_woc_back.py")
+        #reporter_impl.print_all("test_data/prop_trans_woc_back.py", None)
 
         psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,

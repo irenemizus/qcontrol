@@ -1,23 +1,6 @@
 {
-  "output": {
-    "table": {
-      "lmin": 0,
-      "mod_fileout": 100,
-      "out_path": "output",
-      "tab_abs": "tab_abs.csv",
-      "tab_real": "tab_real.csv",
-      "tab_mom": "tab_mom.csv"
-    },
-    "plot": {
-      "lmin": 0,
-      "mod_plotout": 100,
-      "mod_update": 20,
-      "number_plotout": 15,
-      "out_path": "output/plots"
-    }
-  },
   "fitter": {
-    "task_type": "local_control_population",
+    "task_type": "trans_wo_control",
     "k_E": 1e29,
     "lamb": 4e14,
     "pow": 0.8,

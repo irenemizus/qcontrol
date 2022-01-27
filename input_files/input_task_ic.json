@@ -1,28 +1,11 @@
 {
-  "output": {
-    "table": {
-      "lmin": 0,
-      "mod_fileout": 100,
-      "out_path": "output",
-      "tab_abs": "tab_abs.csv",
-      "tab_real": "tab_real.csv",
-      "tab_mom": "tab_mom.csv"
-    },
-    "plot": {
-      "lmin": 0,
-      "mod_plotout": 100,
-      "mod_update": 20,
-      "number_plotout": 15,
-      "out_path": "output/plots"
-    }
-  },
   "fitter": {
-    "task_type": "trans_wo_control",
+    "task_type": "intuitive_control",
     "k_E": 1e29,
     "lamb": 4e14,
     "pow": 0.8,
     "epsilon": 1e-15,
-    "impulses_number": 1,
+    "impulses_number": 2,
     "delay": 600e-15,
     "propagation": {
       "m": 0.5,
@@ -37,10 +20,10 @@
       "x0": 0.0,
       "p0": 0.0,
       "L": 5.0,
-      "T": 600e-15,
+      "T": 1200e-15,
       "np": 1024,
       "nch": 64,
-      "nt": 420000,
+      "nt": 840000,
       "E0": 71.54,
       "t0": 300e-15,
       "sigma": 50e-15,

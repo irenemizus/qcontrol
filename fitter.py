@@ -40,7 +40,7 @@ class FittingSolver:
         self.E_tlist = []
 
         conf_prop = conf_fitter.propagation
-        self.propagation_reporter = self.reporter.create_propagation_reporter("one_and_only")
+        self.propagation_reporter = self.reporter.create_propagation_reporter("iter_0f")
         self.propagation_reporter.open()
         self.solver = PropagationSolver(
             pot=self.pot,
@@ -57,11 +57,10 @@ class FittingSolver:
     def time_propagation(self, dx, x):
         self.dyn = FittingSolver.FitterDynamicState(0.0, 0.0, 0)
 
-        #with reporter.PlotReporter(TaskRootConfiguration.OutputPlotConfiguration("0f")) as reporter_imp:
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
                 self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
             print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
-    #    self.reporter = reporter_imp
+
         self.solver.laser_field_envelope = self.LaserFieldEnvelope
         self.solver.start(dx, x, self.psi_init, self.psi_goal, PropagationSolver.Direction.FORWARD)
         self.dyn.propagation_dyn_ref = self.solver.dyn
@@ -71,15 +70,19 @@ class FittingSolver:
         while self.solver.step(0.0):
             self.do_the_thing(self.solver.instr)
 
+        assert self.solver.dyn.l - 1 == self.conf_fitter.propagation.nt
+        self.goal_close = math_base.cprod(self.solver.stat.psif[1], self.solver.dyn.psi[1], self.solver.stat.dx,
+                                          self.conf_fitter.propagation.np)
+        goal_close_abs = abs(self.goal_close)
+        self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs)
+
+
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
            self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
 
-            assert self.solver.dyn.l - 1 == self.conf_fitter.propagation.nt
-            self.goal_close = math_base.cprod(self.solver.stat.psif[1], self.solver.dyn.psi[1], self.solver.stat.dx,
-                                                  self.conf_fitter.propagation.np)
-
-            if abs(self.goal_close - 1.0) > self.conf_fitter.epsilon:
+            if abs(goal_close_abs - 1.0) > self.conf_fitter.epsilon:
                 print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
+                self.propagation_reporter = self.reporter.create_propagation_reporter("iter_0b")
                 self.res = PropagationSolver.StepReaction.ITERATE
 
                 chiT = []
@@ -87,11 +90,10 @@ class FittingSolver:
                 chiT.append(self.goal_close * self.solver.stat.psif[1])
                 self.chi_tlist.append(chiT)
 
-                ##with reporter.PlotReporter(TaskRootConfiguration.OutputPlotConfiguration("0b")) as reporter_imp:
-                #    self.reporter = reporter_imp
                 self.solver.laser_field_envelope = self.LaserFieldEnvelopeBackward
                 self.solver.start(dx, x, chiT, self.psi_init, PropagationSolver.Direction.BACKWARD)
                 self.dyn.propagation_dyn_ref = self.solver.dyn
+
                 # propagation loop for the 0-th back iteration
                 while self.solver.step(self.conf_fitter.propagation.T):
                     self.chi_tlist.append(self.solver.dyn.psi_omega)
@@ -101,14 +103,13 @@ class FittingSolver:
                 self.res = PropagationSolver.StepReaction.OK
 
             # iterative procedure
-            while abs(self.goal_close - 1.0) > self.conf_fitter.epsilon or \
+            while abs(goal_close_abs - 1.0) > self.conf_fitter.epsilon or \
                     self.dyn.iter_step <= self.conf_fitter.iter_max:
                 self.dyn.iter_step += 1
                 print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
+                self.propagation_reporter = self.reporter.create_propagation_reporter("iter_" + str(self.dyn.iter_step) + "f")
                 self.res = PropagationSolver.StepReaction.ITERATE
 
-                #with reporter.PlotReporter(TaskRootConfiguration.OutputPlotConfiguration(f"{self.dyn.iter_step}f")) as reporter_imp:
-                #    self.reporter = reporter_imp
                 self.solver.laser_field_envelope = self.LaserFieldEnvelope
                 self.solver.start(dx, x, self.psi_init, self.psi_goal, PropagationSolver.Direction.FORWARD)
                 self.dyn.propagation_dyn_ref = self.solver.dyn
@@ -121,19 +122,21 @@ class FittingSolver:
                     self.do_the_thing(self.solver.instr)
 
                 print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
+                self.propagation_reporter = self.reporter.create_propagation_reporter("iter_" + str(self.dyn.iter_step) + "b")
 
                 chiT = []
                 assert self.solver.dyn.l - 1 == self.conf_fitter.propagation.nt
                 self.goal_close = math_base.cprod(self.solver.stat.psif[1], self.solver.dyn.psi[1],
                                                       self.solver.stat.dx, self.conf_fitter.propagation.np)
+                goal_close_abs = abs(self.goal_close)
+                self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs)
                 chiT.append(numpy.array([0.0] * self.conf_fitter.propagation.np).astype(complex))
                 chiT.append(self.goal_close * self.solver.stat.psif[1])
 
-                #with reporter.PlotReporter(TaskRootConfiguration.OutputPlotConfiguration(f"{self.dyn.iter_step}b")) as reporter_imp:
-                #    self.reporter = reporter_imp
                 self.solver.laser_field_envelope = self.LaserFieldEnvelopeBackward
                 self.solver.start(dx, x, chiT, self.psi_init, PropagationSolver.Direction.BACKWARD)
                 self.dyn.propagation_dyn_ref = self.solver.dyn
+
                 # propagation loop for the next backward iterations
                 chi_tlist_new = []
                 chi_tlist_new.append(chiT)
@@ -200,8 +203,8 @@ class FittingSolver:
                 self.res = PropagationSolver.StepReaction.CORRECT
 
         # plotting the result
-        self.reporter.print_time_point_fitter(self.dyn.propagation_dyn_ref.l, self.dyn.propagation_dyn_ref.t,
-                                              self.dyn.propagation_dyn_ref.E, self.dyn.propagation_dyn_ref.freq_mult)
+        #if self.dyn.propagation_dyn_ref.l == self.conf_fitter.propagation.nt:
+        #    self.reporter.print_iter_point_fitter(self.dyn.iter_step, self.goal_close)
 
         if self.dyn.propagation_dyn_ref.l % self.conf_fitter.mod_log == 0:
             if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING:
