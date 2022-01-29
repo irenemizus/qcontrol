@@ -1,5 +1,3 @@
-# Nothing here
-
 from test_data import fit_iter_single_harm
 from test_data import fitter_single_harm
 from test_data import prop_single_harm
