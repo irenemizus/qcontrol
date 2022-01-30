@@ -11,6 +11,24 @@ class FittingSolver:
             self.iter_step = iter_step
             self.propagation_dyn_ref = None
 
+    def __initialize_propagation(self, prop_id: str, laser_field_envelope):
+        self.propagation_reporter = self.reporter.create_propagation_reporter(prop_id)
+        self.propagation_reporter.open()
+        self.solver = PropagationSolver(
+            pot=self.pot,
+            _warning_collocation_points=self._warning_collocation_points,
+            _warning_time_steps=self._warning_time_steps,
+            reporter=self.propagation_reporter,
+            laser_field_envelope=laser_field_envelope,
+            freq_multiplier=self.FreqMultiplier,
+            dynamic_state_factory=self.propagation_dynamic_state_factory,
+            mod_log=self.conf_fitter.mod_log,
+            conf_prop=self.conf_fitter.propagation)
+
+    def __finalize_propagation(self):
+        self.propagation_reporter.close()
+        self.propagation_reporter = None
+
     def __init__(
             self,
             conf_fitter,
@@ -39,29 +57,16 @@ class FittingSolver:
         self.E_int = 0.0
         self.E_tlist = []
 
-        conf_prop = conf_fitter.propagation
-        self.propagation_reporter = self.reporter.create_propagation_reporter("iter_0f")
-        self.propagation_reporter.open()
-        self.solver = PropagationSolver(
-            pot=self.pot,
-            _warning_collocation_points=self._warning_collocation_points,
-            _warning_time_steps=self._warning_time_steps,
-            reporter=self.propagation_reporter,
-            laser_field_envelope=self.LaserFieldEnvelope,
-            freq_multiplier=self.FreqMultiplier,
-            dynamic_state_factory=self.propagation_dynamic_state_factory,
-            mod_log=conf_fitter.mod_log,
-            conf_prop=conf_prop)
-
 
     def time_propagation(self, dx, x):
         self.dyn = FittingSolver.FitterDynamicState(0.0, 0.0, 0)
+
+        self.__initialize_propagation("iter_0f", self.LaserFieldEnvelope)
 
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
                 self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
             print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
 
-        self.solver.laser_field_envelope = self.LaserFieldEnvelope
         self.solver.start(dx, x, self.psi_init, self.psi_goal, PropagationSolver.Direction.FORWARD)
         self.dyn.propagation_dyn_ref = self.solver.dyn
         self.E_tlist.append(0.0)
@@ -76,21 +81,22 @@ class FittingSolver:
         goal_close_abs = abs(self.goal_close)
         self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs)
 
-
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
            self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
 
             if abs(goal_close_abs - 1.0) > self.conf_fitter.epsilon:
                 print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
-                self.propagation_reporter = self.reporter.create_propagation_reporter("iter_0b")
-                self.res = PropagationSolver.StepReaction.ITERATE
 
                 chiT = []
                 chiT.append(numpy.array([0.0] * self.conf_fitter.propagation.np).astype(complex))
                 chiT.append(self.goal_close * self.solver.stat.psif[1])
                 self.chi_tlist.append(chiT)
 
-                self.solver.laser_field_envelope = self.LaserFieldEnvelopeBackward
+                self.__finalize_propagation()
+                self.__initialize_propagation("iter_0b", self.LaserFieldEnvelopeBackward)
+                self.res = PropagationSolver.StepReaction.ITERATE
+
+
                 self.solver.start(dx, x, chiT, self.psi_init, PropagationSolver.Direction.BACKWARD)
                 self.dyn.propagation_dyn_ref = self.solver.dyn
 
@@ -98,19 +104,20 @@ class FittingSolver:
                 while self.solver.step(self.conf_fitter.propagation.T):
                     self.chi_tlist.append(self.solver.dyn.psi_omega)
                     self.do_the_thing(self.solver.instr)
+
+                self.__finalize_propagation()
             else:
                 print("The goal has been reached on the very first iteration. You don't need the control!")
                 self.res = PropagationSolver.StepReaction.OK
 
             # iterative procedure
             while abs(goal_close_abs - 1.0) > self.conf_fitter.epsilon or \
-                    self.dyn.iter_step <= self.conf_fitter.iter_max:
+                    self.dyn.iter_step < self.conf_fitter.iter_max:
                 self.dyn.iter_step += 1
                 print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
-                self.propagation_reporter = self.reporter.create_propagation_reporter("iter_" + str(self.dyn.iter_step) + "f")
+                self.__initialize_propagation("iter_" + str(self.dyn.iter_step) + "f", self.LaserFieldEnvelope)
                 self.res = PropagationSolver.StepReaction.ITERATE
 
-                self.solver.laser_field_envelope = self.LaserFieldEnvelope
                 self.solver.start(dx, x, self.psi_init, self.psi_goal, PropagationSolver.Direction.FORWARD)
                 self.dyn.propagation_dyn_ref = self.solver.dyn
 
@@ -121,8 +128,6 @@ class FittingSolver:
                 while self.solver.step(0.0):
                     self.do_the_thing(self.solver.instr)
 
-                print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
-                self.propagation_reporter = self.reporter.create_propagation_reporter("iter_" + str(self.dyn.iter_step) + "b")
 
                 chiT = []
                 assert self.solver.dyn.l - 1 == self.conf_fitter.propagation.nt
@@ -133,7 +138,11 @@ class FittingSolver:
                 chiT.append(numpy.array([0.0] * self.conf_fitter.propagation.np).astype(complex))
                 chiT.append(self.goal_close * self.solver.stat.psif[1])
 
-                self.solver.laser_field_envelope = self.LaserFieldEnvelopeBackward
+                self.__finalize_propagation()
+
+                print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
+                self.__initialize_propagation("iter_" + str(self.dyn.iter_step) + "b", self.LaserFieldEnvelopeBackward)
+
                 self.solver.start(dx, x, chiT, self.psi_init, PropagationSolver.Direction.BACKWARD)
                 self.dyn.propagation_dyn_ref = self.solver.dyn
 
@@ -145,8 +154,9 @@ class FittingSolver:
                     self.do_the_thing(self.solver.instr)
 
                 self.chi_tlist[:] = chi_tlist_new[:]
+                self.__finalize_propagation()
             self.res = PropagationSolver.StepReaction.OK
-        self.propagation_reporter.close()
+        self.__finalize_propagation()
 
 
     def propagation_dynamic_state_factory(self, l, t, psi, psi_omega, E, freq_mult):

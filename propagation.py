@@ -241,7 +241,7 @@ class PropagationSolver:
                                             overlp0, overlpf, overlp_abs, cener_tot.real,
                                             abs(self.dyn.psi[0][max_ind_psi_l]), self.dyn.psi[0][max_ind_psi_l].real,
                                             abs(self.dyn.psi[1][max_ind_psi_u]), self.dyn.psi[1][max_ind_psi_u].real,
-                                            self.dyn.E, self.dyn.freq_mult)
+                                            abs(self.dyn.E), self.dyn.freq_mult)
 
         if self.dyn.l % self.mod_log == 0:
             if self.np < np_min:
