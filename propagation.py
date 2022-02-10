@@ -42,7 +42,7 @@ class PropagationSolver:
 
     # These parameters are updated on each calculation step
     class DynamicState:
-        def __init__(self, l=0, t=0.0, psi=None, psi_omega=None, E=0.0, freq_mult = 1.0):
+        def __init__(self, l=0, t=0.0, psi=None, psi_omega=None, E=0.0, freq_mult=1.0, dir=None):
             assert (psi is None and psi_omega is None) or (psi[0] is not psi_omega[0] and psi[1] is not psi_omega[1] ), "A single array is passed twice (as psi and psi_omega). Clone it!"
 
             self.l = l
@@ -51,6 +51,7 @@ class PropagationSolver:
             self.psi_omega = psi_omega
             self.E = E
             self.freq_mult = freq_mult
+            self.dir = dir
 
 
     # These parameters are recalculated from scratch on each step,
@@ -160,7 +161,7 @@ class PropagationSolver:
         return overlp
 
 
-    def report_static(self):
+    def report_static(self, dir: Direction):
         # check if input data are correct in terms of the given problem
         # calculating the initial energy range of the Hamiltonian operator H
         emax0 = self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
@@ -193,13 +194,24 @@ class PropagationSolver:
         max_ind_psi_l = numpy.argmax(self.stat.psi0[0])
         max_ind_psi_u = numpy.argmax(self.stat.psi0[1])
 
+        if dir == PropagationSolver.Direction.FORWARD:
+            l_start = 0
+            t_start = 0.0
+            E_start = 0.0
+            fm_start = 1.0
+        else:
+            l_start = self.nt
+            t_start = self.T
+            E_start = 0.0
+            fm_start = 1.0
+
         # plotting initial values
-        self.reporter.print_time_point_prop(0, self.stat.psi0, 0.0, self.stat.x, self.np, self.stat.moms0,
+        self.reporter.print_time_point_prop(l_start, self.stat.psi0, t_start, self.stat.x, self.np, self.stat.moms0,
                                        self.stat.cener0[0].real, self.stat.cener0[1].real,
                                        overlp0, overlpf, overlp0_abs, cener0_tot.real,
                                        abs(self.stat.psi0[0][max_ind_psi_l]), self.stat.psi0[0][max_ind_psi_l].real,
                                        abs(self.stat.psi0[1][max_ind_psi_u]), self.stat.psi0[1][max_ind_psi_u].real,
-                                       0.0, 1.0)
+                                       E_start, fm_start)
 
         print("Initial emax = ", emax0)
 
@@ -304,9 +316,9 @@ class PropagationSolver:
         self.stat = PropagationSolver.StaticState(psi0, psif, moms0, cnorm0, cnormf,
                      cener0, cenerf, E00, overlp00, overlpf0, dt, dx, x, v, akx2)
 
-        self.report_static()
+        self.report_static(dir)
 
-        self.dyn = self.dynamic_state_factory(0, 0.0, psi, psi, 0.0, 1.0)
+        self.dyn = self.dynamic_state_factory(0, 0.0, psi, psi, 0.0, 1.0, dir)
 
         self.dyn.l = 1
 
@@ -398,3 +410,8 @@ class PropagationSolver:
             return True
         else:
             return False
+
+
+    @property
+    def time_step(self):
+        return abs(self.stat.dt)
