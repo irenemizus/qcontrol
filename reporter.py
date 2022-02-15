@@ -1,5 +1,12 @@
 import copy
 
+# Disable the orca response timeout.
+import plotly.io._orca
+import retrying
+unwrapped = plotly.io._orca.request_image_with_retrying.__wrapped__
+wrapped = retrying.retry(wait_random_min=1000)(unwrapped)
+plotly.io._orca.request_image_with_retrying = wrapped
+
 import plotly.graph_objects as go
 import os.path
 
@@ -150,6 +157,7 @@ class PlotPropagationReporter(PropagationReporter):
         # Time
         self.t_list = []
         self.t_u_list = []
+        self.t_fit_list = []
 
         # Coordinate
         self.x_list = []
@@ -457,18 +465,18 @@ class PlotPropagationReporter(PropagationReporter):
 
 
     def plot_fitter(self, t, E, freq_mult):
-        self.t_list.append(t)
+        self.t_fit_list.append(t)
         self.E_list.append(E)
         self.freq_mult_list.append(freq_mult)
 
         if self.i % self.conf.mod_update == 0:
             # Updating the graph for laser field energy
-            self.__plot_tvals_update_graph(self.t_list, self.E_list,
+            self.__plot_tvals_update_graph(self.t_fit_list, self.E_list,
                                            "Laser field energy envelope", "E",
                                            os.path.join(self._out_path, self.conf.gr_lf_en))
 
             # Updating the graph for laser field frequency multiplier
-            self.__plot_tvals_update_graph(self.t_list, self.freq_mult_list,
+            self.__plot_tvals_update_graph(self.t_fit_list, self.freq_mult_list,
                                            "Laser field frequency multiplier", "f",
                                            os.path.join(self._out_path, self.conf.gr_lf_fr))
 

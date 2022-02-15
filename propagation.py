@@ -373,7 +373,7 @@ class PropagationSolver:
         cnorm_sum = cnorm[0] + cnorm[1]
 
         # renormalization
-        if cnorm_sum > 0.0:
+        if abs(cnorm_sum) > 0.0:
             self.dyn.psi_omega[0] /= math.sqrt(abs(cnorm_sum))
             self.dyn.psi_omega[1] /= math.sqrt(abs(cnorm_sum))
 

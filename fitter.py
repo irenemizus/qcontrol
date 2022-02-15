@@ -1,7 +1,6 @@
 import collections.abc
 import os.path
-
-import numpy as np
+import numpy
 
 import reporter
 import json
@@ -146,6 +145,7 @@ class FittingSolver:
                 print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
                 self.dyn.E_tlist = []
+                self.dyn.E_int = self.__E_int(dx)
 
             self.dyn.psi_omega_tlist = [self.psi_init.copy()]
             init_psi = self.psi_init
@@ -167,17 +167,13 @@ class FittingSolver:
 
         # propagation loop
         while self.solver.step(t_init):
+            psi_omega_copy = [
+                self.solver.dyn.psi_omega[0].copy(),
+                self.solver.dyn.psi_omega[1].copy()
+            ]
             if direct == PropagationSolver.Direction.BACKWARD:
-                psi_omega_copy = [
-                    self.solver.dyn.psi_omega[0].copy(),
-                    self.solver.dyn.psi_omega[1].copy()
-                ]
                 self.dyn.chi_tlist.append(psi_omega_copy)
             else:
-                psi_omega_copy = [
-                    self.solver.dyn.psi_omega[0].copy(),
-                    self.solver.dyn.psi_omega[1].copy()
-                ]
                 self.dyn.psi_omega_tlist.append(psi_omega_copy)
 
             self.do_the_thing(self.solver.instr)
@@ -191,7 +187,20 @@ class FittingSolver:
             self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs)
             chiT.append(numpy.array([0.0] * self.conf_fitter.propagation.np).astype(complex))
             chiT.append(self.dyn.goal_close * self.solver.stat.psif[1])
-            self.dyn.chi_tlist = [chiT]
+
+            # renormalization
+            cnorm = math_base.cprod(chiT[1], chiT[1], dx, self.conf_fitter.propagation.np)
+            if abs(cnorm) > 0.0:
+                for el in chiT[1]:
+                    el /= math.sqrt(abs(cnorm))
+
+            chiT_omega = [
+                chiT[0].copy(),
+                chiT[1].copy()
+            ]
+            for el in chiT_omega[1]:
+                el *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * self.dyn.propagation_dyn_ref.freq_mult * self.conf_fitter.propagation.T)
+            self.dyn.chi_tlist = [chiT_omega]
 
         self.__finalize_propagation()
         return chiT, goal_close_abs
@@ -203,36 +212,36 @@ class FittingSolver:
 
     # single iteration for an optimal control task
     def __single_iteration_optimal(self, dx, x):
+        assert (dx > 0.0)
         chiT = []
         goal_close_abs = 0.0
         print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
 
+
         for direct in PropagationSolver.Direction:
-            if direct == PropagationSolver.Direction.FORWARD:
-                ind_dir = 'f'
+            #if direct == PropagationSolver.Direction.FORWARD:
+            #    ind_dir = 'f'
+            #else:
+            #    ind_dir = 'b'
 
-                if self.dyn.iter_step > 0:
-                    self.dyn.E_int = self.__E_int(dx)
-            else:
-                ind_dir = 'b'
-
+            # calculating chiT
             chiT, goal_close_abs = self.__single_propagation(dx, x, direct, chiT, goal_close_abs)
 
             #saved_json, arrays = self.dyn.to_json_with_bins()
 
-            if not os.path.exists("savings"):
-                os.mkdir("savings")
+            #if not os.path.exists("savings"):
+            #    os.mkdir("savings")
 
-            path = os.path.join("savings", "iter_" + str(self.dyn.iter_step) + ind_dir)
-            if not os.path.exists(path):
-                os.mkdir(path)
+            #path = os.path.join("savings", "iter_" + str(self.dyn.iter_step) + ind_dir)
+            #if not os.path.exists(path):
+            #    os.mkdir(path)
 
             #with open(os.path.join(path, "fitter_state.json"), 'w') as f:
             #    f.write(saved_json)
 
             #np.savez_compressed(os.path.join(path, "fitter_state_bins.npz"), arrays)
 
-            print(f"abs(goal_close_abs - 1.0) = {abs(goal_close_abs - 1.0)}")
+            #print(f"abs(goal_close_abs - 1.0) = {abs(goal_close_abs - 1.0)}")
             if abs(goal_close_abs - 1.0) <= self.conf_fitter.epsilon and self.dyn.iter_step == 0:
                 print("The goal has been reached on the very first iteration. You don't need the control!")
                 self.dyn.res = PropagationSolver.StepReaction.OK
@@ -252,7 +261,7 @@ class FittingSolver:
                 #print(self.dyn)
 
             # iterative procedure
-            while abs(goal_close_abs - 1.0) > self.conf_fitter.epsilon or \
+            while abs(goal_close_abs - 1.0) > self.conf_fitter.epsilon and \
                     self.dyn.iter_step < self.conf_fitter.iter_max:
                 self.dyn.iter_step += 1
                 goal_close_abs = self.__single_iteration_optimal(dx, x)
@@ -345,7 +354,7 @@ class FittingSolver:
     def __E_int(self, dx):
         conf_prop = self.conf_fitter.propagation
 
-        self.dyn.E_int = 0.0
+        E_int = 0.0
         for l in range(conf_prop.nt):
             chie_old_psig_old = math_base.cprod(self.dyn.chi_tlist[conf_prop.nt - l - 1][1],
                                                 self.dyn.psi_omega_tlist[l][0], dx,
@@ -355,10 +364,10 @@ class FittingSolver:
                                                 dx, conf_prop.np)
             Ediff_old_old = chie_old_psig_old - psie_old_chig_old
 
-            self.dyn.E_int += (Ediff_old_old * Ediff_old_old.conjugate()).real * self.solver.time_step
+            E_int += (Ediff_old_old * Ediff_old_old.conjugate()).real * self.solver.time_step
 
         #print(f"E_int = f{self.dyn.E_int}")
-        return self.dyn.E_int
+        return E_int
 
 
     # calculating envelope of the laser field energy at the given time value

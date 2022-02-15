@@ -1,0 +1,35 @@
+{
+  "fitter": {
+    "task_type": "optimal_control_krotov",
+    "k_E": 1e29,
+    "lamb": 4e14,
+    "pow": 0.8,
+    "epsilon": 1e-8,
+    "impulses_number": 1,
+    "delay": 600e-15,
+    "iter_max": 3,
+    "propagation": {
+      "m": 0.5,
+      "pot_type": "morse",
+      "a": 1.0,
+      "De": 20000,
+      "x0p": -0.17,
+      "a_e": 1.0,
+      "De_e": 10000,
+      "Du": 20000,
+      "wf_type": "morse",
+      "x0": 0.0,
+      "p0": 0.0,
+      "L": 5.0,
+      "T": 400e-15,
+      "np": 1024,
+      "nch": 64,
+      "nt": 230000,
+      "E0": 71.54,
+      "t0": 200e-15,
+      "sigma": 50e-15,
+      "nu_L": 0.29297e15
+    },
+    "mod_log": 500
+  }
+}
