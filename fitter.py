@@ -1,5 +1,5 @@
 import collections.abc
-import os.path
+#import os.path
 import numpy
 
 import reporter
@@ -24,8 +24,8 @@ class FittingSolver:
             self.psi_omega_tlist = []
 
             self.goal_close = 0.0
-            self.E_int = 0.0
-            self.E_tlist = []
+            #self.E_int = 0.0
+            #self.  = []
             self.res = PropagationSolver.StepReaction.OK
 
             self.propagation_dyn_ref = None
@@ -51,8 +51,8 @@ class FittingSolver:
                     new_psi_omega_tlist.append(new_time_point)
                 dct['psi_omega_tlist'] = new_psi_omega_tlist
 
-                new_E_tlist = numpy.array(dct['E_tlist']).astype(complex)
-                dct['E_tlist'] = new_E_tlist
+                #new_E_tlist = numpy.array(dct['E_tlist']).astype(complex)
+                #dct['E_tlist'] = new_E_tlist
 
                 dct['goal_close'] = complex(dct['goal_close'])
 
@@ -118,6 +118,7 @@ class FittingSolver:
             psi_init,
             psi_goal,
             pot_func,
+            laser_field,
             reporter: reporter.FitterReporter,
             _warning_collocation_points,
             _warning_time_steps
@@ -125,6 +126,8 @@ class FittingSolver:
         self._warning_collocation_points = _warning_collocation_points
         self._warning_time_steps = _warning_time_steps
         self.pot_func = pot_func
+        self.laser_field = laser_field
+
         self.reporter = reporter
 
         self.conf_fitter = conf_fitter
@@ -144,14 +147,20 @@ class FittingSolver:
             if self.dyn.iter_step > 0:
                 print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
-                self.dyn.E_tlist = []
-                self.dyn.E_int = self.__E_int(dx)
+                #self.dyn.E_tlist = []
+                #if self.dyn.iter_step == 1:
+                #    self.dyn.E_int = self.__E_int(dx)
 
-            self.dyn.psi_omega_tlist = [self.psi_init.copy()]
+            psi_init_omega_copy = [
+                self.psi_init[0].copy(),
+                self.psi_init[1].copy()
+            ]
+
+            self.dyn.psi_omega_tlist = [psi_init_omega_copy]
             init_psi = self.psi_init
             fin_psi = self.psi_goal
             t_init = 0.0
-            self.dyn.E_tlist.append(0.0)
+            #self.dyn.E_tlist.append(self.laser_field(self.conf_fitter.propagation.E0, 0.0, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma))
         else:
             print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
             ind_dir = "b"
@@ -351,29 +360,29 @@ class FittingSolver:
                 pass
 
 
-    def __E_int(self, dx):
-        conf_prop = self.conf_fitter.propagation
+    #def __E_int(self, dx):
+    #    conf_prop = self.conf_fitter.propagation
 
-        E_int = 0.0
-        for l in range(conf_prop.nt):
-            chie_old_psig_old = math_base.cprod(self.dyn.chi_tlist[conf_prop.nt - l - 1][1],
-                                                self.dyn.psi_omega_tlist[l][0], dx,
-                                                conf_prop.np)
-            psie_old_chig_old = math_base.cprod(self.dyn.psi_omega_tlist[l][1],
-                                                self.dyn.chi_tlist[conf_prop.nt - l - 1][0],
-                                                dx, conf_prop.np)
-            Ediff_old_old = chie_old_psig_old - psie_old_chig_old
+    #    E_int = 0.0
+    #    for l in range(conf_prop.nt):
+    #        chie_old_psig_old = math_base.cprod(self.dyn.chi_tlist[conf_prop.nt - l - 1][1],
+    #                                            self.dyn.psi_omega_tlist[l][0], dx,
+    #                                            conf_prop.np)
+    #        psie_old_chig_old = math_base.cprod(self.dyn.psi_omega_tlist[l][1],
+    #                                            self.dyn.chi_tlist[conf_prop.nt - l - 1][0],
+    #                                            dx, conf_prop.np)
+    #        Ediff_old_old = chie_old_psig_old - psie_old_chig_old
 
-            E_int += (Ediff_old_old * Ediff_old_old.conjugate()).real * self.solver.time_step
+    #        E_int += (Ediff_old_old * Ediff_old_old.conjugate()).real * self.solver.time_step
 
-        #print(f"E_int = f{self.dyn.E_int}")
-        return E_int
+    #    print(f"E_int = {self.dyn.E_int}")
+    #    return E_int
 
 
     # calculating envelope of the laser field energy at the given time value
     def LaserFieldEnvelope(self, stat: PropagationSolver.StaticState,
                            dyn: PropagationSolver.DynamicState):
-        self.dyn.E_patched = phys_base.laser_field(self.conf_fitter.propagation.E0, dyn.t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma)
+        self.dyn.E_patched = self.laser_field(self.conf_fitter.propagation.E0, dyn.t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma)
 
         # transition without control
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL:
@@ -382,32 +391,32 @@ class FittingSolver:
         # intuitive control algorithm
         elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
             for npul in range(1, self.conf_fitter.impulses_number):
-                self.dyn.E_patched += phys_base.laser_field(self.conf_fitter.propagation.E0, dyn.t,
+                self.dyn.E_patched += self.laser_field(self.conf_fitter.propagation.E0, dyn.t,
                                             self.conf_fitter.propagation.t0 + (npul * self.conf_fitter.delay),
                                             self.conf_fitter.propagation.sigma)
             E = self.dyn.E_patched
 
         # local control algorithm (with A = Pe)
         elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
-            if self.dyn.propagation_dyn_ref.E == 0.0:
-                self.dyn.propagation_dyn_ref.E = self.dyn.E_patched
+            if self.solver.dyn.E == 0.0:
+                self.solver.dyn.E = self.dyn.E_patched
 
             if self.dyn.E_patched <= 0:
                 raise RuntimeError("E_patched has to be positive")
 
-            if self.dyn.propagation_dyn_ref.E <= 0:
+            if self.solver.dyn.E <= 0:
                 raise RuntimeError("E has to be positive")
 
             # solving dynamic equation for E
             # linear difference to the "desired" value
-            first = self.dyn.propagation_dyn_ref.E - self.dyn.E_patched
+            first = self.solver.dyn.E - self.dyn.E_patched
             # decay term
-            second = self.dyn.E_vel * math.pow(self.dyn.E_patched / self.dyn.propagation_dyn_ref.E, self.conf_fitter.pow)
+            second = self.dyn.E_vel * math.pow(self.dyn.E_patched / self.solver.dyn.E, self.conf_fitter.pow)
 
             # Euler
             E_acc = -self.conf_fitter.k_E * first - self.conf_fitter.lamb * second
             self.dyn.E_vel += E_acc * stat.dt
-            E = self.dyn.propagation_dyn_ref.E + self.dyn.E_vel * stat.dt
+            E = self.solver.dyn.E + self.dyn.E_vel * stat.dt
 
         # optimal control algorithm
         elif (self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or
@@ -415,33 +424,28 @@ class FittingSolver:
               self.dyn.dir == PropagationSolver.Direction.FORWARD:
             if self.dyn.iter_step == 0:
                 E = self.dyn.E_patched
-                self.dyn.E_tlist.append(E)
+                #self.dyn.E_tlist.append(E)
             else:
                 conf_prop = self.conf_fitter.propagation
-                Enorm0 = math.sqrt(math.pi) * conf_prop.E0 * conf_prop.E0 * conf_prop.sigma * \
-                         (math.erf((conf_prop.T - conf_prop.t0) / conf_prop.sigma) +
-                          math.erf(conf_prop.t0 / conf_prop.sigma)) / 2.0
+                #Enorm0 = math.sqrt(math.pi) * conf_prop.E0 * conf_prop.E0 * conf_prop.sigma * \
+                #         (math.erf((conf_prop.T - conf_prop.t0) / conf_prop.sigma) +
+                #          math.erf(conf_prop.t0 / conf_prop.sigma)) / 2.0
 
-                #print(f"Enorm0 = f{Enorm0}")
+                #print(f"Enorm0 = {Enorm0}")
 
-                chie_old_psig_new = math_base.cprod(self.dyn.chi_tlist[conf_prop.nt - self.dyn.propagation_dyn_ref.l][1],
-                                            self.dyn.propagation_dyn_ref.psi_omega[0], stat.dx, conf_prop.np)
-                psie_new_chig_old = math_base.cprod(self.dyn.propagation_dyn_ref.psi_omega[1],
-                                            self.dyn.chi_tlist[conf_prop.nt - self.dyn.propagation_dyn_ref.l][0],stat.dx, conf_prop.np)
-                Ediff_new_old = chie_old_psig_new - psie_new_chig_old
+                chie_old_psig_new = math_base.cprod(self.dyn.chi_tlist[conf_prop.nt - self.solver.dyn.l - 1][1],
+                                                    dyn.psi_omega[0],
+                                                    stat.dx, conf_prop.np)
+                psie_new_chig_old = math_base.cprod(dyn.psi_omega[1],
+                                                    self.dyn.chi_tlist[conf_prop.nt - self.solver.dyn.l - 1][0],
+                                                    stat.dx, conf_prop.np)
+                #Ediff_new_old = chie_old_psig_new - psie_new_chig_old
 
-
-                # chie_old_psig_old = math_base.cprod(self.dyn.chi_tlist[conf_prop.nt - self.dyn.propagation_dyn_ref.l][1],
-                #                                     self.dyn.psi_omega_tlist[self.dyn.propagation_dyn_ref.l][0], stat.dx, conf_prop.np)
-                # psie_old_chig_old = math_base.cprod(self.dyn.psi_omega_tlist[self.dyn.propagation_dyn_ref.l][1],
-                #                                     self.dyn.chi_tlist[conf_prop.nt - self.dyn.propagation_dyn_ref.l][0],stat.dx, conf_prop.np)
-                # Ediff_old_old = chie_old_psig_old - psie_old_chig_old
-                #
-                #
-                # self.dyn.E_int += Ediff_new_old * Ediff_new_old.conjugate() * self.solver.stat.dt
-
-                E = 1j * math.sqrt(Enorm0) * Ediff_new_old / math.sqrt(self.dyn.E_int)
-                self.dyn.E_tlist.append(E)
+                #E = 1j * math.sqrt(Enorm0) * Ediff_new_old / math.sqrt(self.dyn.E_int)
+                h_lambda = 0.0066
+                #E = 1j * Ediff_new_old / h_lambda
+                E = -2.0 * chie_old_psig_new.imag / h_lambda
+                #self.dyn.E_tlist.append(E)
         else:
             E = self.dyn.E_patched
 
@@ -451,8 +455,22 @@ class FittingSolver:
     # calculating envelope of the laser field energy at the given time value for back propagation
     def LaserFieldEnvelopeBackward(self, stat: PropagationSolver.StaticState,
                                     dyn: PropagationSolver.DynamicState):
-        self.dyn.E_patched = self.dyn.E_tlist[self.conf_fitter.propagation.nt - dyn.l]
-        E = self.dyn.E_patched
+        #self.dyn.E_patched = self.dyn.E_tlist[self.conf_fitter.propagation.nt - dyn.l]
+        #E = self.dyn.E_patched
+        conf_prop = self.conf_fitter.propagation
+        chie_new_psig_old = math_base.cprod(dyn.psi_omega[1],
+                                            self.dyn.psi_omega_tlist[conf_prop.nt - self.solver.dyn.l - 1][0],
+                                            stat.dx, conf_prop.np)
+        psie_old_chig_new = math_base.cprod(self.dyn.psi_omega_tlist[conf_prop.nt - self.solver.dyn.l - 1][1],
+                                            dyn.psi_omega[0],
+                                            stat.dx, conf_prop.np)
+        #Ediff_new_old = chie_new_psig_old - psie_old_chig_new
+
+        # E = 1j * math.sqrt(Enorm0) * Ediff_new_old / math.sqrt(self.dyn.E_int)
+        h_lambda = 0.0066
+        #E = 1j * Ediff_new_old / h_lambda
+        E = -2.0 * chie_new_psig_old.imag / h_lambda
+
         return E
 
 

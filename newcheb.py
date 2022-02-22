@@ -443,7 +443,7 @@ def main(argv):
     fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
     fit_reporter_imp.open()
 
-    fitting_solver = fitter.FittingSolver(conf_task.fitter, psi0, psif, task_manager_imp.pot, fit_reporter_imp,
+    fitting_solver = fitter.FittingSolver(conf_task.fitter, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                           _warning_collocation_points,
                                           _warning_time_steps
                                           )

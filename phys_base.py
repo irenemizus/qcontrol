@@ -13,22 +13,6 @@ Red_Planck_h = 1.054572e-27 # erg * s
 Hz_to_cm = 3.33563492e-11 # s / cm
 
 
-def laser_field(E0, t, t0, sigma):
-    """ Calculates energy of external laser field impulse
-        INPUT
-        E0      amplitude value of the laser field energy envelope
-        t0      initial time, when the laser field is switched on
-        sigma   scaling parameter of the laser field envelope
-        nu_L basic frequency of the laser field
-        t       current time value
-        OUTPUT
-        E       complex value of current external laser field  """
-
-    E = E0 * math.exp(-(t - t0) * (t - t0) / 2.0 / sigma / sigma)
-
-    return E
-
-
 def diff(psi, akx2, np):
     """ Calculates kinetic energy mapping carried out in momentum space
         INPUT

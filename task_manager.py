@@ -6,6 +6,26 @@ from config import TaskRootConfiguration
 
 from phys_base import dalt_to_au, hart_to_cm
 
+class _LaserFields:
+    @staticmethod
+    def zero(E0, t, t0, sigma):
+        return 0.0
+
+    @staticmethod
+    def laser_field(E0, t, t0, sigma):
+        """ Calculates energy of external laser field impulse
+            INPUT
+            E0      amplitude value of the laser field energy envelope
+            t0      initial time, when the laser field is switched on
+            sigma   scaling parameter of the laser field envelope
+            nu_L basic frequency of the laser field
+            t       current time value
+            OUTPUT
+            E       complex value of current external laser field  """
+
+        E = E0 * math.exp(-(t - t0) * (t - t0) / 2.0 / sigma / sigma)
+
+        return E
 """
 This class contains all the possible wavefunction types
 
@@ -106,6 +126,9 @@ class TaskManager:
     def psi_init(self, x, np, x0, p0, m, De, a):
         return [self.psi_init_impl(x, np, x0, p0, m, De, a), _PsiFunctions.zero(np)]
 
+    def laser_field(self, E0, t, t0, sigma):
+        raise NotImplementedError()
+
 
 class HarmonicSingleStateTaskManager(TaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
@@ -161,6 +184,9 @@ class HarmonicSingleStateTaskManager(TaskManager):
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
         return [_PsiFunctions.harmonic(x, np, x0, p0, m, De, a), _PsiFunctions.zero(np)]
 
+    def laser_field(self, E0, t, t0, sigma):
+        return _LaserFields.zero(E0, t, t0, sigma)
+
 
 class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
@@ -197,6 +223,9 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
         return [_PsiFunctions.zero(np), _PsiFunctions.harmonic(x, np, x0p + x0, p0, m, De_e, a_e)]
+
+    def laser_field(self, E0, t, t0, sigma):
+        return _LaserFields.zero(E0, t, t0, sigma)
 
 
 class MorseSingleStateTaskManager(TaskManager):
@@ -254,6 +283,9 @@ class MorseSingleStateTaskManager(TaskManager):
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
         return [_PsiFunctions.morse(x, np, x0, p0, m, De, a), _PsiFunctions.zero(np)]
 
+    def laser_field(self, E0, t, t0, sigma):
+        return _LaserFields.zero(E0, t, t0, sigma)
+
 
 class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
@@ -292,6 +324,9 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
         return [_PsiFunctions.zero(np), _PsiFunctions.morse(x, np, x0p + x0, p0, m, De_e, a_e)]
+
+    def laser_field(self, E0, t, t0, sigma):
+        return _LaserFields.laser_field(E0, t, t0, sigma)
 
 
 def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):

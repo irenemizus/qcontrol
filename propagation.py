@@ -18,7 +18,7 @@ class PropagationSolver:
         def __init__(self, psi0=None, psif=None, moms0: phys_base.ExpectationValues=None,
                      cnorm0=None, cnormf=None,
                      cener0=None, cenerf=None,
-                     E00=0.0, overlp00=None, overlpf0=None,
+                     overlp00=None, overlpf0=None,
                      dt=0.0, dx=0.0, x=None, v=None, akx2=None):
             assert (psi0 is None and psif is None) or (psi0[0] is not psif[0] and psi0[1] is not psif[1]), \
                 "A single array is passed twice (as psi0 and psif). Clone it!"
@@ -30,7 +30,6 @@ class PropagationSolver:
             self.cnormf = cnormf
             self.cener0 = cener0
             self.cenerf = cenerf
-            self.E00 = E00
             self.overlp00 = overlp00
             self.overlpf0 = overlpf0
             self.dt = dt
@@ -161,7 +160,7 @@ class PropagationSolver:
         return overlp
 
 
-    def report_static(self, dir: Direction):
+    def report_static(self):
         # check if input data are correct in terms of the given problem
         # calculating the initial energy range of the Hamiltonian operator H
         emax0 = self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
@@ -194,24 +193,15 @@ class PropagationSolver:
         max_ind_psi_l = numpy.argmax(self.stat.psi0[0])
         max_ind_psi_u = numpy.argmax(self.stat.psi0[1])
 
-        if dir == PropagationSolver.Direction.FORWARD:
-            l_start = 0
-            t_start = 0.0
-            E_start = 0.0
-            fm_start = 1.0
-        else:
-            l_start = self.nt
-            t_start = self.T
-            E_start = 0.0
-            fm_start = 1.0
+        fm_start = 1.0
 
         # plotting initial values
-        self.reporter.print_time_point_prop(l_start, self.stat.psi0, t_start, self.stat.x, self.np, self.stat.moms0,
+        self.reporter.print_time_point_prop(self.dyn.l, self.stat.psi0, self.dyn.t, self.stat.x, self.np, self.stat.moms0,
                                        self.stat.cener0[0].real, self.stat.cener0[1].real,
                                        overlp0, overlpf, overlp0_abs, cener0_tot.real,
                                        abs(self.stat.psi0[0][max_ind_psi_l]), self.stat.psi0[0][max_ind_psi_l].real,
                                        abs(self.stat.psi0[1][max_ind_psi_u]), self.stat.psi0[1][max_ind_psi_u].real,
-                                       E_start, fm_start)
+                                       abs(self.dyn.E), fm_start)
 
         print("Initial emax = ", emax0)
 
@@ -303,9 +293,6 @@ class PropagationSolver:
         dt = dir.value * self.T / (self.nt - 1)
         psi = copy.deepcopy(psi0)
 
-        # initial laser field energy
-        E00 = phys_base.laser_field(self.E0, 0.0, self.t0, self.sigma)
-
         # initial population
         overlp00 = self._pop_eval(psi0, psi, dx, self.np)
         overlpf0 = self._pop_eval(psif, psi, dx, self.np)
@@ -314,11 +301,17 @@ class PropagationSolver:
         moms0 = phys_base.exp_vals_calc(psi, x, akx2, dx, self.np, self.m)
 
         self.stat = PropagationSolver.StaticState(psi0, psif, moms0, cnorm0, cnormf,
-                     cener0, cenerf, E00, overlp00, overlpf0, dt, dx, x, v, akx2)
+                     cener0, cenerf, overlp00, overlpf0, dt, dx, x, v, akx2)
 
-        self.report_static(dir)
+        if dir == PropagationSolver.Direction.FORWARD:
+            self.dyn = self.dynamic_state_factory(0, 0.0, psi, psi, 0.0, 1.0, dir)
+        else:
+            self.dyn = self.dynamic_state_factory(0, self.T, psi, psi, 0.0, 1.0, dir)
 
-        self.dyn = self.dynamic_state_factory(0, 0.0, psi, psi, 0.0, 1.0, dir)
+        # Calculating the initial field value
+        self.dyn.E = self.laser_field_envelope(self.stat, self.dyn)
+
+        self.report_static()
 
         self.dyn.l = 1
 
