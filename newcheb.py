@@ -36,6 +36,9 @@ Options:
         table.tab_iter
             output file name, to which the iteration dependencies of the "global" values should be written.
             By default, is equal to "tab_iter.csv"
+        table.tab_iter_E
+            output file name, to which the iteration dependency of the laser field energy envelope should be written.
+            By default, is equal to "tab_iter_E.csv"
 
         parameters, which has to be specified if plotting of the resulting figures for controlled values is needed.
         plot.imin
@@ -46,8 +49,11 @@ Options:
             step of plotting graphs with x-axis = number of iteration (to plot to file each <val>-th iteration).
             By default, is equal to 1
         plot.gr_iter
-            output file name, to which the corresponding result should be plotted.
+            output file name, to which the iteration dependencies of the "global" values should be plotted.
             By default, is equal to "fig_iter.pdf"
+        plot.gr_iter_E
+            output file name, to which the iteration dependency of the laser field energy envelope should be plotted.
+            By default, is equal to "fig_iter_E.pdf"
 
         In key "propagation":
             parameters, which has to be specified if writing of the resulting propagation tables is needed.
@@ -164,6 +170,10 @@ Options:
         maximum iteration number for the "optimal_control_..." task_type in case if a divergence with the
         given criteria hasn't been reached. Is a dummy variable for all other task types.
         By default, is equal to 5
+    h_lambda
+        parameter, which is applicable for the task_type = "optimal_control_..." only.
+        For all other cases is a dummy variable.
+        By default, is equal to 0.0066.
     mod_log
         step of output to stdout (to write to stdout each <val>-th time step).
         By default, is equal to 500

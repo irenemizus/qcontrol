@@ -532,7 +532,7 @@ class FitterReporter:
     def close(self):
         raise NotImplementedError()
 
-    def print_iter_point_fitter(self, iter, goal_close):
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, nt):
         raise NotImplementedError()
 
     def create_propagation_reporter(self, prop_id: str):
@@ -544,6 +544,7 @@ class TableFitterReporter(FitterReporter):
         super().__init__()
         self.conf = conf
         self.f_ifit = None
+        self.f_ifit_E = None
 
     def create_propagation_reporter(self, prop_id: str):
         prop_conf_output = copy.deepcopy(self.conf)
@@ -555,12 +556,16 @@ class TableFitterReporter(FitterReporter):
             os.mkdir(self.conf.out_path)
 
         self.f_ifit = open(os.path.join(self.conf.out_path, self.conf.tab_iter), 'w')
+        self.f_ifit_E = open(os.path.join(self.conf.out_path, self.conf.tab_iter_E), 'w')
         return self
 
     def close(self):
         self.f_ifit.close()
         self.f_ifit = None
+        self.f_ifit_E.close()
+        self.f_ifit_E = None
         pass
+
 
     @staticmethod
     def __plot_i_file_fitter(iter, goal_close, file_ifit):
@@ -568,13 +573,24 @@ class TableFitterReporter(FitterReporter):
         file_ifit.write("{:2d} {:.6f} \n".format(int(iter), goal_close))
         file_ifit.flush()
 
+    @staticmethod
+    def __plot_i_file_E(E_tlist, iter, t_list, nt, f_ifit_E):
+        """ Plots laser field energy envelope on the current iteration """
+        for i in range(nt):
+            f_ifit_E.write("{:2d} {:.6f} {:.6e}\n".format(iter, t_list[i] * 1e+15, abs(E_tlist[i])))
+            f_ifit_E.flush()
+
+
+    def plot_i_E(self, E_tlist, iter, t_list, nt):
+        self.__plot_i_file_E(E_tlist, iter, t_list, nt, self.f_ifit_E)
 
     def plot_fitter(self, iter, goal_close):
         self.__plot_i_file_fitter(iter, goal_close, self.f_ifit)
 
-    def print_iter_point_fitter(self, iter, goal_close):
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, nt):
         if iter % self.conf.imod_fileout == 0 and iter >= self.conf.imin:
             self.plot_fitter(iter, goal_close)
+            self.plot_i_E(E_tlist, iter, t_list, nt)
 
 
 class PlotFitterReporter(FitterReporter):
@@ -592,11 +608,39 @@ class PlotFitterReporter(FitterReporter):
         self.i_list = []
         self.gc_list = []
 
+        # t = Coordinate
+        self.E_abs = {}  # key: iter, value: {'t': [], 'y': []}
         return self
 
     def close(self):
         pass
 
+
+    @staticmethod
+    def __plot_iter_time_update_graph(E_tlist, title_plot, title_y, plot_name):
+        fig = go.Figure()
+
+        for i in E_tlist:
+            sc = go.Scatter(x=E_tlist[i]['t'], y=E_tlist[i]['y'], name = str(i), mode="lines")
+            fig.add_trace(sc)  # , row=1, col=1
+
+            fig.update_layout(
+                title={
+                    'text': title_plot,
+                    'y': 0.9,
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top'
+                },
+                xaxis_title={
+                    'text': 'time'
+                },
+                yaxis_title={
+                    'text': title_y
+                }
+            )
+
+        fig.write_image(plot_name)
 
     @staticmethod
     def __plot_iter_update_graph(i_list, val_list, title_plot, title_y, plot_name):
@@ -633,11 +677,25 @@ class PlotFitterReporter(FitterReporter):
                                        "Closeness of the current result to the goal", "(Ψ, Ψ_goal)",
                                        os.path.join(self.conf.out_path, self.conf.gr_iter))
 
+    def plot_E(self, E, iter, t, nt):
+        E_abs = []
+        for i in range(nt):
+            E_abs.append(abs(E[i]))
 
-    def print_iter_point_fitter(self, iter, goal_close):
+        self.E_abs[iter] = {'t': t, 'y': E_abs}
+
+        # Updating the graph for E_abs
+        self.__plot_iter_time_update_graph(self.E_abs,
+                                 "Absolute value of the laser field envelope",
+                                 "abs(E)", os.path.join(self.conf.out_path, self.conf.gr_iter_E))
+
+
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, nt):
         try:
             if iter % self.conf.imod_plotout == 0 and iter >= self.conf.imin:
                 self.plot_fitter(iter, goal_close)
+                self.plot_E(E_tlist, iter, t_list, nt)
+
         except ValueError as err:
             print_err("A nasty error has occurred during the reporting: ", err)
             print_err("Hopefully that doesn't affect the calculations, so the application is going on...")
@@ -677,6 +735,6 @@ class MultipleFitterReporter(FitterReporter):
     def close(self):
         pass
 
-    def print_iter_point_fitter(self, iter, goal_close):
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, nt):
         for rep in self.reps:
-            rep.print_iter_point_fitter(iter, goal_close)
+            rep.print_iter_point_fitter(iter, goal_close, E_tlist, t_list, nt)

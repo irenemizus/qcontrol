@@ -8,6 +8,7 @@
     "impulses_number": 1,
     "delay": 600e-15,
     "iter_max": 3,
+    "h_lambda": 0.0066,
     "propagation": {
       "m": 0.5,
       "pot_type": "morse",
@@ -25,10 +26,10 @@
       "np": 1024,
       "nch": 64,
       "nt": 230000,
-      "E0": 71.54,
+      "E0": 60,
       "t0": 200e-15,
       "sigma": 50e-15,
-      "nu_L": 0.29297e15
+      "nu_L": 0.5e15
     },
     "mod_log": 500
   }

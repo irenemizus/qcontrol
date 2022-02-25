@@ -5,10 +5,12 @@
     "table.imin": 0,
     "table.imod_fileout": 1,
     "table.tab_iter": "tab_iter.csv",
+    "table.tab_iter_E": "tab_iter_E.csv",
 
     "plot.imin": 0,
     "plot.imod_plotout": 1,
     "plot.gr_iter": "fig_iter_goal.pdf",
+    "plot.gr_iter_E": "fig_gr_iter_E.pdf",
 
     "propagation": {
       "table.lmin": 0,

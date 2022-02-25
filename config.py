@@ -176,6 +176,7 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["delay"] = 600e-15   # s
             self._data["mod_log"] = 500
             self._data["iter_max"] = 5
+            self._data["h_lambda"] = 0.0066
 
 
 class ReportRootConfiguration(ConfigurationBase):
@@ -251,6 +252,7 @@ class ReportRootConfiguration(ConfigurationBase):
 
             # default input values
             self._data["tab_iter"] = "tab_iter.csv"
+            self._data["tab_iter_E"] = "tab_iter_E.csv"
             self._data["imin"] = 0
             self._data["imod_fileout"] = 1
 
@@ -268,6 +270,7 @@ class ReportRootConfiguration(ConfigurationBase):
                 self._data["imin"] = 0
                 self._data["imod_plotout"] = 1
                 self._data["gr_iter"] = f"fig_iter{suffix}.pdf"
+                self._data["gr_iter_E"] = f"fig_iter_E{suffix}.pdf"
 
 class ReportTableRootConfiguration(ReportRootConfiguration):
     def __init__(self):
