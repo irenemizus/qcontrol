@@ -124,12 +124,13 @@ class propagation_Tests(unittest.TestCase):
 
         def laser_field_envelope(stat: PropagationSolver.StaticState,
                                dyn: PropagationSolver.DynamicState):
-            return phys_base.laser_field(conf.propagation.E0, dyn.t,
+            return task_manager._LaserFields.laser_field(conf.propagation.E0, dyn.t,
                                          conf.propagation.t0, conf.propagation.sigma)
 
-        def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult):
+        def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult, dir):
+            assert dir == PropagationSolver.Direction.FORWARD
             psi_omega_copy = copy.deepcopy(psi_omega)
-            return PropagationSolver.DynamicState(l, t, psi, psi_omega_copy, E, freq_mult)
+            return PropagationSolver.DynamicState(l, t, psi, psi_omega_copy, E, freq_mult, dir)
 
 
         mod_fileout = 10000
@@ -192,12 +193,13 @@ class propagation_Tests(unittest.TestCase):
 
         def laser_field_envelope(stat: PropagationSolver.StaticState,
                                dyn: PropagationSolver.DynamicState):
-            return phys_base.laser_field(conf.propagation.E0, dyn.t,
+            return task_manager._LaserFields.laser_field(conf.propagation.E0, dyn.t,
                                          conf.propagation.t0, conf.propagation.sigma)
 
-        def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult):
+        def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult, dir):
+            assert dir == PropagationSolver.Direction.BACKWARD
             psi_omega_copy = copy.deepcopy(psi_omega)
-            return PropagationSolver.DynamicState(l, t, psi, psi_omega_copy, E, freq_mult)
+            return PropagationSolver.DynamicState(l, t, psi, psi_omega_copy, E, freq_mult, dir)
 
 
         mod_fileout = 10000

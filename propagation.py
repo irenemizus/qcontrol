@@ -290,7 +290,7 @@ class PropagationSolver:
         cenerf = self._ener_eval(psif, v, akx2, dx, self.np)
 
         # time propagation
-        dt = dir.value * self.T / (self.nt - 1)
+        dt = dir.value * self.T / self.nt
         psi = copy.deepcopy(psi0)
 
         # initial population
@@ -395,9 +395,9 @@ class PropagationSolver:
         self.instr = PropagationSolver.InstrumentationOutputData(moms, cnorm, psigc_psie, psigc_dv_psie,
                      cener, E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after)
 
-        self.dyn.l += 1
-
         self.report_dynamic()
+
+        self.dyn.l += 1
 
         if self.dyn.l <= self.nt:
             return True

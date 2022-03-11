@@ -34,7 +34,7 @@ class TableComparer:
                         return True
                     elif abs(el2) < self.delta and abs(el1) >= self.delta:
                         return False
-                    elif abs(el1 - el2) / abs(el2) * 100.0 >= abs(eps):
+                    elif abs(el1 - el2) / abs(el2) >= abs(eps):
                         return False
                 elif isinstance(el1, np.ndarray) and \
                      isinstance(el2, np.ndarray) and \
@@ -51,8 +51,8 @@ class TableComparer:
                             return False
                         elif abs(el2[l].imag) < self.delta and abs(el1[l].imag) >= self.delta:
                             return False
-                        elif abs(el1[l].real - el2[l].real) / abs(el2[l].real) * 100.0 >= eps.real or \
-                           abs(el1[l].imag - el2[l].imag) / abs(el2[l].imag) * 100.0 >= eps.imag:
+                        elif abs(el1[l].real - el2[l].real) / abs(el2[l].real) >= eps.real or \
+                           abs(el1[l].imag - el2[l].imag) / abs(el2[l].imag) >= eps.imag:
                             return False
         return True
 
@@ -159,6 +159,7 @@ class TestFitterReporter(FitterReporter):
         self.imin = imin
 
         self.iter_tab = []
+        self.iter_tab_E = []
 
         self.prop_reporters = {}
 
@@ -173,9 +174,15 @@ class TestFitterReporter(FitterReporter):
             iter, goal_close
         ))
 
-    def print_iter_point_fitter(self, iter, goal_close):
+    def plot_i_E(self, E_tlist, iter, t_list, nt):
+        self.iter_tab_E.append((
+            iter, t_list, E_tlist
+        ))
+
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, nt):
         if iter % self.imod_fileout == 0 and iter >= self.imin:
             self.plot_iter(iter, goal_close)
+            self.plot_i_E(E_tlist, iter, t_list, nt)
 
     def print_all(self, filename):
         # To print the whole arrays without truncation ('...')
@@ -187,6 +194,12 @@ class TestFitterReporter(FitterReporter):
             for l in self.iter_tab:
                 f.write("    " + str(l) + ",\n")
             f.write("]\n\n")
+
+            f.write("iter_tab_E = [\n")
+            for l in self.iter_tab_E:
+                f.write("    " + str(l) + ",\n")
+            f.write("]\n\n")
+
 
     def create_propagation_reporter(self, prop_id: str):
         new_prop_rep = TestPropagationReporter(self.mod_fileout, self.lmin)
