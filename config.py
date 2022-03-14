@@ -152,7 +152,7 @@ class TaskRootConfiguration(ConfigurationBase):
             LOCAL_CONTROL_POPULATION = 4
             LOCAL_CONTROL_PROJECTION = 5
             OPTIMAL_CONTROL_KROTOV = 6
-            OPTIMAL_CONTROL_GRADIENT = 7
+            OPTIMAL_CONTROL_UNIT_TRANSFORM = 7
 
 
             @staticmethod
@@ -198,13 +198,15 @@ class ReportRootConfiguration(ConfigurationBase):
             def __init__(self, suffix=None):
                 if suffix is not None and suffix != "":
                     suffix = "_" + suffix
+                else:
+                    suffix = ""
 
                 super().__init__(key_prefix="table.")
                 # default input values
-                self._data["tab_abs"] = "tab_abs_{level}.csv"
-                self._data["tab_real"] = "tab_real_{level}.csv"
-                self._data["tab_tvals"] = "tab_tvals_{level}.csv"
-                self._data["tab_tvals_fit"] = "tab_tvals_fit.csv"
+                self._data["tab_abs"] = "tab_abs_{level}" + f"{suffix}.csv"
+                self._data["tab_real"] = "tab_real_{level}" + f"{suffix}.csv"
+                self._data["tab_tvals"] = "tab_tvals_{level}" + f"{suffix}.csv"
+                self._data["tab_tvals_fit"] = f"tab_tvals_fit{suffix}.csv"
                 self._data["lmin"] = 0
                 self._data["mod_fileout"] = 100
 
@@ -247,9 +249,6 @@ class ReportRootConfiguration(ConfigurationBase):
             super().__init__(key_prefix="table.")
             self._data["propagation"] = ReportRootConfiguration.ReportFitterConfiguration.ReportTablePropagationConfiguration()
 
-            if suffix is not None and suffix != "":
-                suffix = "_" + suffix
-
             # default input values
             self._data["tab_iter"] = "tab_iter.csv"
             self._data["tab_iter_E"] = "tab_iter_E.csv"
@@ -261,16 +260,11 @@ class ReportRootConfiguration(ConfigurationBase):
             super().__init__(key_prefix="plot.")
             self._data["propagation"] = ReportRootConfiguration.ReportFitterConfiguration.ReportPlotPropagationConfiguration()
 
-            if suffix is not None and suffix != "":
-                suffix = "_" + suffix
-            else:
-                suffix = ""
-
             # default input values
-                self._data["imin"] = 0
-                self._data["imod_plotout"] = 1
-                self._data["gr_iter"] = f"fig_iter{suffix}.pdf"
-                self._data["gr_iter_E"] = f"fig_iter_E{suffix}.pdf"
+            self._data["imin"] = 0
+            self._data["imod_plotout"] = 1
+            self._data["gr_iter"] = "fig_iter.pdf"
+            self._data["gr_iter_E"] = "fig_iter_E.pdf"
 
 class ReportTableRootConfiguration(ReportRootConfiguration):
     def __init__(self):

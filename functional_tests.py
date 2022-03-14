@@ -82,8 +82,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_single_harm.py")
-        prop_reporter.print_all("test_data/prop_single_harm.py", "test_data/fitter_single_harm.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_single_harm.py")
+        #prop_reporter.print_all("test_data/prop_single_harm.py", "test_data/fitter_single_harm.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
@@ -181,8 +181,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_single_morse.py")
-        prop_reporter.print_all("test_data/prop_single_morse.py", "test_data/fitter_single_morse.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_single_morse.py")
+        #prop_reporter.print_all("test_data/prop_single_morse.py", "test_data/fitter_single_morse.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.0001, 0.001, 0.001, 0.001, 0.000001,
@@ -281,8 +281,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_filter.py")
-        prop_reporter.print_all("test_data/prop_filter.py", "test_data/fitter_filter.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_filter.py")
+        #prop_reporter.print_all("test_data/prop_filter.py", "test_data/fitter_filter.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.0001, 0.000001,
@@ -381,8 +381,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_trans_woc.py")
-        prop_reporter.print_all("test_data/prop_trans_woc.py", "test_data/fitter_trans_woc.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_trans_woc.py")
+        #prop_reporter.print_all("test_data/prop_trans_woc.py", "test_data/fitter_trans_woc.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -481,8 +481,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_int_ctrl.py")
-        prop_reporter.print_all("test_data/prop_int_ctrl.py", "test_data/fitter_int_ctrl.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_int_ctrl.py")
+        #prop_reporter.print_all("test_data/prop_int_ctrl.py", "test_data/fitter_int_ctrl.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -581,8 +581,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_pop.py")
-        prop_reporter.print_all("test_data/prop_loc_ctrl_pop.py", "test_data/fitter_loc_ctrl_pop.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_pop.py")
+        #prop_reporter.print_all("test_data/prop_loc_ctrl_pop.py", "test_data/fitter_loc_ctrl_pop.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -681,8 +681,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_proj.py")
-        prop_reporter.print_all("test_data/prop_loc_ctrl_proj.py", "test_data/fitter_loc_ctrl_proj.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_proj.py")
+        #prop_reporter.print_all("test_data/prop_loc_ctrl_proj.py", "test_data/fitter_loc_ctrl_proj.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -716,7 +716,7 @@ class fitter_Tests(unittest.TestCase):
             "k_E": 1e29,
             "lamb": 4e14,
             "pow": 0.8,
-            "epsilon": 1e-15,
+            "epsilon": 1e-8,
             "impulses_number": 1,
             "delay": 600e-15,
             "iter_max": 1,
@@ -734,7 +734,7 @@ class fitter_Tests(unittest.TestCase):
                 "x0": 0.0,
                 "p0": 0.0,
                 "L": 5.0,
-                "T": 330e-15,
+                "T": 350e-15,
                 "np": 1024,
                 "nch": 64,
                 "nt": 230000,
@@ -783,8 +783,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot.py")
-        prop_reporter.print_all("test_data/prop_opt_ctrl_krot.py", "test_data/fitter_opt_ctrl_krot.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot.py")
+        #prop_reporter.print_all("test_data/prop_opt_ctrl_krot.py", "test_data/fitter_opt_ctrl_krot.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -808,7 +808,6 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_opt_ctrl_krot.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_krot.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_krot.iter_tab_E))
-
 
 
 if __name__ == '__main__':

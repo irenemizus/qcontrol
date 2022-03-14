@@ -19,5 +19,8 @@ from test_data import prop_loc_ctrl_pop
 from test_data import fit_iter_loc_ctrl_proj
 from test_data import fitter_loc_ctrl_proj
 from test_data import prop_loc_ctrl_proj
+from test_data import fit_iter_opt_ctrl_krot
+from test_data import fitter_opt_ctrl_krot
+from test_data import prop_opt_ctrl_krot
 from test_data import prop_trans_woc_forw
 from test_data import prop_trans_woc_back

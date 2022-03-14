@@ -106,38 +106,37 @@ Options:
     In key "fitter":
     task_type
         type of the calculation task:
-        "trans_wo_control"  - calculation of transition from the ground state
-                              to the excited one under the influence of external
-                              non-controlled laser field with gaussian envelope and a constant
-                              chirp (by default)
-        "single_pot"        - simple propagation of an initial harmonic / morse wavefunction
-                              shifted from the potential minima in a harmonic / morse potential
-        "filtering"         - filtering task
-                              in this case E0 and nu_L are zeroing mandatory
-        "intuitive_control" - calculation of transitions from the ground state
-                              to the excited state and back to the ground one
-                              under the influence of a sequence of equal laser pulses
-                              with gaussian envelopes and a constant chirps
-        "local_control_population" - calculation of transition from the ground state
-                                     to the excited one under the influence of external
-                                     laser field with controlled envelope form
-                                     by the local control algorithm, when the goal operator is A = / 0  0 \
+        "trans_wo_control"               - calculation of transition from the ground state
+                                           to the excited one under the influence of external
+                                           non-controlled laser field with gaussian envelope and a constant
+                                           chirp (by default)
+        "single_pot"                     - simple propagation of an initial harmonic / morse wavefunction
+                                           shifted from the potential minima in a harmonic / morse potential
+        "filtering"                      - filtering task
+                                           in this case E0 and nu_L are zeroing mandatory
+        "intuitive_control"              - calculation of transitions from the ground state
+                                           to the excited state and back to the ground one
+                                           under the influence of a sequence of equal laser pulses
+                                           with gaussian envelopes and a constant chirps
+        "local_control_population"       - calculation of transition from the ground state
+                                           to the excited one under the influence of external
+                                           laser field with controlled envelope form
+                                           by the local control algorithm, when the goal operator is A = / 0  0 \
                                                                                                    \ 0  1 /
-        "local_control_projection" - calculation of transition from the ground state
-                                     to the excited one under the influence of external
-                                     laser field with controlled chirp
-                                     by the local control algorithm, when the goal operator is A = P_g + P_e
-        "optimal_control_krotov"   - calculation of transition from the ground state
-                                     to the excited one under the influence of a controlled external
-                                     laser field with an iterative Krotov algorithm,
-                                     when the propagation on a current time step
-                                     is partially under the old field and partially - under the new field,
-                                     which is calculated "on the fly"
-        "optimal_control_gradient" - calculation of transition from the ground state
-                                     to the excited one under the influence of a controlled external
-                                     laser field with an iterative gradient algorithm,
-                                     when the propagation on a current time step
-                                     is under an old field, calculated on the previous step
+        "local_control_projection"       - calculation of transition from the ground state
+                                           to the excited one under the influence of external
+                                           laser field with controlled chirp
+                                           by the local control algorithm, when the goal operator is A = P_g + P_e
+        "optimal_control_krotov"         - calculation of transition from the ground state
+                                           to the excited one under the influence of a controlled external
+                                           laser field with an iterative Krotov algorithm,
+                                           when the propagation on a current time step
+                                           is partially under the old field and partially - under the new field,
+                                           which is calculated "on the fly"
+        "optimal_control_unit_transform" - calculation of transition from the pure ground and excited states
+                                           under the influence of a Hadamard H1 unitary transformation
+                                           using a controlled external laser field with an iterative Krotov algorithm
+                                           and the squared modulus functional Fsm
     k_E
         aspect ratio for the inertial "force" in equation for the laser field energy in sec^(-2).
         Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
@@ -422,8 +421,8 @@ def main(argv):
             if conf_task.fitter.impulses_number != 1:
                 print("For the task_type = 'optimal_control_krotov' the impulses_number value will be replaced by 1")
                 conf_task.fitter.impulses_number = 1
-        elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
-            print("An optimal control task with gradient method begins...")
+        elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+            print("An optimal control task with Hadamard H1 unitary transformation begins...")
             if conf_task.fitter.impulses_number != 1:
                 print("For the task_type = 'optimal_control_gradient' the impulses_number value will be replaced by 1")
                 conf_task.fitter.impulses_number = 1

@@ -148,10 +148,6 @@ class FittingSolver:
                 print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
                 self.dyn.E_tlist = []
-            #else:
-            #    self.dyn.E_tlist.append(
-            #        self.laser_field(self.conf_fitter.propagation.E0, 0.0, self.conf_fitter.propagation.t0,
-            #                         self.conf_fitter.propagation.sigma))
 
             psi_init_omega_copy = [
                 self.psi_init[0].copy(),
@@ -231,15 +227,14 @@ class FittingSolver:
         goal_close_abs = 0.0
         print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
 
-
         for direct in PropagationSolver.Direction:
+            # calculating chiT
+            chiT, goal_close_abs = self.__single_propagation(dx, x, direct, chiT, goal_close_abs)
+
             #if direct == PropagationSolver.Direction.FORWARD:
             #    ind_dir = 'f'
             #else:
             #    ind_dir = 'b'
-
-            # calculating chiT
-            chiT, goal_close_abs = self.__single_propagation(dx, x, direct, chiT, goal_close_abs)
 
             #saved_json, arrays = self.dyn.to_json_with_bins()
 
@@ -255,7 +250,6 @@ class FittingSolver:
 
             #np.savez_compressed(os.path.join(path, "fitter_state_bins.npz"), arrays)
 
-            #print(f"abs(goal_close_abs - 1.0) = {abs(goal_close_abs - 1.0)}")
             if abs(goal_close_abs - 1.0) <= self.conf_fitter.epsilon and self.dyn.iter_step == 0:
                 print("The goal has been reached on the very first iteration. You don't need the control!")
                 self.dyn.res = PropagationSolver.StepReaction.OK
@@ -263,12 +257,10 @@ class FittingSolver:
 
         return goal_close_abs
 
-
     def time_propagation(self, dx, x):
         self.dyn = FittingSolver.FitterDynamicState(0.0, 0.0, 0, PropagationSolver.Direction.FORWARD)
 
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
-           self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT:
+        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
             # 0-th iteration
             goal_close_abs = self.__single_iteration_optimal(dx, x)
                 #self.dyn = FittingSolver.FitterDynamicState.from_json(saved_json)
@@ -289,11 +281,9 @@ class FittingSolver:
         else:
             self.__single_iteration_simple(dx, x)
 
-
     def propagation_dynamic_state_factory(self, l, t, psi, psi_omega, E, freq_mult, dir):
         psi_omega_copy = copy.deepcopy(psi_omega)
         return PropagationSolver.DynamicState(l, t, psi, psi_omega_copy, E, freq_mult, dir)
-
 
     def do_the_thing(self, instr: PropagationSolver.InstrumentationOutputData):
         # algorithm without control
@@ -364,7 +354,6 @@ class FittingSolver:
             else:
                 pass
 
-
     # calculating envelope of the laser field energy at the given time value
     def LaserFieldEnvelope(self, stat: PropagationSolver.StaticState,
                            dyn: PropagationSolver.DynamicState):
@@ -405,8 +394,7 @@ class FittingSolver:
             E = self.solver.dyn.E + self.dyn.E_vel * stat.dt
 
         # optimal control algorithm
-        elif (self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or
-              self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_GRADIENT) and \
+        elif (self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV) and \
               self.dyn.dir == PropagationSolver.Direction.FORWARD:
             if self.dyn.iter_step == 0:
                 E = self.dyn.E_patched
