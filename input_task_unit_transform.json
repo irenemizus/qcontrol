@@ -1,13 +1,14 @@
 {
   "fitter": {
-    "task_type": "optimal_control_krotov",
+    "task_type": "optimal_control_unit_transform",
     "k_E": 1e29,
     "lamb": 4e14,
     "pow": 0.8,
-    "epsilon": 1e-3,
+    "epsilon": 1e-8,
     "impulses_number": 1,
     "delay": 600e-15,
-    "iter_max": 3,
+    "iter_max": 2,
+    "h_lambda": 0.0066,
     "propagation": {
       "m": 0.5,
       "pot_type": "morse",
@@ -21,7 +22,7 @@
       "x0": 0.0,
       "p0": 0.0,
       "L": 5.0,
-      "T": 330e-15,
+      "T": 350e-15,
       "np": 1024,
       "nch": 64,
       "nt": 230000,
