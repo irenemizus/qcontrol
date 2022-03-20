@@ -203,10 +203,10 @@ class ReportRootConfiguration(ConfigurationBase):
 
                 super().__init__(key_prefix="table.")
                 # default input values
-                self._data["tab_abs"] = "tab_abs_{level}" + f"{suffix}.csv"
-                self._data["tab_real"] = "tab_real_{level}" + f"{suffix}.csv"
-                self._data["tab_tvals"] = "tab_tvals_{level}" + f"{suffix}.csv"
-                self._data["tab_tvals_fit"] = f"tab_tvals_fit{suffix}.csv"
+                self._data["tab_abs"] = "tab_abs_{level}.csv"
+                self._data["tab_real"] = "tab_real_{level}.csv"
+                self._data["tab_tvals"] = "tab_tvals_{level}.csv"
+                self._data["tab_tvals_fit"] = "tab_tvals_fit.csv"
                 self._data["lmin"] = 0
                 self._data["mod_fileout"] = 100
 

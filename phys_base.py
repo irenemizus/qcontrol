@@ -6,14 +6,29 @@ import copy
 
 import math_base
 
+import pyopencl.array as cla
+import pyopencl as cl
+import pyopencl.elementwise as cle
+import pyopencl.clmath
+from pyvkfft.fft import fftn, ifftn
+
+from psi_basis import Psi
+
 hart_to_cm = 219474.6313708 # 1 / cm / hartree
 cm_to_erg = 1.98644568e-16 # erg * cm
 dalt_to_au = 1822.888486 # a.u. / D
 Red_Planck_h = 1.054572e-27 # erg * s
 Hz_to_cm = 3.33563492e-11 # s / cm
 
+cl_context = cl._cl.Context()
+complex_mult = cle.ElementwiseKernel(cl_context,
+                                     "cdouble_t *x, cdouble_t *y",
+                                     "x[i] = cdouble_mul(x[i], y[i])",
+                                     "complex_mult")
+cq = cl.CommandQueue(cl_context)
 
-def diff(psi, akx2, np):
+
+def diff_cpu(psi, akx2, np):
     """ Calculates kinetic energy mapping carried out in momentum space
         INPUT
         psi   complex vector of length np
@@ -27,15 +42,38 @@ def diff(psi, akx2, np):
     assert akx2.size == np
 
     psi_freq = numpy.fft.fft(psi)
-
     phi_freq = numpy.multiply(psi_freq, akx2)
-
     phi = numpy.fft.ifft(phi_freq)
 
     return phi
 
 
-def hamil(psi, v, akx2, np):
+def diff_gpu(psi, akx2, np):
+    """ Calculates kinetic energy mapping carried out in momentum space
+        INPUT
+        psi   complex vector of length np
+        akx2  complex vector of length np, = k^2/2m
+        np    number of grid points
+        OUTPUT
+        phi   complex vector of length np describing the mapping
+              of kinetic energy phi = P^2/2m psi """
+
+    assert psi.size == np
+    assert akx2.size == np
+
+    buf_dev = cla.to_device(cq, psi)
+    akx2_dev = cla.to_device(cq, akx2)
+
+    fftn(buf_dev)
+    complex_mult(buf_dev, akx2_dev)
+    ifftn(buf_dev)
+
+    phi = buf_dev.get()
+
+    return phi
+
+
+def hamil(psi: list[numpy.ndarray], v, akx2, np):
     """ Calculates the simplest one-dimensional Hamiltonian mapping of vector psi
         INPUT
         psi   list of complex vectors of length np
@@ -50,7 +88,7 @@ def hamil(psi, v, akx2, np):
     assert akx2.size == np
 
     # kinetic energy mapping
-    phi = diff(psi, akx2, np)
+    phi = diff_cpu(psi, akx2, np)
 
     # potential energy mapping and accumulation phi_l = H psi_l
     vpsi = numpy.multiply(v, psi)
@@ -58,7 +96,8 @@ def hamil(psi, v, akx2, np):
 
     return phi
 
-def hamil2D_orig(psi, v, akx2, np, E_full):
+
+def hamil2D_orig(psi: list[numpy.ndarray], v, akx2, np, E_full):
     """ Calculates two-dimensional Hamiltonian mapping of vector psi (without energy shifting)
         INPUT
         psi    list of complex vectors of length np
@@ -253,7 +292,7 @@ class ExpectationValues():
         self.p2_u = p2_u
 
 
-def exp_vals_calc(psi, x, akx2, dx, np, m):
+def exp_vals_calc(psi: Psi, x, akx2, dx, np, m):
     """ Calculation of expectation values <x>, <x^2>, <p>, <p^2>
         INPUT
         psi     list of complex vectors of length np describing wavefunctions
@@ -266,33 +305,33 @@ def exp_vals_calc(psi, x, akx2, dx, np, m):
         moms  list of complex vectors of length np """
 
     # for x
-    momx_l = math_base.cprod2(psi[0], x, dx, np)
-    momx_u = math_base.cprod2(psi[1], x, dx, np)
+    momx_l = math_base.cprod2(psi.f[0], x, dx, np)
+    momx_u = math_base.cprod2(psi.f[1], x, dx, np)
 
     # for x^2
     x2 = numpy.multiply(x, x)
-    momx2_l = math_base.cprod2(psi[0], x2, dx, np)
-    momx2_u = math_base.cprod2(psi[1], x2, dx, np)
+    momx2_l = math_base.cprod2(psi.f[0], x2, dx, np)
+    momx2_u = math_base.cprod2(psi.f[1], x2, dx, np)
 
     # for p^2
-    phi_kin_l = diff(psi[0], akx2, np)
+    phi_kin_l = diff_cpu(psi.f[0], akx2, np)
     phi_p2_l = phi_kin_l * (2.0 * m)
-    momp2_l = math_base.cprod(psi[0], phi_p2_l, dx, np)
+    momp2_l = math_base.cprod(psi.f[0], phi_p2_l, dx, np)
 
-    phi_kin_u = diff(psi[1], akx2, np)
+    phi_kin_u = diff_cpu(psi.f[1], akx2, np)
     phi_p2_u = phi_kin_u * (2.0 * m)
-    momp2_u = math_base.cprod(psi[1], phi_p2_u, dx, np)
+    momp2_u = math_base.cprod(psi.f[1], phi_p2_u, dx, np)
 
     # for p
     akx = math_base.initak(np, dx, 1)
     akx_mul = hart_to_cm / (-1j) / dalt_to_au
     akx *= akx_mul
 
-    phip_l = diff(psi[0], akx, np)
-    momp_l = math_base.cprod(psi[0], phip_l, dx, np)
+    phip_l = diff_cpu(psi.f[0], akx, np)
+    momp_l = math_base.cprod(psi.f[0], phip_l, dx, np)
 
-    phip_u = diff(psi[1], akx, np)
-    momp_u = math_base.cprod(psi[1], phip_u, dx, np)
+    phip_u = diff_cpu(psi.f[1], akx, np)
+    momp_u = math_base.cprod(psi.f[1], phip_u, dx, np)
 
     return ExpectationValues(momx_l, momx_u, momx2_l, momx2_u, momp_l, momp_u, momp2_l, momp2_u)
 

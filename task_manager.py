@@ -4,6 +4,7 @@ import phys_base
 import numpy
 from config import TaskRootConfiguration
 from propagation import PropagationSolver
+from psi_basis import PsiBasis
 
 from phys_base import dalt_to_au, hart_to_cm
 
@@ -90,17 +91,6 @@ class _PsiFunctions:
 
         return psi
 
-
-class PsiBasis:
-    def __init__(self, n, lvls=2):
-        #self.psis = [[None] * lvls] * n
-        self.psis = []
-        for el in range(n):
-            psi = []
-            for lvl in range(lvls):
-                psi.append([None])
-                self.psis.append(psi)
-
 """
 The implementations of this interface set up the task. That includes defining the starting
 conditions, the goal, the potential, and all the possible other parameters necessary to define the task.
@@ -127,7 +117,7 @@ class TaskManager:
         raise NotImplementedError()
 
     def ener_goal(self, psif: PsiBasis, v, akx2, np):
-        n = len(psif.psis)
+        n = len(psif)
         phif = []
         for i in range(n):
             phif.append([phys_base.hamil(psif.psis[i][0], v[0][1], akx2, np),
@@ -197,14 +187,14 @@ class HarmonicSingleStateTaskManager(TaskManager):
 
     def psi_init(self, x, np, x0, p0, m, De, a) -> PsiBasis:
         psi_init_obj = PsiBasis(1)
-        psi_init_obj.psis[0][0] = self.psi_init_impl(x, np, x0, p0, m, De, a)
-        psi_init_obj.psis[0][1] = _PsiFunctions.zero(np)
+        psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a)
+        psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
         return psi_init_obj
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
         psi_goal_obj = PsiBasis(1)
-        psi_goal_obj.psis[0][0] = _PsiFunctions.harmonic(x, np, x0, p0, m, De, a)
-        psi_goal_obj.psis[0][1] = _PsiFunctions.zero(np)
+        psi_goal_obj.psis[0].f[0] = _PsiFunctions.harmonic(x, np, x0, p0, m, De, a)
+        psi_goal_obj.psis[0].f[1] = _PsiFunctions.zero(np)
         return psi_goal_obj
 
     def laser_field(self, E0, t, t0, sigma):
@@ -246,8 +236,8 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
         psi_goal_obj = PsiBasis(1)
-        psi_goal_obj.psis[0][0] = _PsiFunctions.zero(np)
-        psi_goal_obj.psis[0][1] = _PsiFunctions.harmonic(x, np, x0p + x0, p0, m, De_e, a_e)
+        psi_goal_obj.psis[0].f[0] = _PsiFunctions.zero(np)
+        psi_goal_obj.psis[0].f[1] = _PsiFunctions.harmonic(x, np, x0p + x0, p0, m, De_e, a_e)
         return psi_goal_obj
 
     def laser_field(self, E0, t, t0, sigma):
@@ -307,14 +297,14 @@ class MorseSingleStateTaskManager(TaskManager):
 
     def psi_init(self, x, np, x0, p0, m, De, a) -> PsiBasis:
         psi_init_obj = PsiBasis(1)
-        psi_init_obj.psis[0][0] = self.psi_init_impl(x, np, x0, p0, m, De, a)
-        psi_init_obj.psis[0][1] = _PsiFunctions.zero(np)
+        psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a)
+        psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
         return psi_init_obj
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
         psi_goal_obj = PsiBasis(1)
-        psi_goal_obj.psis[0][0] = _PsiFunctions.morse(x, np, x0, p0, m, De, a)
-        psi_goal_obj.psis[0][1] = _PsiFunctions.zero(np)
+        psi_goal_obj.psis[0].f[0] = _PsiFunctions.morse(x, np, x0, p0, m, De, a)
+        psi_goal_obj.psis[0].f[1] = _PsiFunctions.zero(np)
         return psi_goal_obj
 
     def laser_field(self, E0, t, t0, sigma):
@@ -358,8 +348,8 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
         psi_goal_obj = PsiBasis(1)
-        psi_goal_obj.psis[0][0] = _PsiFunctions.zero(np)
-        psi_goal_obj.psis[0][1] = _PsiFunctions.morse(x, np, x0p + x0, p0, m, De_e, a_e)
+        psi_goal_obj.psis[0].f[0] = _PsiFunctions.zero(np)
+        psi_goal_obj.psis[0].f[1] = _PsiFunctions.morse(x, np, x0p + x0, p0, m, De_e, a_e)
         return psi_goal_obj
 
     def laser_field(self, E0, t, t0, sigma):

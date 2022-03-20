@@ -3,6 +3,9 @@ import copy
 # Disable the orca response timeout.
 import plotly.io._orca
 import retrying
+
+from psi_basis import Psi
+
 unwrapped = plotly.io._orca.request_image_with_retrying.__wrapped__
 wrapped = retrying.retry(wait_random_min=1000)(unwrapped)
 plotly.io._orca.request_image_with_retrying = wrapped
@@ -25,7 +28,7 @@ class PropagationReporter:
     def close(self):
         raise NotImplementedError()
 
-    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         raise NotImplementedError()
 
@@ -105,15 +108,15 @@ class TablePropagationReporter(PropagationReporter):
         file_fit.flush()
 
 
-    def plot(self, psi, t, x, np):
-        self.__plot_file(psi[0], t, x, np, self.f_abs, self.f_real)
+    def plot(self, psi: Psi, t, x, np):
+        self.__plot_file(psi.f[0], t, x, np, self.f_abs, self.f_real)
 
     def plot_prop(self, t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max):
         self.__plot_t_file_prop(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, overlp,
                              ener_tot, abs_psi_max, real_psi_max, self.f_prop)
 
-    def plot_up(self, psi, t, x, np):
-        self.__plot_file(psi[1], t, x, np, self.f_abs_up, self.f_real_up)
+    def plot_up(self, psi: Psi, t, x, np):
+        self.__plot_file(psi.f[1], t, x, np, self.f_abs_up, self.f_real_up)
 
     def plot_prop_up(self, t, moms, ener, overlp, overlp_tot, abs_psi_max, real_psi_max):
         self.__plot_t_file_prop(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, overlp,
@@ -134,7 +137,7 @@ class TablePropagationReporter(PropagationReporter):
             f.write("{0}\n".format(phi_u[i]))
 
 
-    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         if l % self.conf.mod_fileout == 0 and l >= self.conf.lmin:
             self.plot(psi, t, x, np)
@@ -314,12 +317,12 @@ class PlotPropagationReporter(PropagationReporter):
         fig.write_image(plot_name)
 
 
-    def plot(self, psi, t, x, np):
+    def plot(self, psi:Psi, t, x, np):
         psi0_abs = []
         psi0_real = []
         for i in range(np):
-            psi0_abs.append(abs(psi[0][i]))
-            psi0_real.append(psi[0][i].real)
+            psi0_abs.append(abs(psi.f[0][i]))
+            psi0_real.append(psi.f[0][i].real)
 
         self.psi_abs[t] = {'x': x, 'y': psi0_abs}
         self.psi_real[t] = {'x': x, 'y': psi0_real}
@@ -336,12 +339,12 @@ class PlotPropagationReporter(PropagationReporter):
                                      "Re(Ψ)", os.path.join(self._out_path, self.conf.gr_real_grd))
 
 
-    def plot_up(self, psi, t, x, np):
+    def plot_up(self, psi: Psi, t, x, np):
         psi1_abs = []
         psi1_real = []
         for i in range(np):
-            psi1_abs.append(abs(psi[1][i]))
-            psi1_real.append(psi[1][i].real)
+            psi1_abs.append(abs(psi.f[1][i]))
+            psi1_real.append(psi.f[1][i].real)
 
         self.psi_abs_u[t] = {'x': x, 'y': psi1_abs}
         self.psi_real_u[t] = {'x': x, 'y': psi1_real}
@@ -481,7 +484,7 @@ class PlotPropagationReporter(PropagationReporter):
                                            os.path.join(self._out_path, self.conf.gr_lf_fr))
 
 
-    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         try:
             if l % self.conf.mod_plotout == 0 and l >= self.conf.lmin:
@@ -513,7 +516,7 @@ class MultiplePropagationReporter(PropagationReporter):
     def close(self):
         pass
 
-    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         for rep in self.reps:
             rep.print_time_point_prop(l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
@@ -576,7 +579,7 @@ class TableFitterReporter(FitterReporter):
     @staticmethod
     def __plot_i_file_E(E_tlist, iter, t_list, nt, f_ifit_E):
         """ Plots laser field energy envelope on the current iteration """
-        for i in range(nt):
+        for i in range(nt + 1):
             f_ifit_E.write("{:2d} {:.6f} {:.6e}\n".format(iter, t_list[i] * 1e+15, abs(E_tlist[i])))
             f_ifit_E.flush()
 
@@ -679,7 +682,7 @@ class PlotFitterReporter(FitterReporter):
 
     def plot_E(self, E, iter, t, nt):
         E_abs = []
-        for i in range(nt):
+        for i in range(nt + 1):
             E_abs.append(abs(E[i]))
 
         self.E_abs[iter] = {'t': t, 'y': E_abs}

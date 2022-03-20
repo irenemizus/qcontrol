@@ -436,23 +436,26 @@ def main(argv):
     grid = grid_setup.GridConstructor(conf_task.fitter.propagation)
     dx, x = grid.grid_setup()
 
-    # evaluating of initial wavefunction
+    # evaluating of initial wavefunction (of type PsiBasis)
     psi0 = task_manager_imp.psi_init(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
                                      conf_task.fitter.propagation.p0, conf_task.fitter.propagation.m,
                                      conf_task.fitter.propagation.De, conf_task.fitter.propagation.a)
 
-    # evaluating of the final goal
+    # evaluating of the final goal (of type PsiBasis)
     psif = task_manager_imp.psi_goal(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
                                      conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
                                      conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
                                      conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
                                      conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e)
 
+    # initial propagation direction
+    init_dir = task_manager_imp.init_dir
+
     # main calculation part
     fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
     fit_reporter_imp.open()
 
-    fitting_solver = fitter.FittingSolver(conf_task.fitter, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+    fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                           _warning_collocation_points,
                                           _warning_time_steps
                                           )

@@ -71,10 +71,13 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
@@ -170,10 +173,13 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
@@ -270,10 +276,13 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
@@ -370,10 +379,13 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
@@ -470,10 +482,13 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
@@ -570,10 +585,13 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
@@ -670,10 +688,13 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
@@ -772,10 +793,13 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e)
 
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
