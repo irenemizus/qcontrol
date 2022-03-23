@@ -1,6 +1,7 @@
 import copy
 from enum import Enum
 
+
 class ConfigurationBase:
     def __init__(self, key_prefix: str):
         self._empty = True

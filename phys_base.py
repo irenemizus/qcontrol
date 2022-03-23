@@ -1,5 +1,4 @@
 import cmath
-import math
 
 import numpy
 import copy
@@ -9,7 +8,7 @@ import math_base
 import pyopencl.array as cla
 import pyopencl as cl
 import pyopencl.elementwise as cle
-import pyopencl.clmath
+#import pyopencl.clmath
 from pyvkfft.fft import fftn, ifftn
 
 from psi_basis import Psi
