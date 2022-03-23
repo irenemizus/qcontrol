@@ -1,5 +1,4 @@
 import cmath
-import math
 
 import numpy
 import copy
@@ -9,7 +8,7 @@ import math_base
 import pyopencl.array as cla
 import pyopencl as cl
 import pyopencl.elementwise as cle
-import pyopencl.clmath
+#import pyopencl.clmath
 from pyvkfft.fft import fftn, ifftn
 
 from psi_basis import Psi
@@ -73,7 +72,7 @@ def diff_gpu(psi, akx2, np):
     return phi
 
 
-def hamil(psi: list[numpy.ndarray], v, akx2, np):
+def hamil(psi: numpy.ndarray, v, akx2, np):
     """ Calculates the simplest one-dimensional Hamiltonian mapping of vector psi
         INPUT
         psi   list of complex vectors of length np

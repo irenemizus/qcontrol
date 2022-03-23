@@ -2,6 +2,7 @@ import copy
 
 import numpy
 
+
 class Psi:
     def __init__(self, f: list[numpy.ndarray] = None, lvls: int = 2):
         psi = []
@@ -26,8 +27,9 @@ class Psi:
             res._psi[i] = self._psi[i].copy()
         return res
 
+
 class PsiBasis:
-    def __init__(self, n: int, lvls:int = 2):
+    def __init__(self, n: int, lvls: int = 2):
         # self.psis = [[None] * lvls] * n
         self.n = n
         self.lvls = lvls

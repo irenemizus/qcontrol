@@ -29,8 +29,8 @@ class FittingSolver:
             self.chi_tlist = []
             self.psi_omega_tlist = []
 
-            self.chi_cur = None
-            self.psi_omega_cur = None
+            self.chi_cur = PsiBasis(basis_length)
+            self.psi_omega_cur = PsiBasis(basis_length)
 
             self.goal_close = [complex(0.0)] * basis_length
             self.E_tlist = []
@@ -301,6 +301,7 @@ class FittingSolver:
         #
 
         chiT = PsiBasis(self.basis_length)
+        self.dyn.goal_close = [complex(0.0)] * self.basis_length
         for vect in range(self.basis_length):
             solver = self.solvers[vect]
 
@@ -314,7 +315,7 @@ class FittingSolver:
 
                 if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
                     chiT_part.f[0] = numpy.array([0.0] * self.conf_fitter.propagation.np).astype(complex)
-                    chiT_part.f[1] = self.dyn.goal_close * solver.stat.psif.f[1]
+                    chiT_part.f[1] = self.dyn.goal_close[vect] * solver.stat.psif.f[1]
 
                     # renormalization
                     cnorm = math_base.cprod(chiT_part.f[1], chiT_part.f[1], dx, self.conf_fitter.propagation.np)
@@ -350,7 +351,7 @@ class FittingSolver:
 
     # single simple forward propagation
     def __single_iteration_simple(self, dx, x):
-        chiT, goal_close_abs = self.__single_propagation(dx, x, PropagationSolver.Direction.FORWARD, [], 0.0)
+        chiT, goal_close_abs = self.__single_propagation(dx, x, PropagationSolver.Direction.FORWARD, self.psi_goal_basis, 0.0)
         self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, self.dyn.E_tlist, self.dyn.t_list,
                                               self.conf_fitter.propagation.nt)
 

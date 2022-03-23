@@ -97,7 +97,7 @@ class PropagationSolver:
     stat: StaticState
     dyn: DynamicState
     instr: InstrumentationOutputData
-    freq_multiplier: Callable[[StaticState, DynamicState], float]
+    freq_multiplier: Callable[[DynamicState, StaticState], float]
 
     def __init__(
             self,

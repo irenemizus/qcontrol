@@ -8,6 +8,7 @@ from psi_basis import PsiBasis
 
 from phys_base import dalt_to_au, hart_to_cm
 
+
 class _LaserFields:
     @staticmethod
     def zero(E0, t, t0, sigma):
@@ -28,6 +29,8 @@ class _LaserFields:
         E = E0 * math.exp(-(t - t0) * (t - t0) / 2.0 / sigma / sigma)
 
         return E
+
+
 """
 This class contains all the possible wavefunction types
 
@@ -35,11 +38,12 @@ This class is "module-private". It may/should be used only among Task Manager im
 If you want to call a wavefunction implementation from somewhere except a Task Manager, you 
 are probably wrong :) 
 """
+
+
 class _PsiFunctions:
     @staticmethod
     def zero(np):
         return numpy.array([0.0] * np).astype(complex)
-
 
     @staticmethod
     def harmonic(x, np, x0, p0, m, De, a):
@@ -61,7 +65,6 @@ class _PsiFunctions:
              in x]).astype(complex)
 
         return psi
-
 
     @staticmethod
     def morse(x, np, x0, p0, m, De, a):
@@ -91,6 +94,7 @@ class _PsiFunctions:
 
         return psi
 
+
 """
 The implementations of this interface set up the task. That includes defining the starting
 conditions, the goal, the potential, and all the possible other parameters necessary to define the task.
@@ -98,6 +102,8 @@ conditions, the goal, the potential, and all the possible other parameters neces
 For example: The calculating and fitting lasses should NOT be aware of if they are solving 
 Morse or Harmonic problem. It lays on this class. 
 """
+
+
 class TaskManager:
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
                  conf_fitter: TaskRootConfiguration.FitterConfiguration):
@@ -123,8 +129,8 @@ class TaskManager:
         n = len(psif)
         phif = []
         for i in range(n):
-            phif.append([phys_base.hamil(psif.psis[i][0], v[0][1], akx2, np),
-                         phys_base.hamil(psif.psis[i][1], v[1][1], akx2, np)])
+            phif.append([phys_base.hamil(psif.psis[i].f[0], v[0][1], akx2, np),
+                         phys_base.hamil(psif.psis[i].f[1], v[1][1], akx2, np)])
         return phif
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
@@ -269,7 +275,6 @@ class MorseSingleStateTaskManager(TaskManager):
 
         return v
 
-
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         """ Potential energy vectors
             INPUT
@@ -387,7 +392,7 @@ class MorseMultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
 
 def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
     if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING or \
-        conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
+       conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
 
         if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
             print("Morse potentials are used")
