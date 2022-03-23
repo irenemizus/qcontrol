@@ -123,8 +123,8 @@ class TaskManager:
         n = len(psif)
         phif = []
         for i in range(n):
-            phif.append([phys_base.hamil(psif.psis[i][0], v[0][1], akx2, np),
-                         phys_base.hamil(psif.psis[i][1], v[1][1], akx2, np)])
+            phif.append([phys_base.hamil(psif.psis[i].f[0], v[0][1], akx2, np),
+                         phys_base.hamil(psif.psis[i].f[1], v[1][1], akx2, np)])
         return phif
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):

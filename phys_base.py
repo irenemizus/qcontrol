@@ -73,7 +73,7 @@ def diff_gpu(psi, akx2, np):
     return phi
 
 
-def hamil(psi: list[numpy.ndarray], v, akx2, np):
+def hamil(psi: numpy.ndarray, v, akx2, np):
     """ Calculates the simplest one-dimensional Hamiltonian mapping of vector psi
         INPUT
         psi   list of complex vectors of length np
