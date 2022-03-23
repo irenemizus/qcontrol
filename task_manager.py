@@ -113,6 +113,9 @@ class TaskManager:
         self.conf_fitter = conf_fitter
         self.init_dir = PropagationSolver.Direction.FORWARD
 
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
+        raise NotImplementedError()
+
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
         raise NotImplementedError()
 
@@ -125,9 +128,6 @@ class TaskManager:
         return phif
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
-        raise NotImplementedError()
-
-    def psi_init(self, x, np, x0, p0, m, De, a):
         raise NotImplementedError()
 
     def laser_field(self, E0, t, t0, sigma):
@@ -185,13 +185,13 @@ class HarmonicSingleStateTaskManager(TaskManager):
 
         return v
 
-    def psi_init(self, x, np, x0, p0, m, De, a) -> PsiBasis:
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
         psi_init_obj = PsiBasis(1)
         psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a)
         psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
         return psi_init_obj
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
         psi_goal_obj = PsiBasis(1)
         psi_goal_obj.psis[0].f[0] = _PsiFunctions.harmonic(x, np, x0, p0, m, De, a)
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.zero(np)
@@ -234,7 +234,7 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
 
         return v
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
         psi_goal_obj = PsiBasis(1)
         psi_goal_obj.psis[0].f[0] = _PsiFunctions.zero(np)
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.harmonic(x, np, x0p + x0, p0, m, De_e, a_e)
@@ -295,13 +295,13 @@ class MorseSingleStateTaskManager(TaskManager):
 
         return v
 
-    def psi_init(self, x, np, x0, p0, m, De, a) -> PsiBasis:
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
         psi_init_obj = PsiBasis(1)
         psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a)
         psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
         return psi_init_obj
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
         psi_goal_obj = PsiBasis(1)
         psi_goal_obj.psis[0].f[0] = _PsiFunctions.morse(x, np, x0, p0, m, De, a)
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.zero(np)
@@ -346,7 +346,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 
         return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du)
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
         psi_goal_obj = PsiBasis(1)
         psi_goal_obj.psis[0].f[0] = _PsiFunctions.zero(np)
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.morse(x, np, x0p + x0, p0, m, De_e, a_e)
@@ -354,6 +354,35 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 
     def laser_field(self, E0, t, t0, sigma):
         return _LaserFields.laser_field(E0, t, t0, sigma)
+
+
+class MorseMultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
+    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
+        super().__init__(wf_type, conf_fitter)
+        self.init_dir = PropagationSolver.Direction.BACKWARD
+
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
+        psi_init_obj = PsiBasis(2)
+
+        psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a)
+        psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
+
+        psi_init_obj.psis[1].f[0] = _PsiFunctions.zero(np)
+        psi_init_obj.psis[1].f[1] = self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e)
+
+        return psi_init_obj
+
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
+        psi_goal_obj = PsiBasis(2)
+
+        psi_goal_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0)
+        psi_goal_obj.psis[0].f[1] = self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0)
+
+        psi_goal_obj.psis[1].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0)
+        psi_goal_obj.psis[1].f[1] = -self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0)
+
+        return psi_goal_obj
 
 
 def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
@@ -371,7 +400,10 @@ def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
     else:
         if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
             print("Morse potentials are used")
-            task_manager_imp = MorseMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
+            if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+                task_manager_imp = MorseMultipleStateUnitTransformTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
+            else:
+                task_manager_imp = MorseMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
         elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
             print("Harmonic potentials are used")
             task_manager_imp = HarmonicMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)

@@ -3,6 +3,7 @@ import cmath
 import copy
 from enum import Enum
 import datetime
+from typing import Callable
 
 import numpy
 
@@ -96,6 +97,7 @@ class PropagationSolver:
     stat: StaticState
     dyn: DynamicState
     instr: InstrumentationOutputData
+    freq_multiplier: Callable[[StaticState, DynamicState], float]
 
     def __init__(
             self,
@@ -337,7 +339,7 @@ class PropagationSolver:
 
         self.dyn.t = self.stat.dt * self.dyn.l + t_start
 
-        self.dyn.freq_mult = self.freq_multiplier(self.stat)
+        self.dyn.freq_mult = self.freq_multiplier(self.dyn, self.stat)
 
         # Here we're transforming the problem to the one for psi_omega
         exp_L = cmath.exp(1j * math.pi * self.nu_L * self.dyn.freq_mult * self.dyn.t)

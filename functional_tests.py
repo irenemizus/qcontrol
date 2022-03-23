@@ -61,8 +61,10 @@ class fitter_Tests(unittest.TestCase):
 
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.m,
-                                         conf.propagation.De, conf.propagation.a)
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -79,7 +81,7 @@ class fitter_Tests(unittest.TestCase):
 
         fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x)
+        #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
@@ -163,8 +165,10 @@ class fitter_Tests(unittest.TestCase):
 
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.m,
-                                         conf.propagation.De, conf.propagation.a)
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -181,7 +185,7 @@ class fitter_Tests(unittest.TestCase):
 
         fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x)
+        #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
@@ -266,8 +270,10 @@ class fitter_Tests(unittest.TestCase):
 
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.m,
-                                         conf.propagation.De, conf.propagation.a)
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -284,7 +290,7 @@ class fitter_Tests(unittest.TestCase):
 
         fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x)
+        #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
@@ -369,8 +375,10 @@ class fitter_Tests(unittest.TestCase):
 
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.m,
-                                         conf.propagation.De, conf.propagation.a)
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -387,7 +395,7 @@ class fitter_Tests(unittest.TestCase):
 
         fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x)
+        #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
@@ -472,8 +480,10 @@ class fitter_Tests(unittest.TestCase):
 
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.m,
-                                         conf.propagation.De, conf.propagation.a)
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -490,7 +500,7 @@ class fitter_Tests(unittest.TestCase):
 
         fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x)
+        #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
@@ -575,8 +585,10 @@ class fitter_Tests(unittest.TestCase):
 
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.m,
-                                         conf.propagation.De, conf.propagation.a)
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -593,7 +605,7 @@ class fitter_Tests(unittest.TestCase):
 
         fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x)
+        #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
@@ -678,8 +690,10 @@ class fitter_Tests(unittest.TestCase):
 
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.m,
-                                         conf.propagation.De, conf.propagation.a)
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -696,7 +710,7 @@ class fitter_Tests(unittest.TestCase):
 
         fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x)
+        #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
@@ -783,8 +797,10 @@ class fitter_Tests(unittest.TestCase):
 
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.m,
-                                         conf.propagation.De, conf.propagation.a)
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -807,8 +823,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot.py")
-        #prop_reporter.print_all("test_data/prop_opt_ctrl_krot.py", "test_data/fitter_opt_ctrl_krot.py")
+        fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot_.py")
+        prop_reporter.print_all("test_data/prop_opt_ctrl_krot_.py", "test_data/fitter_opt_ctrl_krot_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,

@@ -75,9 +75,9 @@ class TestPropagationReporter(PropagationReporter):
     def close(self):
         pass
 
-    def plot(self, psi, t, x, np):
+    def plot(self, psi: Psi, t, x, np):
         self.psi_tab.append((
-            psi[0], t, x
+            psi.f[0], t, x
         ))
 
     def plot_tvals(self, t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max):
@@ -87,9 +87,9 @@ class TestPropagationReporter(PropagationReporter):
             ener, overlp, ener_tot, abs_psi_max, real_psi_max
         ))
 
-    def plot_up(self, psi, t, x, np):
+    def plot_up(self, psi: Psi, t, x, np):
         self.psi_up_tab.append((
-            psi[1], t, x
+            psi.f[1], t, x
         ))
 
     def plot_tvals_up(self, t, moms, ener, overlp, overlp_tot, abs_psi_max, real_psi_max):
@@ -104,7 +104,7 @@ class TestPropagationReporter(PropagationReporter):
             t, E, freq_mult
         ))
 
-    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         if l % self.mod_fileout == 0 and l >= self.lmin:
             self.plot(psi, t, x, np)

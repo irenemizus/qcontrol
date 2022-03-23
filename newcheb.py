@@ -438,8 +438,10 @@ def main(argv):
 
     # evaluating of initial wavefunction (of type PsiBasis)
     psi0 = task_manager_imp.psi_init(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
-                                     conf_task.fitter.propagation.p0, conf_task.fitter.propagation.m,
-                                     conf_task.fitter.propagation.De, conf_task.fitter.propagation.a)
+                                     conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
+                                     conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
+                                     conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
+                                     conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e)
 
     # evaluating of the final goal (of type PsiBasis)
     psif = task_manager_imp.psi_goal(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
