@@ -1,5 +1,6 @@
 import collections.abc
 #import os.path
+from typing import List
 
 import reporter
 import json
@@ -15,6 +16,7 @@ class FittingSolver:
         E_tlist: list[complex]
         chi_cur: PsiBasis
         psi_omega_cur: PsiBasis
+        goal_close: List[complex]
 
         def __init__(self, basis_length, E_vel=0.0, freq_mult_vel=0.0, iter_step=0, dir = PropagationSolver.Direction.FORWARD):
             self.E_vel = E_vel
@@ -133,6 +135,7 @@ class FittingSolver:
 
     psi_init_basis: PsiBasis
     psi_goal_basis: PsiBasis
+    dyn: FitterDynamicState
 
     def __init__(
             self,
@@ -328,7 +331,7 @@ class FittingSolver:
                         el *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * solver.dyn.freq_mult * self.conf_fitter.propagation.T)
                     chiT.psis[vect] = chiT_omega
 
-            goal_close_abs += abs(self.dyn.goal_close[vect])
+            goal_close_abs += self.dyn.goal_close[vect]
 
         # for l in range(len(chi_tlist_part[0])):
         #     chi_tlist_l = PsiBasis(self.basis_length)
@@ -346,6 +349,7 @@ class FittingSolver:
                 direct == PropagationSolver.Direction.FORWARD:
             self.dyn.chi_tlist = [ chiT ]
 
+        goal_close_abs = abs(goal_close_abs)
         self.__finalize_propagation()
         return chiT, goal_close_abs
 
@@ -364,7 +368,7 @@ class FittingSolver:
         goal_close_abs = 0.0
 
         direct = self.init_dir
-        for _ in range(2):
+        for run in range(2):
             print(f"Iteration = {self.dyn.iter_step}, {direct.name} direction begins...")
             # calculating chiT
             chiT, goal_close_abs = self.__single_propagation(dx, x, direct, chiT, goal_close_abs)
@@ -394,10 +398,11 @@ class FittingSolver:
                     self.dyn.res = PropagationSolver.StepReaction.OK
                     break
 
-            direct = PropagationSolver.Direction(-direct.value)
+            if direct == PropagationSolver.Direction.FORWARD:
+                self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, self.dyn.E_tlist, self.dyn.t_list,
+                                                  self.conf_fitter.propagation.nt)
 
-        self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, self.dyn.E_tlist, self.dyn.t_list,
-                                              self.conf_fitter.propagation.nt)
+            direct = PropagationSolver.Direction(-direct.value)
 
         return goal_close_abs
 
