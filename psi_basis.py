@@ -1,19 +1,20 @@
 import copy
+from typing import List
 
 import numpy
 
 
 class Psi:
-    def __init__(self, f: list[numpy.ndarray] = None, lvls: int = 2):
-        psi = []
+    def __init__(self, f: List[numpy.ndarray] = None, lvls: int = 2):
+        psi: List[numpy.ndarray] = []
         for lvl in range(lvls):
             if f is None:
-                psi.append([None])
+                psi.append(numpy.array(0))
             else:
                 psi.append(f[lvl])
         self._psi = psi
 
-    def get_psi(self) -> list[numpy.ndarray]:
+    def get_psi(self) -> List[numpy.ndarray]:
         return self._psi
 
     def lvls(self):
@@ -40,7 +41,7 @@ class PsiBasis:
     def __len__(self):
         return len(self._psis)
 
-    def get_psis(self) -> list[Psi]:
+    def get_psis(self) -> List[Psi]:
         return self._psis
 
     def __deepcopy__(self, memo):

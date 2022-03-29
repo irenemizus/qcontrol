@@ -1,8 +1,12 @@
 import copy
+import typing
 from enum import Enum
+from typing import Dict
 
 
 class ConfigurationBase:
+    _data: Dict[str, typing.Any]
+
     def __init__(self, key_prefix: str):
         self._empty = True
         self._key_prefix = key_prefix

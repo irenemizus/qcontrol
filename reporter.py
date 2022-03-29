@@ -1,6 +1,8 @@
 import copy
 
 # Disable the orca response timeout.
+from typing import List
+
 import plotly.io._orca
 import retrying
 
@@ -199,7 +201,6 @@ class PlotPropagationReporter(PropagationReporter):
         self.E_list = []
         self.freq_mult_list = []
 
-
         # X = Coordinate
         self.psi_abs = {}  # key: t, value: {'x': [], 'y': []}
         self.psi_real = {}  # key: t, value: {'x': [], 'y': []}
@@ -212,7 +213,6 @@ class PlotPropagationReporter(PropagationReporter):
 
     def close(self):
         pass
-
 
     @staticmethod
     def __plot_update_graph(psi, numb_plotout, title_plot, title_y, plot_name):
@@ -500,6 +500,8 @@ class PlotPropagationReporter(PropagationReporter):
 
 
 class MultiplePropagationReporter(PropagationReporter):
+    reps: List[PropagationReporter]
+
     def __init__(self, out_path: str, conf_rep_table, conf_rep_plot):
         super(MultiplePropagationReporter, self).__init__(out_path=out_path)
         self.reps = []

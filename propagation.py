@@ -3,7 +3,7 @@ import cmath
 import copy
 from enum import Enum
 import datetime
-from typing import Callable
+from typing import Callable, List, Optional
 
 import numpy
 
@@ -20,11 +20,15 @@ class PropagationSolver:
         psi0: Psi
         psif: Psi
 
-        def __init__(self, psi0: Psi = None, psif: Psi = None, moms0: phys_base.ExpectationValues=None,
-                     cnorm0=None, cnormf=None,
-                     cener0=None, cenerf=None,
-                     overlp00=None, overlpf0=None,
-                     dt=0.0, dx=0.0, x=None, v=None, akx2=None):
+        def __init__(self, psi0: Psi, psif: Psi, moms0: phys_base.ExpectationValues,
+                     cnorm0: List[complex],
+                     cnormf: List[complex],
+                     cener0: List[complex],
+                     cenerf: List[complex],
+                     overlp00: List[complex],
+                     overlpf0: List[complex],
+                     dt: float = 0.0, dx: float = 0.0,
+                     x: numpy.ndarray = numpy.array(0), v=None, akx2=None):
             assert (psi0 is None and psif is None) or (psi0.f[0] is not psif.f[0] and psi0.f[1] is not psif.f[1]), \
                 "A single array is passed twice (as psi0 and psif). Clone it!"
 
@@ -43,15 +47,15 @@ class PropagationSolver:
             self.v = v
             self.akx2 = akx2
 
-
     # These parameters are updated on each calculation step
     class DynamicState:
         psi: Psi
         psi_omega: Psi
 
-        def __init__(self, l=0, t=0.0, psi: Psi = None, psi_omega: Psi = None, E=0.0, freq_mult=1.0, dir=None):
+        def __init__(self, l=0, t=0.0, psi: Psi = Psi(None), psi_omega: Psi = Psi(None),
+                     E=0.0, freq_mult=1.0, dir=None):
             assert (psi is None and psi_omega is None) or \
-                   (psi.f[0] is not psi_omega.f[0] and psi.f[1] is not psi_omega.f[1] ), \
+                   (psi.f[0] is not psi_omega.f[0] and psi.f[1] is not psi_omega.f[1]), \
                 "A single array is passed twice (as psi and psi_omega). Clone it!"
 
             self.l = l
@@ -61,7 +65,6 @@ class PropagationSolver:
             self.E = E
             self.freq_mult = freq_mult
             self.dir = dir
-
 
     # These parameters are recalculated from scratch on each step,
     # and then follows an output of them to the user
@@ -94,10 +97,10 @@ class PropagationSolver:
         FORWARD = 1
         BACKWARD = -1
 
-    stat: StaticState
-    dyn: DynamicState
-    instr: InstrumentationOutputData
-    freq_multiplier: Callable[[DynamicState, StaticState], float]
+    stat: Optional[StaticState]
+    dyn: Optional[DynamicState]
+    instr: Optional[InstrumentationOutputData]
+    freq_multiplier: Optional[Callable[[DynamicState, StaticState], float]]
 
     def __init__(
             self,
@@ -106,7 +109,7 @@ class PropagationSolver:
             _warning_time_steps,
             reporter: PropagationReporter,
             laser_field_envelope,
-            freq_multiplier,
+            freq_multiplier: Callable[[DynamicState, StaticState], float],
             dynamic_state_factory,
             mod_log,
             conf_prop):
