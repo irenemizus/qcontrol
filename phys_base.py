@@ -1,4 +1,5 @@
 import cmath
+import sys
 
 import numpy
 import copy
@@ -12,6 +13,7 @@ import pyopencl.elementwise as cle
 from pyvkfft.fft import fftn, ifftn
 
 from psi_basis import Psi
+from test_tools import TableComparer
 
 hart_to_cm = 219474.6313708 # 1 / cm / hartree
 cm_to_erg = 1.98644568e-16 # erg * cm
@@ -44,6 +46,12 @@ def diff_cpu(psi, akx2, np):
     phi_freq = numpy.multiply(psi_freq, akx2)
     phi = numpy.fft.ifft(phi_freq)
 
+    # numpy.set_printoptions(threshold=sys.maxsize)
+    # print(f"psi = {psi}")
+    # print(f"akx2 = {akx2}")
+    # print(f"np = {np}")
+    # print(f"phi = {phi}")
+
     return phi
 
 
@@ -60,12 +68,14 @@ def diff_gpu(psi, akx2, np):
     assert psi.size == np
     assert akx2.size == np
 
-    buf_dev = cla.to_device(cq, psi)
-    akx2_dev = cla.to_device(cq, akx2)
+    psi = psi.astype(numpy.complex128)
 
-    fftn(buf_dev)
+    buf_dev = cla.to_device(cq, psi)
+    akx2_dev = cla.to_device(cq, akx2.astype(numpy.complex128))
+
+    buf_dev = fftn(buf_dev)
     complex_mult(buf_dev, akx2_dev)
-    ifftn(buf_dev)
+    buf_dev = ifftn(buf_dev)
 
     phi = buf_dev.get()
 
@@ -87,7 +97,7 @@ def hamil(psi: numpy.ndarray, v, akx2, np):
     assert akx2.size == np
 
     # kinetic energy mapping
-    phi = diff_cpu(psi, akx2, np)
+    phi = diff_gpu(psi, akx2, np)
 
     # potential energy mapping and accumulation phi_l = H psi_l
     vpsi = numpy.multiply(v, psi)

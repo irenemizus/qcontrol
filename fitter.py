@@ -1,5 +1,5 @@
 import collections.abc
-#import os.path
+import os.path
 from typing import List
 
 import reporter
@@ -112,7 +112,7 @@ class FittingSolver:
         self.solvers = []
         self.propagation_reporters = [None] * self.basis_length
         for vect in range(self.basis_length):
-            propagation_reporter = self.reporter.create_propagation_reporter(prop_id)
+            propagation_reporter = self.reporter.create_propagation_reporter(os.path.join(prop_id, "basis_" + str(vect)))
             propagation_reporter.open()
             self.propagation_reporters[vect] = propagation_reporter
 
@@ -166,7 +166,7 @@ class FittingSolver:
 
         self.dyn = None
 
-        self.TMP_delta_E = 0.0
+        #self.TMP_delta_E = 0.0
 
     # single propagation to the given direction; returns new chiT
     def __single_propagation(self, dx, x, direct: PropagationSolver.Direction, chiT: PsiBasis, goal_close_abs):
@@ -212,6 +212,7 @@ class FittingSolver:
 
         # Starting solvers
         for vect in range(self.basis_length):
+
             solver = self.solvers[vect]
             solver.start(dx, x, init_psi_basis.psis[vect], fin_psi_basis.psis[vect], self.dyn.dir)
 
@@ -238,6 +239,10 @@ class FittingSolver:
 
                 if vect in finished:
                     raise AssertionError(f"The solver #{vect} has finished, but asked to proceed. It's a pity.")
+
+                if solver.dyn.l % self.conf_fitter.mod_log == 0 and \
+                   self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+                    print(f"The solver for the basis vector #{vect} is running...")
 
                 if not solver.step(t_init):
                     finished.add(vect)
@@ -305,6 +310,11 @@ class FittingSolver:
                     for el in chiT_omega.f[1]:
                         el *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * solver.dyn.freq_mult * self.conf_fitter.propagation.T)
                     chiT.psis[vect] = chiT_omega
+
+                elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+                    print("goal_close value for the basis vector ", vect, " = ", self.dyn.goal_close[vect])
+                else:
+                    pass
 
             goal_close_abs += self.dyn.goal_close[vect]
 
@@ -470,10 +480,6 @@ class FittingSolver:
             else:
                 pass
 
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM and \
-            dyn.l == self.conf_fitter.propagation.nt + 1:
-            for vect in range(self.basis_length):
-                print("goal_close value for the basis vector ", vect, " = ", self.dyn.goal_close[vect])
 
     # calculating envelope of the laser field energy at the given time value
     def LaserFieldEnvelope(self, prop: PropagationSolver, stat: PropagationSolver.StaticState,
@@ -577,12 +583,12 @@ class FittingSolver:
                 s = E_init / conf_prop.E0
                 delta_E = - s * (self.a0 * sum).imag / self.conf_fitter.h_lambda
 
-                print(f"===== Got {delta_E}")
-                if abs(self.TMP_delta_E) > abs(delta_E):
-                    print("===== Got max")
+                #print(f"===== Got {delta_E}")
+                #if abs(self.TMP_delta_E) > abs(delta_E):
+                #    print("===== Got max")
 
 
-                self.TMP_delta_E = delta_E
+                #self.TMP_delta_E = delta_E
 
                 if self.dyn.iter_step == 0:
                     E = E_init + delta_E

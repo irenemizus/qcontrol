@@ -820,7 +820,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
+        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
         fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot_.py")

@@ -726,7 +726,7 @@ class MultipleFitterReporter(FitterReporter):
         out_path = prop_conf_rep_table.out_path
         prop_out_path = os.path.join(out_path, prop_id)
         if not os.path.exists(prop_out_path):
-            os.mkdir(prop_out_path)
+            os.makedirs(prop_out_path)
 
         return MultiplePropagationReporter(out_path=prop_out_path,
                                            conf_rep_table=prop_conf_rep_table.propagation,

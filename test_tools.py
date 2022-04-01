@@ -54,6 +54,8 @@ class TableComparer:
                         elif abs(el1[l].real - el2[l].real) / abs(el2[l].real) >= eps.real or \
                            abs(el1[l].imag - el2[l].imag) / abs(el2[l].imag) >= eps.imag:
                             return False
+                else:
+                    raise ValueError("Invalid types to compare")
         return True
 
 
