@@ -7,8 +7,8 @@
     "epsilon": 1e-8,
     "impulses_number": 1,
     "delay": 600e-15,
-    "iter_max": 2,
-    "h_lambda": 0.05,
+    "iter_max": 5,
+    "h_lambda": 30000,
     "propagation": {
       "m": 0.5,
       "pot_type": "morse",

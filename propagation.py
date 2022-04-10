@@ -157,10 +157,10 @@ class PropagationSolver:
     def _ener_eval(psi: Psi, v, akx2, dx, np):
         cener = []
 
-        phi_l = phys_base.hamil(psi.f[0], v[0][1], akx2, np)
+        phi_l = phys_base.hamil_cpu(psi.f[0], v[0][1], akx2, np)
         cener.append(math_base.cprod(phi_l, psi.f[0], dx, np))
 
-        phi_u = phys_base.hamil(psi.f[1], v[1][1], akx2, np)
+        phi_u = phys_base.hamil_cpu(psi.f[1], v[1][1], akx2, np)
         cener.append(math_base.cprod(phi_u, psi.f[1], dx, np))
 
         return cener
@@ -370,7 +370,7 @@ class PropagationSolver:
         self.dyn.E = self.laser_field_envelope(self, self.stat, self.dyn)
         E_full = self.dyn.E * exp_L * exp_L
 
-        self.dyn.psi_omega = Psi(f=phys_base.prop(self.dyn.psi_omega.f, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax, self.dyn.E, eL), lvls=self.dyn.psi_omega.lvls())
+        self.dyn.psi_omega = Psi(f=phys_base.prop_cpu(self.dyn.psi_omega.f, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax, self.dyn.E, eL), lvls=self.dyn.psi_omega.lvls())
 
         cnorm = []
         cnorm.append(math_base.cprod(self.dyn.psi_omega.f[0], self.dyn.psi_omega.f[0], self.stat.dx, self.np))

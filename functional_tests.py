@@ -81,14 +81,14 @@ class fitter_Tests(unittest.TestCase):
 
         fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        #fitting_solver.time_propagation(dx, x)
+        fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
+        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fit_iter_single_harm.py")
-        #prop_reporter.print_all("test_data/prop_single_harm.py", "test_data/fitter_single_harm.py")
+        fit_reporter_imp.print_all("test_data/fit_iter_single_harm_.py")
+        prop_reporter.print_all("test_data/prop_single_harm_.py", "test_data/fitter_single_harm_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
@@ -188,7 +188,7 @@ class fitter_Tests(unittest.TestCase):
         #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
+        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("test_data/fit_iter_single_morse.py")
@@ -293,7 +293,7 @@ class fitter_Tests(unittest.TestCase):
         #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
+        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("test_data/fit_iter_filter.py")
@@ -398,7 +398,7 @@ class fitter_Tests(unittest.TestCase):
         #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
+        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("test_data/fit_iter_trans_woc.py")
@@ -503,7 +503,7 @@ class fitter_Tests(unittest.TestCase):
         #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
+        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("test_data/fit_iter_int_ctrl.py")
@@ -608,7 +608,7 @@ class fitter_Tests(unittest.TestCase):
         #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
+        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_pop.py")
@@ -713,7 +713,7 @@ class fitter_Tests(unittest.TestCase):
         #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f"]
+        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_proj.py")
@@ -817,14 +817,14 @@ class fitter_Tests(unittest.TestCase):
 
         fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x)
+        #fitting_solver.time_propagation(dx, x)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot_.py")
-        prop_reporter.print_all("test_data/prop_opt_ctrl_krot_.py", "test_data/fitter_opt_ctrl_krot_.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot.py")
+        #prop_reporter.print_all("test_data/prop_opt_ctrl_krot.py", "test_data/fitter_opt_ctrl_krot.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
