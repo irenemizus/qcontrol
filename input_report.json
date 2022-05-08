@@ -1,6 +1,6 @@
 {
   "fitter": {
-    "out_path": "output",
+    "out_path": "output_fr120",
 
     "table.imin": 0,
     "table.imod_fileout": 1,
@@ -9,6 +9,7 @@
 
     "plot.imin": 0,
     "plot.imod_plotout": 1,
+    "plot.inumber_plotout": 15,
     "plot.gr_iter": "fig_iter_goal.pdf",
     "plot.gr_iter_E": "fig_gr_iter_E.pdf",
 
@@ -20,9 +21,9 @@
       "table.tab_tvals": "tab_tvals_{level}.csv",
       "table.tab_tvals_fit": "tab_tvals_fit.csv",
 
-      "plot.lmin": 0,
-      "plot.mod_plotout": 500,
-      "plot.mod_update": 200,
+      "plot.lmin": 1,
+      "plot.mod_plotout": 20,
+      "plot.mod_update": 100,
       "plot.number_plotout": 15
     }
   }

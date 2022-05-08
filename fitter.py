@@ -1,7 +1,5 @@
 import collections.abc
 import os.path
-#from typing import List
-import phys_base
 import reporter
 import json
 from config import TaskRootConfiguration
@@ -108,7 +106,7 @@ class FittingSolver:
     propagation_reporters: list[PropagationReporter]
 
 
-    def __initialize_propagation(self, prop_id: str, laser_field_envelope):
+    def __initialize_propagation(self, prop_id: str, laser_field_envelope, ntriv):
 
         self.solvers = []
         self.propagation_reporters = [None] * self.basis_length
@@ -126,6 +124,7 @@ class FittingSolver:
                 freq_multiplier=self.FreqMultiplier,
                 dynamic_state_factory=self.propagation_dynamic_state_factory,
                 mod_log=self.conf_fitter.mod_log,
+                ntriv = ntriv,
                 conf_prop=self.conf_fitter.propagation))
 
     def __finalize_propagation(self):
@@ -142,6 +141,7 @@ class FittingSolver:
             self,
             conf_fitter,
             init_dir,
+            ntriv,
             psi_init_basis: PsiBasis,
             psi_goal_basis: PsiBasis,
             pot_func,
@@ -159,6 +159,7 @@ class FittingSolver:
 
         self.conf_fitter = conf_fitter
         self.init_dir = init_dir
+        self.ntriv = ntriv
         self.psi_init_basis = psi_init_basis
         self.psi_goal_basis = psi_goal_basis
 
@@ -167,7 +168,7 @@ class FittingSolver:
 
         self.dyn = None
 
-        self.TMP_delta_E = []
+        #self.TMP_delta_E = []
 
 
     # single propagation to the given direction; returns new chiT
@@ -175,6 +176,8 @@ class FittingSolver:
         self.dyn.dir = direct
         init_psi_basis: PsiBasis
         fin_psi_basis: PsiBasis
+        self.dyn.chi_cur = None
+        self.dyn.psi_omega_cur = None
         if direct == PropagationSolver.Direction.FORWARD:
             ind_dir = "f"
             laser_field = self.LaserFieldEnvelope
@@ -187,6 +190,7 @@ class FittingSolver:
             psi_init_omega_copy = copy.deepcopy(self.psi_init_basis)
 
             self.dyn.psi_omega_tlist = [ psi_init_omega_copy ]
+            self.dyn.psi_omega_cur = self.dyn.psi_omega_tlist[0]
             init_psi_basis = self.psi_init_basis
             fin_psi_basis = self.psi_goal_basis
             t_init = 0.0
@@ -196,25 +200,26 @@ class FittingSolver:
             ind_dir = "b"
             laser_field = self.LaserFieldEnvelopeBackward
             #self.dyn.t_list_bw = []
-            self.dyn.res = PropagationSolver.StepReaction.ITERATE
+            if self.dyn.iter_step > 0:
+                self.dyn.res = PropagationSolver.StepReaction.ITERATE
 
             if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                chiT = self.psi_goal_basis
+                chiT = copy.deepcopy(self.psi_goal_basis)
                 self.dyn.chi_tlist = [ chiT ]
 
+            self.dyn.chi_cur = self.dyn.chi_tlist[0]
             init_psi_basis = chiT
             fin_psi_basis = self.psi_init_basis
             t_init = self.conf_fitter.propagation.T
             #self.dyn.t_list_bw.append(t_init)
 
-        self.__initialize_propagation("iter_" + str(self.dyn.iter_step) + ind_dir, laser_field)
+        self.__initialize_propagation("iter_" + str(self.dyn.iter_step) + ind_dir, laser_field, self.ntriv)
 
         # Propagation loop
         finished: set[int] = set()
 
         # Starting solvers
         for vect in range(self.basis_length):
-
             solver = self.solvers[vect]
             solver.start(dx, x, init_psi_basis.psis[vect], fin_psi_basis.psis[vect], self.dyn.dir)
 
@@ -225,9 +230,6 @@ class FittingSolver:
                 raise AssertionError("Different energies in different solvers")
 
         E_tlist_new: list[complex] = []
-        self.dyn.chi_cur = None
-        self.dyn.psi_omega_cur = None
-
         # Working with solvers
         if direct == PropagationSolver.Direction.FORWARD:
             # with open("test_chi_" + str(self.dyn.iter_step) + ".txt", "w") as f:
@@ -241,9 +243,8 @@ class FittingSolver:
             #         f.write("]\n\n")
             #     f.write("]\n\n")
             E_tlist_new = [ E_checked ]
-            self.dyn.psi_omega_cur = self.dyn.psi_omega_tlist[0]
 
-        self.TMP_delta_E = []
+        #self.TMP_delta_E = []
         while True:
             chi_new: PsiBasis = PsiBasis(self.basis_length)
             psi_omega_new: PsiBasis = PsiBasis(self.basis_length)
@@ -287,18 +288,18 @@ class FittingSolver:
                 E_tlist_new.append(E_checked)
                 self.dyn.t_list.append(t_checked)
                 self.dyn.psi_omega_cur = psi_omega_new
-                self.dyn.psi_omega_tlist.append(psi_omega_new)
+                #self.dyn.psi_omega_tlist.append(psi_omega_new)
 
             do_continue = len(finished) < self.basis_length
             if not do_continue: break
 
         if direct == PropagationSolver.Direction.FORWARD:
             self.dyn.E_tlist = E_tlist_new
-            with open("test_E_" + str(self.dyn.iter_step) + ".txt", "w") as f:
-                f.write("TMP_delta_E = [\n")
-                for l in self.TMP_delta_E:
-                    f.write("    " + str(l) + ",\n")
-                f.write("]\n\n")
+            #with open("test_E_" + str(self.dyn.iter_step) + ".txt", "w") as f:
+            #    f.write("TMP_delta_E = [\n")
+            #    for l in self.TMP_delta_E:
+            #        f.write("    " + str(l) + ",\n")
+            #     f.write("]\n\n")
 
             # with open("test_E_" + str(self.dyn.iter_step) + ".txt", "w") as f:
             #     f.write("E_tlist = [\n")
@@ -339,13 +340,12 @@ class FittingSolver:
                 else:
                     pass
 
-            goal_close_abs += self.dyn.goal_close[vect]
+            goal_close_abs += abs(self.dyn.goal_close[vect])
 
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV and \
                 direct == PropagationSolver.Direction.FORWARD:
             self.dyn.chi_tlist = [ chiT ]
 
-        goal_close_abs = abs(goal_close_abs)
         self.__finalize_propagation()
         return chiT, goal_close_abs
 
@@ -362,7 +362,7 @@ class FittingSolver:
     # single iteration for an optimal control task
     def __single_iteration_optimal(self, dx, x):
         assert (dx > 0.0)
-        chiT = self.psi_goal_basis
+        chiT = copy.deepcopy(self.psi_goal_basis)
         goal_close_abs = 0.0
 
         direct = self.init_dir
@@ -416,11 +416,20 @@ class FittingSolver:
                 #self.dyn = FittingSolver.FitterDynamicState.from_json(saved_json)
                 #print(self.dyn)
 
+            #self.dyn.freq_mult_patched += -0.0025  # Adding 30 percent to frequency
+
             # iterative procedure
+            #with open("test_nu_L.txt", "w") as f:
             while abs(goal_close_abs - self.basis_length) > self.conf_fitter.epsilon and \
-                    self.dyn.iter_step < self.conf_fitter.iter_max:
+                    (self.dyn.iter_step < self.conf_fitter.iter_max or self.conf_fitter.iter_max == -1):
                 self.dyn.iter_step += 1
+
+                #self.dyn.freq_mult_patched += 0.000025  # Adding 0.005 percent to frequency
+
                 goal_close_abs = self.__single_iteration_optimal(dx, x)
+
+                    #f.write("{:2d} {:.6e}\n".format(self.dyn.iter_step, self.solvers[0].nu_L * self.dyn.freq_mult_patched))
+                    #f.flush()
 
             if abs(goal_close_abs - self.basis_length) <= self.conf_fitter.epsilon:
                 print("The goal has been successfully reached on the " + str(self.dyn.iter_step) + " iteration.")
@@ -557,7 +566,7 @@ class FittingSolver:
                 conf_prop = self.conf_fitter.propagation
 
                 chie_old_psig_new = math_base.cprod(self.dyn.chi_tlist[conf_prop.nt - prop.dyn.l].psis[0].f[1],
-                                                    self.dyn.psi_omega_cur.psis[0].f[0],
+                                                    dyn.psi_omega.f[0],
                                                     stat.dx, conf_prop.np)
 
                 E = -2.0 * chie_old_psig_new.imag / self.conf_fitter.h_lambda
@@ -598,21 +607,21 @@ class FittingSolver:
                       math_base.cprod(chi1_g, psi1_g, stat.dx, conf_prop.np) + \
                       math_base.cprod(chi1_e, psi1_e, stat.dx, conf_prop.np)
 
-                E_init = self.laser_field(conf_prop.E0, dyn.t - abs(stat.dt) / 2.0, conf_prop.t0, conf_prop.sigma)
+                E_init = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma)
                 s = E_init / conf_prop.E0
-                delta_E = - s * (self.a0 * sum).imag / self.conf_fitter.h_lambda / phys_base.Red_Planck_h * phys_base.cm_to_erg
+                delta_E = - s * (self.a0 * sum).imag / self.conf_fitter.h_lambda #/ phys_base.Red_Planck_h * phys_base.cm_to_erg
 
                 #print(f"===== Got {delta_E}")
                 #if abs(self.TMP_delta_E) > abs(delta_E):
                 #    print("===== Got max")
-                self.TMP_delta_E.append(delta_E)
+                #self.TMP_delta_E.append(delta_E)
                 #print(f"delta_E[{len(self.TMP_delta_E)}] = {delta_E}")
 
                 if self.dyn.iter_step == 0:
                     E = E_init + delta_E
                 else:
                     E = self.dyn.E_tlist[prop.dyn.l] + delta_E
-                assert abs(E) < 500
+                #assert abs(E) < conf_prop.E0 * 100
         else:
             E = self.dyn.E_patched
 
@@ -626,7 +635,7 @@ class FittingSolver:
         # optimal control algorithm
         if (self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV) and \
                 self.dyn.dir == PropagationSolver.Direction.BACKWARD:
-            chie_new_psig_old = math_base.cprod(self.dyn.psi_omega_cur.psis[0].f[1],
+            chie_new_psig_old = math_base.cprod(dyn.psi_omega.f[1],
                                                 self.dyn.psi_omega_tlist[conf_prop.nt - prop.dyn.l].psis[0].f[0],
                                                 stat.dx, conf_prop.np)
 
@@ -666,6 +675,6 @@ class FittingSolver:
             self.dyn.freq_mult_vel += freq_mult_acc * stat.dt
             freq_mult = dyn.freq_mult + self.dyn.freq_mult_vel * stat.dt
         else:
-            freq_mult = 1.0
+            freq_mult = self.dyn.freq_mult_patched
 
         return freq_mult

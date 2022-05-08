@@ -7,8 +7,8 @@
     "epsilon": 1e-8,
     "impulses_number": 1,
     "delay": 600e-15,
-    "iter_max": 5,
-    "h_lambda": 30000,
+    "iter_max": -1,
+    "h_lambda": 0.005,
     "propagation": {
       "m": 0.5,
       "pot_type": "morse",
@@ -17,7 +17,7 @@
       "x0p": -0.17,
       "a_e": 1.0,
       "De_e": 10000,
-      "Du": 20000,
+      "Du": 100,
       "wf_type": "morse",
       "x0": 0.0,
       "p0": 0.0,
@@ -25,11 +25,11 @@
       "T": 350e-15,
       "np": 1024,
       "nch": 64,
-      "nt": 230000,
-      "E0": 71.54,
-      "t0": 200e-15,
-      "sigma": 50e-15,
-      "nu_L": 0.29297e15
+      "nt": 10000,
+      "E0": 0.5,
+      "t0": 0.0,
+      "sigma": 100e-15,
+      "nu_L": 0.21999429e13
     },
     "mod_log": 500
   }

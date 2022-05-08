@@ -112,6 +112,7 @@ class PropagationSolver:
             freq_multiplier: Callable[[DynamicState, StaticState], float],
             dynamic_state_factory,
             mod_log,
+            ntriv,
             conf_prop):
         self.milliseconds_full = 0.0
         self.pot = pot
@@ -122,6 +123,7 @@ class PropagationSolver:
         self.freq_multiplier = freq_multiplier
         self.dynamic_state_factory = dynamic_state_factory
         self.mod_log = mod_log
+        self.ntriv = ntriv
 
         self.m = conf_prop.m
         self.L = conf_prop.L
@@ -154,14 +156,14 @@ class PropagationSolver:
         return cnorm
 
     @staticmethod
-    def _ener_eval(psi: Psi, v, akx2, dx, np):
+    def _ener_eval(psi: Psi, v, akx2, dx, np, ntriv):
         cener = []
 
-        phi_l = phys_base.hamil_cpu(psi.f[0], v[0][1], akx2, np)
-        cener.append(math_base.cprod(phi_l, psi.f[0], dx, np))
+        phi_l = phys_base.hamil_cpu(psi.f[0], v[0][1], akx2, np, ntriv)
+        cener.append(math_base.cprod(psi.f[0], phi_l, dx, np))
 
-        phi_u = phys_base.hamil_cpu(psi.f[1], v[1][1], akx2, np)
-        cener.append(math_base.cprod(phi_u, psi.f[1], dx, np))
+        phi_u = phys_base.hamil_cpu(psi.f[1], v[1][1], akx2, np, ntriv)
+        cener.append(math_base.cprod(psi.f[1], phi_u, dx, np))
 
         return cener
 
@@ -176,8 +178,14 @@ class PropagationSolver:
     def report_static(self):
         # check if input data are correct in terms of the given problem
         # calculating the initial energy range of the Hamiltonian operator H
-        emax0 = self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
-        emin0 = self.stat.v[0][0]
+        emax0g = self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
+        emin0g = self.stat.v[0][0]
+
+        emax0e = self.stat.v[1][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
+        emin0e = self.stat.v[1][0]
+
+        emax0 = max(emax0g, emin0g, emax0e, emin0e)
+        emin0 = min(emax0g, emin0g, emax0e, emin0e)
 
         # calculating the initial minimum number of collocation points that is needed for convergence
         np_min0 = int(
@@ -201,7 +209,7 @@ class PropagationSolver:
         cener0_tot = self.stat.cener0[0] + self.stat.cener0[1]
         overlp0 =  self.stat.overlp00[0] + self.stat.overlp00[1]
         overlpf = self.stat.overlpf0[0] + self.stat.overlpf0[1]
-        overlp0_abs = abs(overlp0) + abs(overlpf)
+        overlp0_abs = [abs(overlp0), abs(overlpf)]
         max_ind_psi_l = numpy.argmax(self.stat.psi0.f[0])
         max_ind_psi_u = numpy.argmax(self.stat.psi0.f[1])
 
@@ -210,12 +218,13 @@ class PropagationSolver:
         # plotting initial values
         self.reporter.print_time_point_prop(self.dyn.l, self.stat.psi0, self.dyn.t, self.stat.x, self.np, self.stat.moms0,
                                        self.stat.cener0[0].real, self.stat.cener0[1].real,
-                                       overlp0, overlpf, overlp0_abs, cener0_tot.real,
+                                       self.stat.overlp00, self.stat.overlpf0, overlp0_abs, cener0_tot.real,
                                        abs(self.stat.psi0.f[0][max_ind_psi_l]), self.stat.psi0.f[0][max_ind_psi_l].real,
                                        abs(self.stat.psi0.f[1][max_ind_psi_u]), self.stat.psi0.f[1][max_ind_psi_u].real,
                                        abs(self.dyn.E), fm_start)
 
         print("Initial emax = ", emax0)
+        print("Initial emin = ", emin0)
 
         print(" Initial state features: ")
         print("Initial normalization (ground state): ", abs(self.stat.cnorm0[0]))
@@ -241,7 +250,7 @@ class PropagationSolver:
         cener_tot = self.instr.cener[0] + self.instr.cener[1]
         overlp0 = self.instr.overlp0[0] + self.instr.overlp0[1]
         overlpf = self.instr.overlpf[0] + self.instr.overlpf[1]
-        overlp_abs = abs(overlp0) + abs(overlpf)
+        overlp_abs = [abs(overlp0), abs(overlpf)]
 
         time_span = self.instr.time_after - self.instr.time_before
         milliseconds_per_step = time_span.microseconds / 1000
@@ -252,7 +261,7 @@ class PropagationSolver:
 
         self.reporter.print_time_point_prop(self.dyn.l, self.dyn.psi, self.dyn.t, self.stat.x, self.np,
                                             self.instr.moms, self.instr.cener[0].real, self.instr.cener[1].real,
-                                            overlp0, overlpf, overlp_abs, cener_tot.real,
+                                            self.instr.overlp0, self.instr.overlpf, overlp_abs, cener_tot.real,
                                             abs(self.dyn.psi.f[0][max_ind_psi_l]), self.dyn.psi.f[0][max_ind_psi_l].real,
                                             abs(self.dyn.psi.f[1][max_ind_psi_u]), self.dyn.psi.f[1][max_ind_psi_u].real,
                                             abs(self.dyn.E), self.dyn.freq_mult)
@@ -281,10 +290,10 @@ class PropagationSolver:
 
     def start(self, dx, x, psi0, psif, dir: Direction):
         # evaluating of potential(s)
-        v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du)
+        v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du, self.nu_L)
 
         # evaluating of k vector
-        akx2 = math_base.initak(self.np, dx, 2)
+        akx2 = math_base.initak(self.np, dx, 2, self.ntriv)
 
         # evaluating of kinetic energy
         akx2 *= -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
@@ -293,13 +302,13 @@ class PropagationSolver:
         cnorm0 = self._norm_eval(psi0, dx, self.np)
 
         # calculating of initial ground/excited energies
-        cener0 = self._ener_eval(psi0, v, akx2, dx, self.np)
+        cener0 = self._ener_eval(psi0, v, akx2, dx, self.np, self.ntriv)
 
         # final normalization check
         cnormf = self._norm_eval(psif, dx, self.np)
 
         # calculating of final excited/filtered energy
-        cenerf = self._ener_eval(psif, v, akx2, dx, self.np)
+        cenerf = self._ener_eval(psif, v, akx2, dx, self.np, self.ntriv)
 
         # time propagation
         dt = dir.value * self.T / self.nt
@@ -310,7 +319,7 @@ class PropagationSolver:
         overlpf0 = self._pop_eval(psif, psi, dx, self.np)
 
         # calculating of initial expectation values
-        moms0 = phys_base.exp_vals_calc(psi, x, akx2, dx, self.np, self.m)
+        moms0 = phys_base.exp_vals_calc(psi, x, akx2, dx, self.np, self.m, self.ntriv)
 
         self.stat = PropagationSolver.StaticState(psi0, psif, moms0, cnorm0, cnormf,
                      cener0, cenerf, overlp00, overlpf0, dt, dx, x, v, akx2)
@@ -370,7 +379,7 @@ class PropagationSolver:
         self.dyn.E = self.laser_field_envelope(self, self.stat, self.dyn)
         E_full = self.dyn.E * exp_L * exp_L
 
-        self.dyn.psi_omega = Psi(f=phys_base.prop_cpu(self.dyn.psi_omega.f, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax, self.dyn.E, eL), lvls=self.dyn.psi_omega.lvls())
+        self.dyn.psi_omega = Psi(f=phys_base.prop_cpu(self.dyn.psi_omega.f, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax, self.dyn.E, eL, self.ntriv), lvls=self.dyn.psi_omega.lvls())
 
         cnorm = []
         cnorm.append(math_base.cprod(self.dyn.psi_omega.f[0], self.dyn.psi_omega.f[0], self.stat.dx, self.np))
@@ -390,17 +399,17 @@ class PropagationSolver:
         self.dyn.psi.f[1] = self.dyn.psi_omega.f[1] / exp_L
 
         # calculating of a current energy
-        phi = phys_base.hamil2D_orig(self.dyn.psi.f, self.stat.v, self.stat.akx2, self.np, E_full)
+        phi = phys_base.hamil2D_cpu(self.dyn.psi.f, self.stat.v, self.stat.akx2, self.np, self.dyn.E, eL, self.ntriv, E_full, orig=True)
 
         cener = []
-        cener.append(math_base.cprod(phi[0], self.dyn.psi.f[0], self.stat.dx, self.np))
-        cener.append(math_base.cprod(phi[1], self.dyn.psi.f[1], self.stat.dx, self.np))
+        cener.append(math_base.cprod(self.dyn.psi.f[0], phi[0], self.stat.dx, self.np))
+        cener.append(math_base.cprod(self.dyn.psi.f[1], phi[1], self.stat.dx, self.np))
 
         overlp0 = self._pop_eval(self.stat.psi0, self.dyn.psi, self.stat.dx, self.np)
         overlpf = self._pop_eval(self.stat.psif, self.dyn.psi, self.stat.dx, self.np)
 
         # calculating of expectation values
-        moms = phys_base.exp_vals_calc(self.dyn.psi, self.stat.x, self.stat.akx2, self.stat.dx, self.np, self.m)
+        moms = phys_base.exp_vals_calc(self.dyn.psi, self.stat.x, self.stat.akx2, self.stat.dx, self.np, self.m, self.ntriv)
 
         time_after = datetime.datetime.now()
 

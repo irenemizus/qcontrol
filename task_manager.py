@@ -15,7 +15,7 @@ class _LaserFields:
         return 0.0
 
     @staticmethod
-    def laser_field(E0, t, t0, sigma):
+    def laser_field_gauss(E0, t, t0, sigma):
         """ Calculates energy of external laser field impulse
             INPUT
             E0      amplitude value of the laser field energy envelope
@@ -27,6 +27,40 @@ class _LaserFields:
             E       complex value of current external laser field  """
 
         E = E0 * math.exp(-(t - t0) * (t - t0) / 2.0 / sigma / sigma)
+
+        return E
+
+    @staticmethod
+    def laser_field_sqrsin(E0, t, t0, sigma):
+        """ Calculates energy of external laser field impulse
+            INPUT
+            E0      amplitude value of the laser field energy envelope
+            t0      initial time, when the laser field is switched on
+            sigma   scaling parameter of the laser field envelope
+            nu_L basic frequency of the laser field
+            t       current time value
+            OUTPUT
+            E       complex value of current external laser field  """
+
+        E = E0 * math.sin(2.0 * math.pi * (t - t0) / sigma) * math.sin(2.0 * math.pi * (t - t0) / sigma)
+
+        return E
+
+    @staticmethod
+    def laser_field_maxwell(E0, t, t0, sigma):
+        """ Calculates energy of external laser field impulse
+            INPUT
+            E0      amplitude value of the laser field energy envelope
+            t0      initial time, when the laser field is switched on
+            sigma   scaling parameter of the laser field envelope
+            nu_L basic frequency of the laser field
+            t       current time value
+            OUTPUT
+            E       complex value of current external laser field  """
+
+        #E = E0 * t / sigma
+        #E = E0 * (1.0 - t / sigma)
+        E = E0 * t * t * math.exp(-(t - t0) * (t - t0) / 2.0 / sigma / sigma) / sigma / sigma
 
         return E
 
@@ -44,6 +78,10 @@ class _PsiFunctions:
     @staticmethod
     def zero(np):
         return numpy.array([0.0] * np).astype(complex)
+
+    @staticmethod
+    def one(np, L):
+        return numpy.array([1.0 / math.sqrt(L)] * np).astype(complex)
 
     @staticmethod
     def harmonic(x, np, x0, p0, m, De, a):
@@ -118,22 +156,23 @@ class TaskManager:
 
         self.conf_fitter = conf_fitter
         self.init_dir = PropagationSolver.Direction.FORWARD
+        self.ntriv = 1
 
-    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L):
         raise NotImplementedError()
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e):
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L):
         raise NotImplementedError()
 
     def ener_goal(self, psif: PsiBasis, v, akx2, np):
         n = len(psif)
         phif = []
         for i in range(n):
-            phif.append([phys_base.hamil(psif.psis[i].f[0], v[0][1], akx2, np),
-                         phys_base.hamil(psif.psis[i].f[1], v[1][1], akx2, np)])
+            phif.append([phys_base.hamil_cpu(psif.psis[i].f[0], v[0][1], akx2, np, self.ntriv),
+                         phys_base.hamil_cpu(psif.psis[i].f[1], v[1][1], akx2, np, self.ntriv)])
         return phif
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
         raise NotImplementedError()
 
     def laser_field(self, E0, t, t0, sigma):
@@ -166,7 +205,7 @@ class HarmonicSingleStateTaskManager(TaskManager):
         v.append((0.0, v_l))
         return v
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
         """ Potential energy vector
             INPUT
             x       vector of length np defining positions of grid points
@@ -178,6 +217,7 @@ class HarmonicSingleStateTaskManager(TaskManager):
             De_e    dissociation energy of the excited state (dummy variable)
             a_e     scaling factor of the excited state (dummy variable)
             Du      energy shift between the minima of the potentials (dummy variable)
+            nu_l    basic frequency of the laser field in Hz (dummy variable)
 
             OUTPUT
             v       real vector of length np describing the dimensionless potential V(X) """
@@ -191,13 +231,13 @@ class HarmonicSingleStateTaskManager(TaskManager):
 
         return v
 
-    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_init_obj = PsiBasis(1)
         psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a)
         psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
         return psi_init_obj
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_goal_obj = PsiBasis(1)
         psi_goal_obj.psis[0].f[0] = _PsiFunctions.harmonic(x, np, x0, p0, m, De, a)
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.zero(np)
@@ -212,7 +252,7 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
                  conf_fitter: TaskRootConfiguration.FitterConfiguration):
         super().__init__(wf_type, conf_fitter)
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
         """ Potential energy vector
             INPUT
             x       vector of length np defining positions of grid points
@@ -224,6 +264,7 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
             De_e    dissociation energy of the excited state (dummy variable)
             a_e     scaling factor of the excited state (dummy variable)
             Du      energy shift between the minima of the potentials (dummy variable)
+            nu_l    basic frequency of the laser field in Hz (dummy variable)
 
             OUTPUT
             v       real vector of length np describing the dimensionless potential V(X) """
@@ -240,7 +281,7 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
 
         return v
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_goal_obj = PsiBasis(1)
         psi_goal_obj.psis[0].f[0] = _PsiFunctions.zero(np)
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.harmonic(x, np, x0p + x0, p0, m, De_e, a_e)
@@ -275,7 +316,7 @@ class MorseSingleStateTaskManager(TaskManager):
 
         return v
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
         """ Potential energy vectors
             INPUT
             x           vector of length np defining positions of grid points
@@ -287,6 +328,7 @@ class MorseSingleStateTaskManager(TaskManager):
             De_e        dissociation energy of the excited state
             a_e         scaling factor of the excited state
             Du          energy shift between the minima of the potentials
+            nu_l    basic frequency of the laser field in Hz (dummy variable)
 
             OUTPUT
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
@@ -300,13 +342,13 @@ class MorseSingleStateTaskManager(TaskManager):
 
         return v
 
-    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_init_obj = PsiBasis(1)
         psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a)
         psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
         return psi_init_obj
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_goal_obj = PsiBasis(1)
         psi_goal_obj.psis[0].f[0] = _PsiFunctions.morse(x, np, x0, p0, m, De, a)
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.zero(np)
@@ -333,7 +375,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 
         return v
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
         """ Potential energy vectors
             INPUT
             x           vector of length np defining positions of grid points
@@ -345,55 +387,93 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
             De_e        dissociation energy of the excited state
             a_e         scaling factor of the excited state
             Du          energy shift between the minima of the potentials
+            nu_l    basic frequency of the laser field in Hz (dummy variable)
 
             OUTPUT
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
 
         return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du)
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_goal_obj = PsiBasis(1)
         psi_goal_obj.psis[0].f[0] = _PsiFunctions.zero(np)
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.morse(x, np, x0p + x0, p0, m, De_e, a_e)
         return psi_goal_obj
 
     def laser_field(self, E0, t, t0, sigma):
-        return _LaserFields.laser_field(E0, t, t0, sigma)
+        return _LaserFields.laser_field_gauss(E0, t, t0, sigma)
 
 
-class MorseMultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
+class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
                  conf_fitter: TaskRootConfiguration.FitterConfiguration):
         super().__init__(wf_type, conf_fitter)
         self.init_dir = PropagationSolver.Direction.BACKWARD
+        self.ntriv = 0
 
-    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_init_obj = PsiBasis(2)
 
-        psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a)
+        psi_init_obj.psis[0].f[0] = _PsiFunctions.one(np, L) # self.psi_init_impl(x, np, x0, p0, m, De, a) #
         psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
 
         psi_init_obj.psis[1].f[0] = _PsiFunctions.zero(np)
-        psi_init_obj.psis[1].f[1] = self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e)
+        psi_init_obj.psis[1].f[1] = _PsiFunctions.one(np, L) # self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) #
 
         return psi_init_obj
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e) -> PsiBasis:
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_goal_obj = PsiBasis(2)
 
-        psi_goal_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0)
-        psi_goal_obj.psis[0].f[1] = self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0)
+        psi_goal_obj.psis[0].f[0] = _PsiFunctions.one(np, L) / math.sqrt(2.0) # self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0) #
+        psi_goal_obj.psis[0].f[1] = _PsiFunctions.one(np, L) / math.sqrt(2.0) # self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0) #
 
-        psi_goal_obj.psis[1].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0)
-        psi_goal_obj.psis[1].f[1] = -self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0)
+        psi_goal_obj.psis[1].f[0] =_PsiFunctions.one(np, L) / math.sqrt(2.0) # self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0) #
+        psi_goal_obj.psis[1].f[1] = -_PsiFunctions.one(np, L) / math.sqrt(2.0) # -self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0) #
 
         return psi_goal_obj
+
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
+        """ Potential energy vectors
+            INPUT
+            x           vector of length np defining positions of grid points
+            np          number of grid points (dummy variable)
+            a           scaling factor of the ground state
+            De          dissociation energy of the ground state
+            m           reduced mass of the system
+            x0p         partial shift value of the upper potential corresponding to the ground one
+            De_e        dissociation energy of the excited state
+            a_e         scaling factor of the excited state
+            Du          energy shift between the minima of the potentials
+            nu_l    basic frequency of the laser field in Hz
+
+            OUTPUT
+            v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
+
+        v = []
+        #Dl = 1521.6693
+        Dl = 0.0
+        # Lower morse potential
+        v_l = numpy.array([Dl] * np)
+        v.append((Dl, v_l))
+
+        # Upper morse potential
+        #D_u = nu_L * phys_base.Hz_to_cm
+        D_u = Du + Dl
+        v_u = numpy.array([D_u] * np)
+        v.append((D_u, v_u))
+
+        return v
+
+    def laser_field(self, E0, t, t0, sigma):
+        return _LaserFields.laser_field_maxwell(E0, t, t0, sigma) # laser_field_sqrsin
 
 
 def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
     if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING or \
        conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
 
+        task_manager_imp: TaskManager
         if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
             print("Morse potentials are used")
             task_manager_imp = MorseSingleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
@@ -403,12 +483,11 @@ def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
         else:
             raise RuntimeError("Impossible PotentialType")
     else:
-        if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
+        if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+            task_manager_imp = MultipleStateUnitTransformTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
+        elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
             print("Morse potentials are used")
-            if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                task_manager_imp = MorseMultipleStateUnitTransformTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
-            else:
-                task_manager_imp = MorseMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
+            task_manager_imp = MorseMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
         elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
             print("Harmonic potentials are used")
             task_manager_imp = HarmonicMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)

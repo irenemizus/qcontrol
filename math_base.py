@@ -70,7 +70,7 @@ def cprod3(cx1, cx, cx2, dx, np):
     return numpy.vdot(cx2, cx1cx) * dx
 
 
-def initak(n, dx, iorder):
+def initak(n, dx, iorder, ntriv):
     """ Initializes an array ak, which can be used for
         multiplication in the frequency domain of an FFT.
         The array will contain the values (1j*k)^iorder,
@@ -80,10 +80,12 @@ def initak(n, dx, iorder):
         dx      coordinate grid step in the time domain
         iorder  the power of 1j*k (equivalent to the order of the
                 derivative when the FFT is used for differentiating)
+        ntriv   constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+                                    0 -- a trivial 2-level system
         OUTPUT
         ak      complex one dimensional array of length n """
 
-    dk = 2.0 * math.pi / (n - 1) / dx
+    dk = 2.0 * math.pi * ntriv / (n - 1) / dx
 
     ak = numpy.zeros(n, numpy.complex)
 

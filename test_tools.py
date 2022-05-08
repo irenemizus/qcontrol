@@ -82,11 +82,11 @@ class TestPropagationReporter(PropagationReporter):
             psi.f[0], t, x
         ))
 
-    def plot_tvals(self, t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max):
+    def plot_tvals(self, t, moms, ener, overlp0, overlpf, ener_tot, abs_psi_max, real_psi_max):
         self.tvals_tab.append((
             t,
             moms.x_l.real, moms.x2_l.real, moms.p_l.real, moms.p2_l.real,
-            ener, overlp, ener_tot, abs_psi_max, real_psi_max
+            ener, overlp0, overlpf, ener_tot, abs_psi_max, real_psi_max
         ))
 
     def plot_up(self, psi: Psi, t, x, np):
@@ -94,11 +94,11 @@ class TestPropagationReporter(PropagationReporter):
             psi.f[1], t, x
         ))
 
-    def plot_tvals_up(self, t, moms, ener, overlp, overlp_tot, abs_psi_max, real_psi_max):
+    def plot_tvals_up(self, t, moms, ener, overlp0, overlpf, overlp_tot, abs_psi_max, real_psi_max):
         self.tvals_up_tab.append((
             t,
             moms.x_u.real, moms.x2_u.real, moms.p_u.real, moms.p2_u.real,
-            ener, overlp, overlp_tot, abs_psi_max, real_psi_max
+            ener, overlp0, overlpf, overlp_tot, abs_psi_max, real_psi_max
         ))
 
     def plot_tvals_fit(self, t, E, freq_mult):
@@ -106,13 +106,13 @@ class TestPropagationReporter(PropagationReporter):
             t, E, freq_mult
         ))
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp0, overlpf, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         if l % self.mod_fileout == 0 and l >= self.lmin:
             self.plot(psi, t, x, np)
             self.plot_up(psi, t, x, np)
-            self.plot_tvals(t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max)
-            self.plot_tvals_up(t, moms, ener_u, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+            self.plot_tvals(t, moms, ener, overlp0[0], overlpf[0], ener_tot, abs_psi_max, real_psi_max)
+            self.plot_tvals_up(t, moms, ener_u, overlp0[1], overlpf[1], overlp_tot, abs_psi_max_u, real_psi_max_u)
             self.plot_tvals_fit(t, E, freq_mult)
 
 

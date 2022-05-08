@@ -180,7 +180,7 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["impulses_number"] = 2
             self._data["delay"] = 600e-15   # s
             self._data["mod_log"] = 500
-            self._data["iter_max"] = 5
+            self._data["iter_max"] = -1
             self._data["h_lambda"] = 0.0066
 
 
@@ -235,15 +235,18 @@ class ReportRootConfiguration(ConfigurationBase):
                 self._data["gr_moms_low_grd"] = f"fig_moms_low_grd{suffix}.pdf"
                 self._data["gr_moms_grd"] = f"fig_moms_grd{suffix}.pdf"
                 self._data["gr_ener_grd"] = f"fig_ener_grd{suffix}.pdf"
-                self._data["gr_overlp_grd"] = f"fig_overlp_grd{suffix}.pdf"
+                self._data["gr_overlp0_grd"] = f"fig_overlp0_grd{suffix}.pdf"
+                self._data["gr_overlpf_grd"] = f"fig_overlpf_grd{suffix}.pdf"
                 self._data["gr_ener_tot"] = f"fig_ener_tot{suffix}.pdf"
                 self._data["gr_abs_max_grd"] = f"fig_abs_max_grd{suffix}.pdf"
                 self._data["gr_real_max_grd"] = f"fig_real_max_grd{suffix}.pdf"
                 self._data["gr_moms_low_exc"] = f"fig_moms_low_exc{suffix}.pdf"
                 self._data["gr_moms_exc"] = f"fig_moms_exc{suffix}.pdf"
                 self._data["gr_ener_exc"] = f"fig_ener_exc{suffix}.pdf"
-                self._data["gr_overlp_exc"] = f"fig_overlp_exc{suffix}.pdf"
-                self._data["gr_overlp_tot"] = f"fig_overlp_tot{suffix}.pdf"
+                self._data["gr_overlp0_exc"] = f"fig_overlp0_exc{suffix}.pdf"
+                self._data["gr_overlpf_exc"] = f"fig_overlpf_exc{suffix}.pdf"
+                self._data["gr_overlp0_tot"] = f"fig_overlp0_tot{suffix}.pdf"
+                self._data["gr_overlpf_tot"] = f"fig_overlpf_tot{suffix}.pdf"
                 self._data["gr_abs_max_exc"] = f"fig_abs_max_exc{suffix}.pdf"
                 self._data["gr_real_max_exc"] = f"fig_real_max_exc{suffix}.pdf"
                 self._data["gr_lf_en"] = f"fig_lf_en{suffix}.pdf"
@@ -268,6 +271,7 @@ class ReportRootConfiguration(ConfigurationBase):
             # default input values
             self._data["imin"] = 0
             self._data["imod_plotout"] = 1
+            self._data["inumber_plotout"] = 15
             self._data["gr_iter"] = "fig_iter.pdf"
             self._data["gr_iter_E"] = "fig_iter_E.pdf"
 

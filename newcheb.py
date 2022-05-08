@@ -168,7 +168,8 @@ Options:
     iter_max
         maximum iteration number for the "optimal_control_..." task_type in case if a divergence with the
         given criteria hasn't been reached. Is a dummy variable for all other task types.
-        By default, is equal to 5
+        If iter_max = -1, there is no limitation on the maximum number of iterations.
+        By default, is equal to -1
     h_lambda
         parameter, which is applicable for the task_type = "optimal_control_..." only.
         For all other cases is a dummy variable.
@@ -365,9 +366,9 @@ def main(argv):
     if conf_task.fitter.impulses_number < 0:
         raise ValueError("The number of laser pulses 'impulses_number' should be positive or 0")
 
-    if conf_task.fitter.iter_max < 0 and (conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
+    if conf_task.fitter.iter_max < -1 and (conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
             conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_GRADIENT):
-        raise ValueError("The maximum number of iterations in the optimal control task 'iter_max' should be positive or 0")
+        raise ValueError("The maximum number of iterations in the optimal control task 'iter_max' should be positive, 0 or -1")
 
     if conf_task.fitter.propagation.L <= 0.0 or conf_task.fitter.propagation.T <= 0.0:
         raise ValueError("The value of spatial range 'L' and of time range 'T' of the problem"
@@ -423,9 +424,9 @@ def main(argv):
                 conf_task.fitter.impulses_number = 1
         elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             print("An optimal control task with Hadamard H1 unitary transformation begins...")
-            if conf_task.fitter.impulses_number != 1:
-                print("For the task_type = 'optimal_control_gradient' the impulses_number value will be replaced by 1")
-                conf_task.fitter.impulses_number = 1
+            #if conf_task.fitter.impulses_number != 1:
+            #    print("For the task_type = 'optimal_control_gradient' the impulses_number value will be replaced by 1")
+            #    conf_task.fitter.impulses_number = 1
         else:
             raise RuntimeError("Impossible case in the TaskType class")
 
@@ -441,23 +442,27 @@ def main(argv):
                                      conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
                                      conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
                                      conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
-                                     conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e)
+                                     conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
+                                     conf_task.fitter.propagation.L)
 
     # evaluating of the final goal (of type PsiBasis)
     psif = task_manager_imp.psi_goal(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
                                      conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
                                      conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
                                      conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
-                                     conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e)
+                                     conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
+                                     conf_task.fitter.propagation.L)
 
     # initial propagation direction
     init_dir = task_manager_imp.init_dir
+    # checking of triviality of the system
+    ntriv = task_manager_imp.ntriv
 
     # main calculation part
     fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
     fit_reporter_imp.open()
 
-    fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+    fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                           _warning_collocation_points,
                                           _warning_time_steps
                                           )
