@@ -340,12 +340,13 @@ class FittingSolver:
                 else:
                     pass
 
-            goal_close_abs += abs(self.dyn.goal_close[vect])
+            goal_close_abs += self.dyn.goal_close[vect]
 
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV and \
                 direct == PropagationSolver.Direction.FORWARD:
             self.dyn.chi_tlist = [ chiT ]
 
+        goal_close_abs = abs(goal_close_abs)
         self.__finalize_propagation()
         return chiT, goal_close_abs
 

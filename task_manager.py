@@ -401,7 +401,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
         return psi_goal_obj
 
     def laser_field(self, E0, t, t0, sigma):
-        return _LaserFields.laser_field_gauss(E0, t, t0, sigma)
+        return _LaserFields.laser_field_sqrsin(E0, t, t0, sigma)
 
 
 class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):

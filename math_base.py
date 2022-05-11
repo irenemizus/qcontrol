@@ -85,13 +85,14 @@ def initak(n, dx, iorder, ntriv):
         OUTPUT
         ak      complex one dimensional array of length n """
 
-    dk = 2.0 * math.pi * ntriv / (n - 1) / dx
-
     ak = numpy.zeros(n, numpy.complex)
 
-    for i in range(int(n / 2)):
-        ak[i + 1] = pow(1j * dk * float(i + 1), iorder)
-        ak[n - i - 1] = pow(-1, iorder) * ak[i + 1]
+    if ntriv:
+        dk = 2.0 * math.pi * ntriv / (n - 1) / dx
+
+        for i in range(int(n / 2)):
+            ak[i + 1] = pow(1j * dk * float(i + 1), iorder)
+            ak[n - i - 1] = pow(-1, iorder) * ak[i + 1]
 
     return ak
 
