@@ -205,16 +205,16 @@ class FittingSolver:
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
 
             if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                chiT_omega = copy.deepcopy(self.psi_goal_basis)
-                for vect in range(self.basis_length):
-                    for el1 in chiT_omega.psis[vect].f[1]:
-                        el1 *= cmath.exp(
-                            1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
-                    for el0 in chiT_omega.psis[vect].f[0]:
-                        el0 *= cmath.exp(
-                            -1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
+                chiT = copy.deepcopy(self.psi_goal_basis)
+                #for vect in range(self.basis_length):
+                #    for el1 in chiT.psis[vect].f[1]:
+                #        el1 *= cmath.exp(
+                #            1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
+                #    for el0 in chiT.psis[vect].f[0]:
+                #        el0 *= cmath.exp(
+                #            -1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
 
-                self.dyn.chi_tlist = [ chiT_omega ]
+                self.dyn.chi_tlist = [ chiT ]
 
             self.dyn.chi_cur = self.dyn.chi_tlist[0]
             init_psi_basis = chiT
