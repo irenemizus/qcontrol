@@ -339,9 +339,9 @@ def main(argv):
         raise ValueError("The number 'lmin' of time iteration, from which the result"
                          "should be written to a file or plotted should be positive or 0")
 
-    if conf_rep_table.fitter.imin < 0 or conf_rep_plot.fitter.imin < 0:
+    if conf_rep_table.fitter.imin < -1 or conf_rep_plot.fitter.imin < -1:
         raise ValueError("The number 'imin' of iteration number, from which the result"
-                         "should be written to a file or plotted should be positive or 0")
+                         "should be written to a file or plotted should be positive, -1 or 0")
 
     if conf_rep_table.fitter.propagation.mod_fileout < 0 or conf_task.fitter.mod_log < 0 or \
             conf_rep_table.fitter.imod_fileout < 0:
@@ -437,6 +437,10 @@ def main(argv):
     grid = grid_setup.GridConstructor(conf_task.fitter.propagation)
     dx, x = grid.grid_setup()
 
+    # setup of the time grid
+    forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf_task.fitter.propagation)
+    t_step, t_list = forw_time_grid.grid_setup()
+
     # evaluating of initial wavefunction (of type PsiBasis)
     psi0 = task_manager_imp.psi_init(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
                                      conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
@@ -466,7 +470,7 @@ def main(argv):
                                           _warning_collocation_points,
                                           _warning_time_steps
                                           )
-    fitting_solver.time_propagation(dx, x)
+    fitting_solver.time_propagation(dx, x, t_step, t_list)
     fit_reporter_imp.close()
 
 

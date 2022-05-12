@@ -1,7 +1,8 @@
 import collections.abc
 import os.path
-import reporter
 import json
+
+import reporter
 from config import TaskRootConfiguration
 from propagation import *
 from psi_basis import PsiBasis, Psi
@@ -35,7 +36,7 @@ class FittingSolver:
             self.goal_close = [complex(0.0)] * basis_length
             self.E_tlist = []
 
-            self.t_list = []
+            #self.t_list = []
             #self.t_list_bw = []
             self.res = PropagationSolver.StepReaction.OK
 
@@ -172,7 +173,7 @@ class FittingSolver:
 
 
     # single propagation to the given direction; returns new chiT
-    def __single_propagation(self, dx, x, direct: PropagationSolver.Direction, chiT: PsiBasis, goal_close_abs):
+    def __single_propagation(self, dx, x, t_step, direct: PropagationSolver.Direction, chiT: PsiBasis, goal_close_abs):
         self.dyn.dir = direct
         init_psi_basis: PsiBasis
         fin_psi_basis: PsiBasis
@@ -185,7 +186,7 @@ class FittingSolver:
             if self.dyn.iter_step > 0:
                 print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
-                self.dyn.t_list = []
+                #self.dyn.t_list = []
 
             psi_init_omega_copy = copy.deepcopy(self.psi_init_basis)
 
@@ -194,7 +195,7 @@ class FittingSolver:
             init_psi_basis = self.psi_init_basis
             fin_psi_basis = self.psi_goal_basis
             t_init = 0.0
-            self.dyn.t_list.append(t_init)
+            #self.dyn.t_list.append(t_init)
         else:
             print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
             ind_dir = "b"
@@ -204,8 +205,16 @@ class FittingSolver:
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
 
             if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                chiT = copy.deepcopy(self.psi_goal_basis)
-                self.dyn.chi_tlist = [ chiT ]
+                chiT_omega = copy.deepcopy(self.psi_goal_basis)
+                for vect in range(self.basis_length):
+                    for el1 in chiT_omega.psis[vect].f[1]:
+                        el1 *= cmath.exp(
+                            1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
+                    for el0 in chiT_omega.psis[vect].f[0]:
+                        el0 *= cmath.exp(
+                            -1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
+
+                self.dyn.chi_tlist = [ chiT_omega ]
 
             self.dyn.chi_cur = self.dyn.chi_tlist[0]
             init_psi_basis = chiT
@@ -221,7 +230,7 @@ class FittingSolver:
         # Starting solvers
         for vect in range(self.basis_length):
             solver = self.solvers[vect]
-            solver.start(dx, x, init_psi_basis.psis[vect], fin_psi_basis.psis[vect], self.dyn.dir)
+            solver.start(dx, x, t_step, init_psi_basis.psis[vect], fin_psi_basis.psis[vect], self.dyn.dir)
 
         # Paranoidly checking E EVERYWHERE
         E_checked = self.solvers[0].dyn.E
@@ -275,7 +284,7 @@ class FittingSolver:
             t_checked = self.solvers[0].dyn.t
             E_checked = self.solvers[0].dyn.E
             for vect in range(self.basis_length):
-                if abs(t_checked - self.solvers[vect].dyn.t) > abs(self.solvers[vect].stat.dt) / 1000.0:
+                if abs(t_checked - self.solvers[vect].dyn.t) > t_step / 1000.0:
                     raise AssertionError("Different times in different solvers")
                 if abs(E_checked - self.solvers[vect].dyn.E) > 0.001:
                     raise AssertionError("Different laser field energies in different solvers")
@@ -286,9 +295,9 @@ class FittingSolver:
                 self.dyn.chi_tlist.append(chi_new)
             else:
                 E_tlist_new.append(E_checked)
-                self.dyn.t_list.append(t_checked)
+                #self.dyn.t_list.append(t_checked)
                 self.dyn.psi_omega_cur = psi_omega_new
-                #self.dyn.psi_omega_tlist.append(psi_omega_new)
+                self.dyn.psi_omega_tlist.append(psi_omega_new)
 
             do_continue = len(finished) < self.basis_length
             if not do_continue: break
@@ -340,6 +349,7 @@ class FittingSolver:
                 else:
                     pass
 
+            #goal_close_abs += abs(self.dyn.goal_close[vect])
             goal_close_abs += self.dyn.goal_close[vect]
 
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV and \
@@ -352,16 +362,16 @@ class FittingSolver:
 
 
     # single simple forward propagation
-    def __single_iteration_simple(self, dx, x):
-        chiT, goal_close_abs = self.__single_propagation(dx, x, PropagationSolver.Direction.FORWARD, self.psi_goal_basis, 0.0)
-        self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, self.dyn.E_tlist, self.dyn.t_list,
+    def __single_iteration_simple(self, dx, x, t_step, t_list):
+        chiT, goal_close_abs = self.__single_propagation(dx, x, t_step, PropagationSolver.Direction.FORWARD, self.psi_goal_basis, 0.0)
+        self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, self.dyn.E_tlist, t_list,
                                               self.conf_fitter.propagation.nt)
 
         return 0.0
 
 
     # single iteration for an optimal control task
-    def __single_iteration_optimal(self, dx, x):
+    def __single_iteration_optimal(self, dx, x, t_step, t_list):
         assert (dx > 0.0)
         chiT = copy.deepcopy(self.psi_goal_basis)
         goal_close_abs = 0.0
@@ -370,7 +380,7 @@ class FittingSolver:
         for run in range(2):
             print(f"Iteration = {self.dyn.iter_step}, {direct.name} direction begins...")
             # calculating chiT
-            chiT, goal_close_abs = self.__single_propagation(dx, x, direct, chiT, goal_close_abs)
+            chiT, goal_close_abs = self.__single_propagation(dx, x, t_step, direct, chiT, goal_close_abs)
 
             #if direct == PropagationSolver.Direction.FORWARD:
             #    ind_dir = 'f'
@@ -398,7 +408,7 @@ class FittingSolver:
                     break
 
             if direct == PropagationSolver.Direction.FORWARD:
-                self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, self.dyn.E_tlist, self.dyn.t_list,
+                self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, self.dyn.E_tlist, t_list,
                                                   self.conf_fitter.propagation.nt)
 
             direct = PropagationSolver.Direction(-direct.value)
@@ -406,14 +416,31 @@ class FittingSolver:
         return goal_close_abs
 
 
-    def time_propagation(self, dx, x):
+    def time_propagation(self, dx, x, t_step, t_list):
         self.dyn = FittingSolver.FitterDynamicState(self.basis_length, E_vel=0.0, freq_mult_vel=0.0,
                                                     iter_step=0, dir = self.init_dir)
+        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+
+            E_tlist_init = []
+            goal_close_abs_init = abs(math_base.cprod(self.psi_goal_basis.psis[0].f[0], self.psi_init_basis.psis[0].f[0],
+                                                  dx, self.conf_fitter.propagation.np) + \
+                                  math_base.cprod(self.psi_goal_basis.psis[0].f[1], self.psi_init_basis.psis[0].f[1],
+                                                  dx, self.conf_fitter.propagation.np) + \
+                                  math_base.cprod(self.psi_goal_basis.psis[1].f[0], self.psi_init_basis.psis[1].f[0],
+                                                  dx, self.conf_fitter.propagation.np) + \
+                                  math_base.cprod(self.psi_goal_basis.psis[1].f[1], self.psi_init_basis.psis[1].f[1],
+                                                  dx, self.conf_fitter.propagation.np))
+
+            for t in t_list:
+                E_tlist_init.append(self.laser_field(self.conf_fitter.propagation.E0, t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma))
+
+            self.reporter.print_iter_point_fitter(-1, goal_close_abs_init, E_tlist_init, t_list,
+                                              self.conf_fitter.propagation.nt)
 
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
            self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             # 0-th iteration
-            goal_close_abs = self.__single_iteration_optimal(dx, x)
+            goal_close_abs = self.__single_iteration_optimal(dx, x, t_step, t_list)
                 #self.dyn = FittingSolver.FitterDynamicState.from_json(saved_json)
                 #print(self.dyn)
 
@@ -427,7 +454,7 @@ class FittingSolver:
 
                 #self.dyn.freq_mult_patched += 0.000025  # Adding 0.005 percent to frequency
 
-                goal_close_abs = self.__single_iteration_optimal(dx, x)
+                goal_close_abs = self.__single_iteration_optimal(dx, x, t_step, t_list)
 
                     #f.write("{:2d} {:.6e}\n".format(self.dyn.iter_step, self.solvers[0].nu_L * self.dyn.freq_mult_patched))
                     #f.flush()
@@ -439,7 +466,7 @@ class FittingSolver:
 
             self.dyn.res = PropagationSolver.StepReaction.OK
         else:
-            self.__single_iteration_simple(dx, x)
+            self.__single_iteration_simple(dx, x, t_step, t_list)
 
 
     def propagation_dynamic_state_factory(self, l, t, psi: Psi, psi_omega: Psi, E, freq_mult, dir):
@@ -555,8 +582,8 @@ class FittingSolver:
 
             # Euler
             E_acc = -self.conf_fitter.k_E * first - self.conf_fitter.lamb * second
-            self.dyn.E_vel += E_acc * stat.dt
-            E = prop.dyn.E + self.dyn.E_vel * stat.dt
+            self.dyn.E_vel += E_acc * abs(stat.dt)
+            E = prop.dyn.E + self.dyn.E_vel * abs(stat.dt)
 
         # optimal control algorithm
         elif (self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV) and \
@@ -673,8 +700,8 @@ class FittingSolver:
 
             # Euler
             freq_mult_acc = -self.conf_fitter.k_E * first - self.conf_fitter.lamb * second
-            self.dyn.freq_mult_vel += freq_mult_acc * stat.dt
-            freq_mult = dyn.freq_mult + self.dyn.freq_mult_vel * stat.dt
+            self.dyn.freq_mult_vel += freq_mult_acc * abs(stat.dt)
+            freq_mult = dyn.freq_mult + self.dyn.freq_mult_vel * abs(stat.dt)
         else:
             freq_mult = self.dyn.freq_mult_patched
 

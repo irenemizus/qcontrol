@@ -16,3 +16,19 @@ class GridConstructor:
         x = math_base.coord_grid(dx, self.np)
 
         return dx, x
+
+
+class ForwardTimeGridConstructor:
+    def __init__(self, conf_prop):
+        self.T = conf_prop.T
+        self.nt = conf_prop.nt
+    def grid_setup(self):
+        # calculating time step of the problem
+        dt = self.T / self.nt
+
+        # setting the time grid
+        t = []
+        for l in range(self.nt + 1):
+            t.append(dt * l)
+
+        return dt, t

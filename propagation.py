@@ -178,10 +178,10 @@ class PropagationSolver:
     def report_static(self):
         # check if input data are correct in terms of the given problem
         # calculating the initial energy range of the Hamiltonian operator H
-        emax0g = self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
+        emax0g = self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)])# + 2.0
         emin0g = self.stat.v[0][0]
 
-        emax0e = self.stat.v[1][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
+        emax0e = self.stat.v[1][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)])# + 2.0
         emin0e = self.stat.v[1][0]
 
         emax0 = max(emax0g, emin0g, emax0e, emin0e)
@@ -288,7 +288,7 @@ class PropagationSolver:
                     self.milliseconds_full / self.dyn.l))
 
 
-    def start(self, dx, x, psi0, psif, dir: Direction):
+    def start(self, dx, x, t_step, psi0, psif, dir: Direction):
         # evaluating of potential(s)
         v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du, self.nu_L)
 
@@ -311,7 +311,7 @@ class PropagationSolver:
         cenerf = self._ener_eval(psif, v, akx2, dx, self.np, self.ntriv)
 
         # time propagation
-        dt = dir.value * self.T / self.nt
+        dt = dir.value * t_step
         psi = copy.deepcopy(psi0)
 
         # initial population
@@ -343,10 +343,10 @@ class PropagationSolver:
         emax_list = []
         emin_list = []
         # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_l
-        emax_list.append(self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0)
+        emax_list.append(self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]))# + 2.0)
         emin_list.append(self.stat.v[0][0])
         # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_u
-        emax_list.append(self.stat.v[1][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0)
+        emax_list.append(self.stat.v[1][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]))# + 2.0)
         emin_list.append(self.stat.v[1][0])
 
         self.dyn.t = self.stat.dt * self.dyn.l + t_start

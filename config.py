@@ -77,6 +77,7 @@ class TaskRootConfiguration(ConfigurationBase):
             class WaveFuncType(Enum):
                 MORSE = 0
                 HARMONIC = 1
+                CONST = 2
 
                 @staticmethod
                 def from_int(i):
@@ -92,6 +93,7 @@ class TaskRootConfiguration(ConfigurationBase):
             class PotentialType(Enum):
                 MORSE = 0
                 HARMONIC = 1
+                NONE = 2
 
                 @staticmethod
                 def from_int(i):
