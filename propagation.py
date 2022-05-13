@@ -314,6 +314,7 @@ class PropagationSolver:
         dt = dir.value * t_step
         psi = copy.deepcopy(psi0)
 
+        #print("|psi0| = ", abs(psi.f[0]) + abs(psi.f[1]))
         # initial population
         overlp00 = self._pop_eval(psi0, psi, dx, self.np)
         overlpf0 = self._pop_eval(psif, psi, dx, self.np)
@@ -360,6 +361,8 @@ class PropagationSolver:
         psi_omega_u = self.dyn.psi.f[1] * exp_L
         self.dyn.psi_omega.f[1][:] = psi_omega_u[:]
 
+        #print("|psi1| = ", abs(self.dyn.psi_omega.f[0]) + abs(self.dyn.psi_omega.f[1]))
+
         # New energy ranges
         eL = self.nu_L * self.dyn.freq_mult * phys_base.Hz_to_cm / 2.0
         emax_omega = []
@@ -376,10 +379,13 @@ class PropagationSolver:
 
         t_sc = self.stat.dt * (emax - emin) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
 
+        print("t_sc = ", t_sc)
+
         self.dyn.E = self.laser_field_envelope(self, self.stat, self.dyn)
         E_full = self.dyn.E * exp_L * exp_L
 
         self.dyn.psi_omega = Psi(f=phys_base.prop_cpu(self.dyn.psi_omega.f, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax, self.dyn.E, eL, self.ntriv), lvls=self.dyn.psi_omega.lvls())
+        #print("|psi2| = ", abs(self.dyn.psi_omega.f[0]) + abs(self.dyn.psi_omega.f[1]))
 
         cnorm = []
         cnorm.append(math_base.cprod(self.dyn.psi_omega.f[0], self.dyn.psi_omega.f[0], self.stat.dx, self.np))
@@ -391,6 +397,8 @@ class PropagationSolver:
             self.dyn.psi_omega.f[0] /= math.sqrt(abs(cnorm_sum))
             self.dyn.psi_omega.f[1] /= math.sqrt(abs(cnorm_sum))
 
+        #print("|psi3| = ", abs(self.dyn.psi_omega.f[0]) + abs(self.dyn.psi_omega.f[1]))
+
         psigc_psie = math_base.cprod(self.dyn.psi_omega.f[1], self.dyn.psi_omega.f[0], self.stat.dx, self.np)
         psigc_dv_psie = math_base.cprod3(self.dyn.psi_omega.f[1], self.stat.v[0][1] - self.stat.v[1][1], self.dyn.psi_omega.f[0], self.stat.dx, self.np)
 
@@ -398,6 +406,7 @@ class PropagationSolver:
         self.dyn.psi.f[0] = self.dyn.psi_omega.f[0] * exp_L
         self.dyn.psi.f[1] = self.dyn.psi_omega.f[1] / exp_L
 
+        #print("|psi4| = ", abs(self.dyn.psi.f[0]) + abs(self.dyn.psi.f[1]))
         # calculating of a current energy
         phi = phys_base.hamil2D_cpu(self.dyn.psi.f, self.stat.v, self.stat.akx2, self.np, self.dyn.E, eL, self.ntriv, E_full, orig=True)
 
@@ -417,6 +426,8 @@ class PropagationSolver:
                      cener, E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after)
 
         self.report_dynamic()
+
+        #print("|psi5| = ", abs(self.dyn.psi.f[0]) + abs(self.dyn.psi.f[1]))
 
         self.dyn.l += 1
 

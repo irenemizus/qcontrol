@@ -275,12 +275,15 @@ class FittingSolver:
 
                 psi_omega_copy = copy.deepcopy(solver.dyn.psi_omega)
 
+                #print("|psi6| = ", abs(psi_omega_copy.f[0]) + abs(psi_omega_copy.f[1]))
+
                 if direct == PropagationSolver.Direction.BACKWARD:
                     chi_new.psis[vect] = psi_omega_copy
                 else:
                     psi_omega_new.psis[vect] = psi_omega_copy
 
                 self.do_the_thing(solver.dyn, solver.instr)
+                #print("|psi7| = ", abs(psi_omega_copy.f[0]) + abs(psi_omega_copy.f[1]))
 
             # Checking sanity
             t_checked = self.solvers[0].dyn.t
@@ -325,6 +328,8 @@ class FittingSolver:
             if direct == PropagationSolver.Direction.FORWARD:
                 chiT_part = Psi()
                 assert solver.dyn.l - 1 == self.conf_fitter.propagation.nt
+                #print("|psi8_g| = ", abs(solver.dyn.psi.f[0]))
+                #print("|psi8_e| = ", abs(solver.dyn.psi.f[1]))
                 self.dyn.goal_close[vect] = math_base.cprod(solver.stat.psif.f[1], solver.dyn.psi.f[1],
                                                       solver.stat.dx, self.conf_fitter.propagation.np) + \
                                             math_base.cprod(solver.stat.psif.f[0], solver.dyn.psi.f[0],
