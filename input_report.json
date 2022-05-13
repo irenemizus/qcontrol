@@ -22,8 +22,8 @@
       "table.tab_tvals_fit": "tab_tvals_fit.csv",
 
       "plot.lmin": 0,
-      "plot.mod_plotout": 20,
-      "plot.mod_update": 100,
+      "plot.mod_plotout": 1,
+      "plot.mod_update": 2,
       "plot.number_plotout": 15
     }
   }

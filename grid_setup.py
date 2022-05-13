@@ -7,10 +7,7 @@ class GridConstructor:
         self.np = conf_prop.np
     def grid_setup(self):
         # calculating coordinate step of the problem
-        if self.np > 1:
-            dx = self.L / (self.np - 1)
-        else:
-            dx = 1.0
+        dx = self.L / self.np
 
         # setting the coordinate grid
         x = math_base.coord_grid(dx, self.np)

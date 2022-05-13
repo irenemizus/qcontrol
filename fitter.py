@@ -177,6 +177,7 @@ class FittingSolver:
         self.dyn.dir = direct
         init_psi_basis: PsiBasis
         fin_psi_basis: PsiBasis
+        chiT_omega = PsiBasis(self.basis_length)
         self.dyn.chi_cur = None
         self.dyn.psi_omega_cur = None
         if direct == PropagationSolver.Direction.FORWARD:
@@ -184,7 +185,7 @@ class FittingSolver:
             laser_field = self.LaserFieldEnvelope
 
             if self.dyn.iter_step > 0:
-                print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
+                #print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
                 #self.dyn.t_list = []
 
@@ -197,7 +198,7 @@ class FittingSolver:
             t_init = 0.0
             #self.dyn.t_list.append(t_init)
         else:
-            print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
+            #print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
             ind_dir = "b"
             laser_field = self.LaserFieldEnvelopeBackward
             #self.dyn.t_list_bw = []
@@ -206,15 +207,16 @@ class FittingSolver:
 
             if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                 chiT = copy.deepcopy(self.psi_goal_basis)
-                #for vect in range(self.basis_length):
-                #    for el1 in chiT.psis[vect].f[1]:
-                #        el1 *= cmath.exp(
-                #            1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
-                #    for el0 in chiT.psis[vect].f[0]:
-                #        el0 *= cmath.exp(
-                #            -1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
+                chiT_omega = copy.deepcopy(self.psi_goal_basis)
+                for vect in range(self.basis_length):
+                    for el1_i in range(len(chiT_omega.psis[vect].f[1])):
+                        chiT_omega.psis[vect].f[1][el1_i] *= cmath.exp(
+                            1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
+                    for el0_i in range(len(chiT_omega.psis[vect].f[0])):
+                        chiT_omega.psis[vect].f[0][el0_i] *= cmath.exp(
+                            -1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
 
-                self.dyn.chi_tlist = [ chiT ]
+                self.dyn.chi_tlist = [ chiT_omega ]
 
             self.dyn.chi_cur = self.dyn.chi_tlist[0]
             init_psi_basis = chiT
@@ -264,7 +266,7 @@ class FittingSolver:
                 if vect in finished:
                     raise AssertionError(f"The solver #{vect} has finished, but asked to proceed. It's a pity.")
 
-                if solver.dyn.l % self.conf_fitter.mod_log == 0 and \
+                if (solver.dyn.l - 1) % self.conf_fitter.mod_log == 0 and \
                    self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                     print(f"The solver for the basis vector #{vect} is running...")
 
@@ -316,7 +318,6 @@ class FittingSolver:
             #         f.write("    " + str(l) + ",\n")
             #     f.write("]\n\n")
 
-        chiT = PsiBasis(self.basis_length)
         self.dyn.goal_close = [complex(0.0, 0.0)] * self.basis_length
         for vect in range(self.basis_length):
             solver = self.solvers[vect]
@@ -336,13 +337,15 @@ class FittingSolver:
                     # renormalization
                     cnorm = math_base.cprod(chiT_part.f[1], chiT_part.f[1], dx, self.conf_fitter.propagation.np)
                     if abs(cnorm) > 0.0:
-                        for el in chiT_part.f[1]:
-                            el /= math.sqrt(abs(cnorm))
+                        for el in range(len(chiT_part.f[1])):
+                            chiT_part.f[1][el] /= math.sqrt(abs(cnorm))
 
-                    chiT_omega = copy.deepcopy(chiT_part)
-                    for el in chiT_omega.f[1]:
-                        el *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * solver.dyn.freq_mult * self.conf_fitter.propagation.T)
-                    chiT.psis[vect] = chiT_omega
+                    chiTp_omega = copy.deepcopy(chiT_part)
+                    for el in range(len(chiTp_omega.f[1])):
+                        chiTp_omega.f[1][el] *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * solver.dyn.freq_mult * self.conf_fitter.propagation.T)
+                    chiT_omega.psis[vect] = chiTp_omega
+                    chiT.psis[vect] = copy.deepcopy(chiT_part)
+
 
                 elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                     print("goal_close value for the basis vector ", vect, " = ", self.dyn.goal_close[vect])
@@ -354,7 +357,7 @@ class FittingSolver:
 
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV and \
                 direct == PropagationSolver.Direction.FORWARD:
-            self.dyn.chi_tlist = [ chiT ]
+            self.dyn.chi_tlist = [ chiT_omega ]
 
         goal_close_abs = abs(goal_close_abs)
         self.__finalize_propagation()
@@ -373,7 +376,8 @@ class FittingSolver:
     # single iteration for an optimal control task
     def __single_iteration_optimal(self, dx, x, t_step, t_list):
         assert (dx > 0.0)
-        chiT = copy.deepcopy(self.psi_goal_basis)
+
+        chiT = PsiBasis(self.basis_length)
         goal_close_abs = 0.0
 
         direct = self.init_dir
