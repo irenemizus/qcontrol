@@ -115,7 +115,7 @@ def hamil2D_cpu(psi, v, akx2, np, E, eL, ntriv, E_full=0.0, orig=False):
         phi_u = numpy.subtract(phi_du, psiE_d)
     else:
         phi_l = numpy.subtract(psieL_d, psiE_u)
-        phi_u = -numpy.add(psieL_u, psiE_d)
+        phi_u = numpy.add(-psieL_u, -psiE_d)
 
     return [phi_l, phi_u]
 

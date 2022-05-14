@@ -379,7 +379,7 @@ class PropagationSolver:
 
         t_sc = self.stat.dt * (emax - emin) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
 
-        print("t_sc = ", t_sc)
+        #print("t_sc = ", t_sc)
 
         self.dyn.E = self.laser_field_envelope(self, self.stat, self.dyn)
         E_full = self.dyn.E * exp_L * exp_L
@@ -435,8 +435,3 @@ class PropagationSolver:
             return True
         else:
             return False
-
-
-    @property
-    def time_step(self):
-        return abs(self.stat.dt)

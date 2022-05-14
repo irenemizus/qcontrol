@@ -1,17 +1,28 @@
-import math_base
+import numpy
 
 
 class GridConstructor:
     def __init__(self, conf_prop):
         self.L = conf_prop.L
         self.np = conf_prop.np
+
     def grid_setup(self):
+        """ Setting of the coordinate grid; it should be symmetric,
+            equidistant and centered at about minimum of the potential
+            INPUT
+            L   spatial range of the problem
+            np  number of grid points
+            OUTPUT
+            dx coordinate grid step
+            x  vector of length np defining positions of grid points """
+
         # calculating coordinate step of the problem
         dx = self.L / self.np
 
         # setting the coordinate grid
-        x = math_base.coord_grid(dx, self.np)
-
+        shift = float(self.np - 1) * dx / 2.0
+        x_list = [float(i) * dx - shift for i in range(self.np)]
+        x = numpy.array(x_list)
         return dx, x
 
 

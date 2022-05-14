@@ -328,8 +328,11 @@ class FittingSolver:
             if direct == PropagationSolver.Direction.FORWARD:
                 chiT_part = Psi()
                 assert solver.dyn.l - 1 == self.conf_fitter.propagation.nt
-                #print("|psi8_g| = ", abs(solver.dyn.psi.f[0]))
-                #print("|psi8_e| = ", abs(solver.dyn.psi.f[1]))
+                print("phase(psi_g) = ", cmath.phase(solver.dyn.psi.f[0]))
+                print("phase(psi_e) = ", cmath.phase(solver.dyn.psi.f[1]))
+                print("phase(psif_g) = ", cmath.phase(solver.stat.psif.f[0]))
+                print("phase(psif_e) = ", cmath.phase(solver.stat.psif.f[1]))
+
                 self.dyn.goal_close[vect] = math_base.cprod(solver.stat.psif.f[1], solver.dyn.psi.f[1],
                                                       solver.stat.dx, self.conf_fitter.propagation.np) + \
                                             math_base.cprod(solver.stat.psif.f[0], solver.dyn.psi.f[0],

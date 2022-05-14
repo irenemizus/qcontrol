@@ -1,21 +1,6 @@
 import math
 from typing import Dict
-
 import numpy
-
-
-def coord_grid(dx, np):
-    """ Setting of the coordinate grid; it should be symmetric,
-        equidistant and centered at about minimum of the potential
-        INPUT
-        dx  coordinate grid step
-        np  number of grid points
-        OUTPUT
-        x  vector of length np defining positions of grid points """
-
-    shift = float(np - 1) * dx / 2.0
-    x = [float(i) * dx - shift for i in range(np)]
-    return numpy.array(x)
 
 
 def cprod(cx1, cx2, dx, np):
