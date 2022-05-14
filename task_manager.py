@@ -436,6 +436,12 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
         psi_goal_obj.psis[1].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0) # self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0) #
         psi_goal_obj.psis[1].f[1] = -self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0) # -self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0) #
 
+#        psi_goal_obj.psis[0].f[0] = numpy.array([-0.00022699 + 1j * 0.00094595]) # self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0) #
+#        psi_goal_obj.psis[0].f[1] = numpy.array([-0.23333151+0.97239676j])  # self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0) #
+
+#        psi_goal_obj.psis[1].f[0] = numpy.array([-0.00082939+0.00050838j]) # self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0) #
+#        psi_goal_obj.psis[1].f[1] = numpy.array([-0.85257865+0.52259803j]) # -self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0) #
+
         return psi_goal_obj
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):

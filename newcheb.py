@@ -424,9 +424,17 @@ def main(argv):
                 conf_task.fitter.impulses_number = 1
         elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             print("An optimal control task with Hadamard H1 unitary transformation begins...")
+            if conf_task.fitter.propagation.np > 1:
+                print("For the task_type = 'optimal_control_gradient' the number of collocation points 'np' will be replaced by 1")
+                conf_task.fitter.propagation.np = 1
             #if conf_task.fitter.impulses_number != 1:
             #    print("For the task_type = 'optimal_control_gradient' the impulses_number value will be replaced by 1")
             #    conf_task.fitter.impulses_number = 1
+            if conf_task.fitter.propagation.L == 1.0:
+                pass
+            else:
+                print("For the task_type = 'optimal_control_gradient' the spatial range of the problem 'L' will be replaced by 1.0")
+                conf_task.fitter.propagation.L = 1.0
         else:
             raise RuntimeError("Impossible case in the TaskType class")
 

@@ -5,7 +5,6 @@ class GridConstructor:
     def __init__(self, conf_prop):
         self.L = conf_prop.L
         self.np = conf_prop.np
-
     def grid_setup(self):
         """ Setting of the coordinate grid; it should be symmetric,
             equidistant and centered at about minimum of the potential
@@ -17,12 +16,19 @@ class GridConstructor:
             x  vector of length np defining positions of grid points """
 
         # calculating coordinate step of the problem
-        dx = self.L / self.np
+        if self.np > 1:
+            dx = self.L / (self.np - 1)
 
-        # setting the coordinate grid
-        shift = float(self.np - 1) * dx / 2.0
-        x_list = [float(i) * dx - shift for i in range(self.np)]
-        x = numpy.array(x_list)
+            # setting the coordinate grid
+            shift = float(self.np - 1) * dx / 2.0
+            x_list = [float(i) * dx - shift for i in range(self.np)]
+            x = numpy.array(x_list)
+        elif self.np == 1:
+            dx = 1.0
+            x = numpy.array([ 0.0 ])
+        else:
+            raise RuntimeError("The number of collocation points 'np' must be positive integers!")
+
         return dx, x
 
 

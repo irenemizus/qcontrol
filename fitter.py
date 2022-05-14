@@ -328,10 +328,22 @@ class FittingSolver:
             if direct == PropagationSolver.Direction.FORWARD:
                 chiT_part = Psi()
                 assert solver.dyn.l - 1 == self.conf_fitter.propagation.nt
-                print("phase(psi_g) = ", cmath.phase(solver.dyn.psi.f[0]))
-                print("phase(psi_e) = ", cmath.phase(solver.dyn.psi.f[1]))
+                print("phase(psi_g(T)) = ", cmath.phase(solver.dyn.psi.f[0]))
                 print("phase(psif_g) = ", cmath.phase(solver.stat.psif.f[0]))
+                print("phase(psi0_g) = ", cmath.phase(solver.stat.psi0.f[0]))
+                print("phase(psi_e(T)) = ", cmath.phase(solver.dyn.psi.f[1]))
                 print("phase(psif_e) = ", cmath.phase(solver.stat.psif.f[1]))
+                print("phase(psi0_e) = ", cmath.phase(solver.stat.psi0.f[1]))
+
+                print("|psi_g(T)| = ", abs(solver.dyn.psi.f[0]))
+                print("|psif_g| = ", abs(solver.stat.psif.f[0]))
+                print("|psi0_g| = ", abs(solver.stat.psi0.f[0]))
+                print("|psi_e(T)| = ", abs(solver.dyn.psi.f[1]))
+                print("|psif_e| = ", abs(solver.stat.psif.f[1]))
+                print("|psi0_e| = ", abs(solver.stat.psi0.f[1]))
+
+                print("psi_g(T) = ", solver.dyn.psi.f[0])
+                print("psi_e(T) = ", solver.dyn.psi.f[1])
 
                 self.dyn.goal_close[vect] = math_base.cprod(solver.stat.psif.f[1], solver.dyn.psi.f[1],
                                                       solver.stat.dx, self.conf_fitter.propagation.np) + \
@@ -650,6 +662,7 @@ class FittingSolver:
                 E_init = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma)
                 s = E_init / conf_prop.E0
                 delta_E = - s * (self.a0 * sum).imag / self.conf_fitter.h_lambda #/ phys_base.Red_Planck_h * phys_base.cm_to_erg
+                #delta_E *= cmath.exp(-2.0 * 1j * math.pi * conf_prop.nu_L * (dyn.t - (abs(stat.dt) / 2.0)))
 
                 #print(f"===== Got {delta_E}")
                 #if abs(self.TMP_delta_E) > abs(delta_E):
