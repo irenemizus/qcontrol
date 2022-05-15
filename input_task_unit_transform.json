@@ -3,7 +3,7 @@
     "task_type": "optimal_control_unit_transform",
     "epsilon": 1e-8,
     "iter_max": -1,
-    "h_lambda": 0.5,
+    "h_lambda": 5.0,
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
@@ -11,7 +11,7 @@
       "E0": 5.0,
       "t0": 0.0,
       "Du": 100,
-      "nt": 8,
+      "nt": 64,
       "T": 3.335635e-13,
       "sigma": 0.83391e-13,
       "nu_L": 0.299793e13

@@ -185,7 +185,6 @@ class FittingSolver:
             laser_field = self.LaserFieldEnvelope
 
             if self.dyn.iter_step > 0:
-                #print("Iteration = ", self.dyn.iter_step, ", Forward direction begins...")
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
                 #self.dyn.t_list = []
 
@@ -198,7 +197,6 @@ class FittingSolver:
             t_init = 0.0
             #self.dyn.t_list.append(t_init)
         else:
-            #print("Iteration = ", self.dyn.iter_step, ", Backward direction begins...")
             ind_dir = "b"
             laser_field = self.LaserFieldEnvelopeBackward
             #self.dyn.t_list_bw = []
@@ -209,12 +207,8 @@ class FittingSolver:
                 chiT = copy.deepcopy(self.psi_goal_basis)
                 chiT_omega = copy.deepcopy(self.psi_goal_basis)
                 for vect in range(self.basis_length):
-                    for el1_i in range(len(chiT_omega.psis[vect].f[1])):
-                        chiT_omega.psis[vect].f[1][el1_i] *= cmath.exp(
-                            1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
-                    for el0_i in range(len(chiT_omega.psis[vect].f[0])):
-                        chiT_omega.psis[vect].f[0][el0_i] *= cmath.exp(
-                            -1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
+                    chiT_omega.psis[vect].f[1] *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
+                    chiT_omega.psis[vect].f[0] *= cmath.exp(-1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
 
                 self.dyn.chi_tlist = [ chiT_omega ]
 
@@ -328,22 +322,22 @@ class FittingSolver:
             if direct == PropagationSolver.Direction.FORWARD:
                 chiT_part = Psi()
                 assert solver.dyn.l - 1 == self.conf_fitter.propagation.nt
-                print("phase(psi_g(T)) = ", cmath.phase(solver.dyn.psi.f[0]))
-                print("phase(psif_g) = ", cmath.phase(solver.stat.psif.f[0]))
-                print("phase(psi0_g) = ", cmath.phase(solver.stat.psi0.f[0]))
-                print("phase(psi_e(T)) = ", cmath.phase(solver.dyn.psi.f[1]))
-                print("phase(psif_e) = ", cmath.phase(solver.stat.psif.f[1]))
-                print("phase(psi0_e) = ", cmath.phase(solver.stat.psi0.f[1]))
+                print("phase(psi_g(T)) = ", cmath.phase(solver.dyn.psi.f[0][0]))
+                print("phase(psif_g) = ", cmath.phase(solver.stat.psif.f[0][0]))
+                print("phase(psi0_g) = ", cmath.phase(solver.stat.psi0.f[0][0]))
+                print("phase(psi_e(T)) = ", cmath.phase(solver.dyn.psi.f[1][0]))
+                print("phase(psif_e) = ", cmath.phase(solver.stat.psif.f[1][0]))
+                print("phase(psi0_e) = ", cmath.phase(solver.stat.psi0.f[1][0]))
 
-                print("|psi_g(T)| = ", abs(solver.dyn.psi.f[0]))
-                print("|psif_g| = ", abs(solver.stat.psif.f[0]))
-                print("|psi0_g| = ", abs(solver.stat.psi0.f[0]))
-                print("|psi_e(T)| = ", abs(solver.dyn.psi.f[1]))
-                print("|psif_e| = ", abs(solver.stat.psif.f[1]))
-                print("|psi0_e| = ", abs(solver.stat.psi0.f[1]))
+                print("|psi_g(T)| = ", abs(solver.dyn.psi.f[0][0]))
+                print("|psif_g| = ", abs(solver.stat.psif.f[0][0]))
+                print("|psi0_g| = ", abs(solver.stat.psi0.f[0][0]))
+                print("|psi_e(T)| = ", abs(solver.dyn.psi.f[1][0]))
+                print("|psif_e| = ", abs(solver.stat.psif.f[1][0]))
+                print("|psi0_e| = ", abs(solver.stat.psi0.f[1][0]))
 
-                print("psi_g(T) = ", solver.dyn.psi.f[0])
-                print("psi_e(T) = ", solver.dyn.psi.f[1])
+                print("psi_g(T) = ", solver.dyn.psi.f[0][0])
+                print("psi_e(T) = ", solver.dyn.psi.f[1][0])
 
                 self.dyn.goal_close[vect] = math_base.cprod(solver.stat.psif.f[1], solver.dyn.psi.f[1],
                                                       solver.stat.dx, self.conf_fitter.propagation.np) + \
@@ -357,12 +351,10 @@ class FittingSolver:
                     # renormalization
                     cnorm = math_base.cprod(chiT_part.f[1], chiT_part.f[1], dx, self.conf_fitter.propagation.np)
                     if abs(cnorm) > 0.0:
-                        for el in range(len(chiT_part.f[1])):
-                            chiT_part.f[1][el] /= math.sqrt(abs(cnorm))
+                        chiT_part.f[1] /= math.sqrt(abs(cnorm))
 
                     chiTp_omega = copy.deepcopy(chiT_part)
-                    for el in range(len(chiTp_omega.f[1])):
-                        chiTp_omega.f[1][el] *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * solver.dyn.freq_mult * self.conf_fitter.propagation.T)
+                    chiTp_omega.f[1] *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * solver.dyn.freq_mult * self.conf_fitter.propagation.T)
                     chiT_omega.psis[vect] = chiTp_omega
                     chiT.psis[vect] = copy.deepcopy(chiT_part)
 
@@ -571,8 +563,8 @@ class FittingSolver:
 
 
     # calculating envelope of the laser field energy at the given time value
-    def LaserFieldEnvelope(self, prop: PropagationSolver, stat: PropagationSolver.StaticState,
-                           dyn: PropagationSolver.DynamicState):
+    def LaserFieldEnvelope(self, prop: PropagationSolver, stat: PropagationSolver.StaticState, dyn: PropagationSolver.DynamicState):
+        assert self.dyn.dir == PropagationSolver.Direction.FORWARD
         self.dyn.E_patched = self.laser_field(self.conf_fitter.propagation.E0, dyn.t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma)
 
         # transition without control
@@ -685,9 +677,10 @@ class FittingSolver:
     def LaserFieldEnvelopeBackward(self, prop: PropagationSolver, stat: PropagationSolver.StaticState,
                                     dyn: PropagationSolver.DynamicState):
         conf_prop = self.conf_fitter.propagation
+        assert self.dyn.dir == PropagationSolver.Direction.BACKWARD
+
         # optimal control algorithm
-        if (self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV) and \
-                self.dyn.dir == PropagationSolver.Direction.BACKWARD:
+        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
             chie_new_psig_old = math_base.cprod(dyn.psi_omega.f[1],
                                                 self.dyn.psi_omega_tlist[conf_prop.nt - prop.dyn.l].psis[0].f[0],
                                                 stat.dx, conf_prop.np)
@@ -695,7 +688,7 @@ class FittingSolver:
             E = -2.0 * chie_new_psig_old.imag / self.conf_fitter.h_lambda
 
         # optimal control unitary transformation algorithm
-        else:
+        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             if self.dyn.iter_step == 0:
                 E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma)
             else:
@@ -703,6 +696,8 @@ class FittingSolver:
                     E = self.dyn.E_tlist[-1]
                 else:
                     E = self.dyn.E_tlist[-prop.dyn.l]
+        else:
+            E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma)
 
         return E
 
