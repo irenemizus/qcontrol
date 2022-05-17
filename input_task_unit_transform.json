@@ -4,6 +4,7 @@
     "epsilon": 1e-8,
     "iter_max": -1,
     "h_lambda": 5.0,
+    "init_guess": "maxwell",
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",

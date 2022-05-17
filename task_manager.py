@@ -159,6 +159,17 @@ class TaskManager:
         else:
             raise RuntimeError("Impossible case in the WaveFuncType class")
 
+        if conf_fitter.InitGuess == TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO:
+            self.lf_init_guess = _LaserFields.zero
+        elif conf_fitter.InitGuess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+            self.lf_init_guess = _LaserFields.laser_field_gauss
+        elif conf_fitter.InitGuess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
+            self.lf_init_guess = _LaserFields.laser_field_sqrsin
+        elif conf_fitter.InitGuess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
+            self.lf_init_guess = _LaserFields.laser_field_maxwell
+        else:
+            raise RuntimeError("Impossible case in the InitGuess class")
+
         self.conf_fitter = conf_fitter
         self.init_dir = PropagationSolver.Direction.FORWARD
         self.ntriv = 1
@@ -181,7 +192,7 @@ class TaskManager:
         raise NotImplementedError()
 
     def laser_field(self, E0, t, t0, sigma):
-        raise NotImplementedError()
+        return self.lf_init_guess(E0, t, t0, sigma)
 
 
 class HarmonicSingleStateTaskManager(TaskManager):
@@ -248,9 +259,6 @@ class HarmonicSingleStateTaskManager(TaskManager):
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.zero(np)
         return psi_goal_obj
 
-    def laser_field(self, E0, t, t0, sigma):
-        return _LaserFields.zero(E0, t, t0, sigma)
-
 
 class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
@@ -291,9 +299,6 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
         psi_goal_obj.psis[0].f[0] = _PsiFunctions.zero(np)
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.harmonic(x, np, x0p + x0, p0, m, De_e, a_e, L)
         return psi_goal_obj
-
-    def laser_field(self, E0, t, t0, sigma):
-        return _LaserFields.zero(E0, t, t0, sigma)
 
 
 class MorseSingleStateTaskManager(TaskManager):
@@ -359,9 +364,6 @@ class MorseSingleStateTaskManager(TaskManager):
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.zero(np)
         return psi_goal_obj
 
-    def laser_field(self, E0, t, t0, sigma):
-        return _LaserFields.zero(E0, t, t0, sigma)
-
 
 class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
@@ -405,9 +407,6 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
         psi_goal_obj.psis[0].f[1] = _PsiFunctions.morse(x, np, x0p + x0, p0, m, De_e, a_e, L)
         return psi_goal_obj
 
-    def laser_field(self, E0, t, t0, sigma):
-        return _LaserFields.laser_field_gauss(E0, t, t0, sigma)
-
 
 class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
@@ -419,28 +418,22 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
     def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_init_obj = PsiBasis(2)
 
-        psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) # self.psi_init_impl(x, np, x0, p0, m, De, a) #
+        psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
         psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
 
         psi_init_obj.psis[1].f[0] = _PsiFunctions.zero(np)
-        psi_init_obj.psis[1].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) # self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) #
+        psi_init_obj.psis[1].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
 
         return psi_init_obj
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_goal_obj = PsiBasis(2)
 
-        psi_goal_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0) # self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0) #
-        psi_goal_obj.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0) # self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0) #
+        psi_goal_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
+        psi_goal_obj.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
 
-        psi_goal_obj.psis[1].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0) # self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0) #
-        psi_goal_obj.psis[1].f[1] = -self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0) # -self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0) #
-
-#        psi_goal_obj.psis[0].f[0] = numpy.array([-0.00031916690257328137-3.893972746351827e-05j]) # self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0) #
-#        psi_goal_obj.psis[0].f[1] = numpy.array([-0.9926395140250291-0.1211061179806386j])  # self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0) #
-
-#        psi_goal_obj.psis[1].f[0] = numpy.array([-0.00031381326580705787-7.003604983624065e-05j]) # self.psi_init_impl(x, np, x0, p0, m, De, a) / math.sqrt(2.0) #
-#        psi_goal_obj.psis[1].f[1] = numpy.array([-0.9759892075844389-0.2178186477207249j]) # -self.psi_init_impl(x, np, x0p + x0, p0, m, De_e, a_e) / math.sqrt(2.0) #
+        psi_goal_obj.psis[1].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
+        psi_goal_obj.psis[1].f[1] = -self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
 
         return psi_goal_obj
 
@@ -475,9 +468,6 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
         v.append((D_u, v_u))
 
         return v
-
-    def laser_field(self, E0, t, t0, sigma):
-        return _LaserFields.laser_field_maxwell(E0, t, t0, sigma) # laser_field_sqrsin
 
 
 def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):

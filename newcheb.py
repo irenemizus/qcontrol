@@ -174,6 +174,13 @@ Options:
         parameter, which is applicable for the task_type = "optimal_control_..." only.
         For all other cases is a dummy variable.
         By default, is equal to 0.0066.
+    init_guess
+        type of initial guessed laser field envelope used in propagation tasks.
+        Available options:
+        "zero"      - without external laser field (by default)
+        "gauss"     - a gaussian-like envelope
+        "sqrsin"    - a squared sinus envelope
+        "maxwell"   - a maxwell distribution-like envelope
     mod_log
         step of output to stdout (to write to stdout each <val>-th time step).
         By default, is equal to 500
@@ -336,105 +343,166 @@ def main(argv):
 
     # analyze provided json data
     if conf_rep_table.fitter.propagation.lmin < 0 or conf_rep_plot.fitter.propagation.lmin < 0:
-        raise ValueError("The number 'lmin' of time iteration, from which the result"
-                         "should be written to a file or plotted should be positive or 0")
+        raise ValueError(
+            "The number 'lmin' of time iteration, from which the result"
+            "should be written to a file or plotted, has to be be positive or 0")
 
     if conf_rep_table.fitter.imin < -1 or conf_rep_plot.fitter.imin < -1:
-        raise ValueError("The number 'imin' of iteration number, from which the result"
-                         "should be written to a file or plotted should be positive, -1 or 0")
+        raise ValueError(
+            "The number 'imin' of iteration number, from which the result"
+            "should be written to a file or plotted, has to be positive, -1 or 0")
 
     if conf_rep_table.fitter.propagation.mod_fileout < 0 or conf_task.fitter.mod_log < 0 or \
             conf_rep_table.fitter.imod_fileout < 0:
-        raise ValueError("The numbers 'mod_fileout', 'imod_fileout', and 'mod_log' should be positive or 0")
+        raise ValueError(
+            "The numbers 'mod_fileout', 'imod_fileout', and 'mod_log' have to be positive or 0")
 
     if conf_rep_plot.fitter.propagation.mod_plotout < 0 or conf_rep_plot.fitter.propagation.mod_update < 0 or \
         conf_rep_plot.fitter.imod_plotout < 0:
-        raise ValueError("The step for plotting graphs with x-axis = time 'mod_plotout', "
-                         "the step for plotting graphs with x-axis = number of iteration 'imod_plotout', "
-                         "and for updating the plots 'mod_update' should be positive or 0")
+        raise ValueError(
+            "The step for plotting graphs with x-axis = time, 'mod_plotout', "
+            "the step for plotting graphs with x-axis = number of iteration, 'imod_plotout', "
+            "and for updating the plots, 'mod_update', have to be positive or 0")
 
     if conf_rep_plot.fitter.propagation.number_plotout < 2:
-        raise ValueError("The maximum number of graphs 'number_plotout' to be plotted on one canvas"
-                         "must be larger than 1!")
-
+        raise ValueError(
+            "The maximum number of graphs, 'number_plotout', to be plotted on one canvas has to be larger than 1")
 
     if not math.log2(conf_task.fitter.propagation.np).is_integer() or not math.log2(
             conf_task.fitter.propagation.nch).is_integer():
-        raise ValueError("The number of collocation points 'np' and of Chebyshev "
-                         "interpolation points 'nch' must be positive integers and powers of 2")
+        raise ValueError(
+            "The number of collocation points, 'np', and of Chebyshev "
+            "interpolation points, 'nch', have to be positive integers and powers of 2")
 
     if conf_task.fitter.impulses_number < 0:
-        raise ValueError("The number of laser pulses 'impulses_number' should be positive or 0")
+        raise ValueError(
+            "The number of laser pulses, 'impulses_number', has to be positive or 0")
 
     if conf_task.fitter.iter_max < -1 and (conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
             conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_GRADIENT):
-        raise ValueError("The maximum number of iterations in the optimal control task 'iter_max' should be positive, 0 or -1")
+        raise ValueError(
+            "The maximum number of iterations in the optimal control task, 'iter_max', has to be positive, 0 or -1")
 
     if conf_task.fitter.propagation.L <= 0.0 or conf_task.fitter.propagation.T <= 0.0:
-        raise ValueError("The value of spatial range 'L' and of time range 'T' of the problem"
-                         "must be positive")
+        raise ValueError(
+            "The value of spatial range, 'L', and of time range, 'T', of the problem have to be positive")
 
     if conf_task.fitter.propagation.m <= 0.0 or conf_task.fitter.propagation.a <= 0.0 or conf_task.fitter.propagation.De <= 0.0:
-        raise ValueError("The value of a reduced mass 'm/mass', of a scaling factor 'a'"
-                         "and of a dissociation energy 'De' must be positive")
+        raise ValueError(
+            "The value of a reduced mass, 'm/mass', of a scaling factor, 'a', and of a dissociation energy, 'De', have to be positive")
 
     if not conf_task.fitter.propagation.E0 >= 0.0 or not conf_task.fitter.propagation.sigma > 0.0 or not conf_task.fitter.propagation.nu_L >= 0.0:
-        raise ValueError("The value of an amplitude value of the laser field energy envelope 'E0',"
-                         "of a scaling parameter of the laser field envelope 'sigma'"
-                         "and of a basic frequency of the laser field 'nu_L' must be positive")
+        raise ValueError(
+            "The amplitude value of the laser field energy envelope, 'E0',"
+            "of a scaling parameter of the laser field envelope, 'sigma',"
+            "and of a basic frequency of the laser field, 'nu_L', have to be positive")
 
 
     if conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.FILTERING or \
             conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.SINGLE_POT:
+        print("A '%s' task begins..." % str(conf_task.fitter.task_type).split(".")[-1].lower())
 
-        print("A '%s' task begins. E0 and nu_L values are zeroed..."
-              % str(conf_task.fitter.task_type).split(".")[-1].lower())
-        conf_task.fitter.propagation.E0 = 0.0
-        conf_task.fitter.propagation.nu_L = 0.0
+        if conf_task.fitter.propagation.E0 != 0.0:
+            raise ValueError(
+                "For the 'task_type' = '%s' the amplitude value of the laser field energy envelope, 'E0', has to be equal to zero"
+                % str(conf_task.fitter.task_type).split(".")[-1].lower())
+
+        if conf_task.fitter.propagation.nu_L != 0.0:
+            raise ValueError(
+                "For the 'task_type' = '%s' the value of a basic frequency of the laser field, 'nu_L', has to be equal to zero"
+                % str(conf_task.fitter.task_type).split(".")[-1].lower())
+
+        if conf_task.fitter.init_guess != "zero":
+            raise ValueError(
+                "For the 'task_type' = '%s' the initial guess type for the laser field envelope, 'init_guess', has to be 'zero'"
+                % str(conf_task.fitter.task_type).split(".")[-1].lower())
 
         if conf_task.fitter.impulses_number != 0:
-            print("For the task_type = '%s' the impulses_number value will be replaced by zero"
-                  % str(conf_task.fitter.task_type).split(".")[-1].lower())
-            conf_task.fitter.impulses_number = 0
+            raise ValueError(
+                "For the 'task_type' = '%s' the 'impulses_number' value has to be equal to zero"
+                % str(conf_task.fitter.task_type).split(".")[-1].lower())
     else:
         if conf_task.fitter.task_type == conf_task.fitter.TaskType.TRANS_WO_CONTROL:
             print("An ordinary transition task begins...")
+
+            if conf_task.fitter.init_guess != "zero":
+                raise ValueError(
+                    "For the 'task_type' = 'trans_wo_control' the initial guess type for the laser field envelope, 'init_guess', has to be 'zero'")
+
             if conf_task.fitter.impulses_number != 1:
-                print("For the task_type = 'trans_wo_control' the impulses_number value will be replaced by 1")
-                conf_task.fitter.impulses_number = 1
+                raise ValueError(
+                    "For the 'task_type' = 'trans_wo_control' the 'impulses_number' value has to be equal to 1")
+
         elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
             print("An intuitive control task begins...")
+
+            if conf_task.fitter.init_guess == "zero":
+                raise ValueError(
+                    "For the 'task_type' = 'intuitive_control' the initial guess type for the laser field envelope, "
+                    "'init_guess', mustn't be 'zero'")
+
             if conf_task.fitter.impulses_number < 2:
-                print("For the task_type = 'intuitive_control' the impulses_number value will be replaced by 2")
-                conf_task.fitter.impulses_number = 2
+                raise ValueError(
+                    "For the 'task_type' = 'intuitive_control' the 'impulses_number' value has to be larger than 1")
+
         elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             print("A local control with goal population task begins...")
+
+            if conf_task.fitter.init_guess == "zero":
+                raise ValueError(
+                    "For the 'task_type' = 'local_control_population' the initial guess type for the laser field envelope, "
+                    "'init_guess', mustn't be 'zero'")
+
             if conf_task.fitter.impulses_number != 1:
-                print("For the task_type = 'local_control_population' the impulses_number value will be replaced by 1")
-                conf_task.fitter.impulses_number = 1
+                raise ValueError(
+                    "For the 'task_type' = 'local_control_population' the 'impulses_number' value has to be equal to 1")
+
         elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
             print("A local control with goal projection task begins...")
+
+            if conf_task.fitter.init_guess == "zero":
+                raise ValueError(
+                    "For the 'task_type' = 'local_control_projection' the initial guess type for the laser field envelope, "
+                    "'init_guess', mustn't be 'zero'")
+
             if conf_task.fitter.impulses_number != 1:
-                print("For the task_type = 'local_control_projection' the impulses_number value will be replaced by 1")
-                conf_task.fitter.impulses_number = 1
+                raise ValueError(
+                    "For the 'task_type' = 'local_control_projection' the 'impulses_number' value has to be equal to 1")
+
         elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
             print("An optimal control task with Krotov method begins...")
+
+            if conf_task.fitter.init_guess == "zero":
+                raise ValueError(
+                    "For the 'task_type' = 'optimal_control_krotov' the initial guess type for the laser field envelope, "
+                    "'init_guess', mustn't be 'zero'")
+
             if conf_task.fitter.impulses_number != 1:
-                print("For the task_type = 'optimal_control_krotov' the impulses_number value will be replaced by 1")
-                conf_task.fitter.impulses_number = 1
+                raise ValueError(
+                    "For the 'task_type' = 'optimal_control_krotov' the 'impulses_number' value has to be equal to 1")
+
         elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             print("An optimal control task with Hadamard H1 unitary transformation begins...")
+
+            if conf_task.fitter.init_guess == "zero":
+                raise ValueError(
+                    "For the 'task_type' = 'optimal_control_unit_transform' the initial guess type for the laser field envelope, "
+                    "'init_guess', mustn't be 'zero'")
+
             if conf_task.fitter.propagation.np > 1:
-                print("For the task_type = 'optimal_control_gradient' the number of collocation points 'np' will be replaced by 1")
-                conf_task.fitter.propagation.np = 1
-            #if conf_task.fitter.impulses_number != 1:
-            #    print("For the task_type = 'optimal_control_gradient' the impulses_number value will be replaced by 1")
-            #    conf_task.fitter.impulses_number = 1
+                raise ValueError(
+                    "For the 'task_type' = 'optimal_control_unit_transform' the number of collocation points, 'np', has to be equal to 1")
+
+            if conf_task.fitter.impulses_number != 1:
+                raise ValueError(
+                    "For the 'task_type' = 'optimal_control_unit_transform' the 'impulses_number' value has to be equal to 1")
+
             if conf_task.fitter.propagation.L == 1.0:
                 pass
             else:
-                print("For the task_type = 'optimal_control_gradient' the spatial range of the problem 'L' will be replaced by 1.0")
-                conf_task.fitter.propagation.L = 1.0
+                raise ValueError(
+                    "For the 'task_type' = 'optimal_control_unit_transform' the spatial range of the problem, 'L', has to be equal to 1.0")
+
         else:
             raise RuntimeError("Impossible case in the TaskType class")
 

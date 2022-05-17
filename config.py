@@ -105,7 +105,6 @@ class TaskRootConfiguration(ConfigurationBase):
                     return TaskRootConfiguration.FitterConfiguration.\
                         PropagationConfiguration.PotentialType[s.upper()]
 
-
             def __init__(self):
                 super().__init__(key_prefix="")
                 # default input values
@@ -161,7 +160,6 @@ class TaskRootConfiguration(ConfigurationBase):
             OPTIMAL_CONTROL_KROTOV = 6
             OPTIMAL_CONTROL_UNIT_TRANSFORM = 7
 
-
             @staticmethod
             def from_int(i):
                 return TaskRootConfiguration.FitterConfiguration.TaskType(i)
@@ -170,10 +168,27 @@ class TaskRootConfiguration(ConfigurationBase):
             def from_str(s):
                 return TaskRootConfiguration.FitterConfiguration.TaskType[s.upper()]
 
+
+        class InitGuess(Enum):
+            ZERO = 0
+            GAUSS = 1
+            SQRSIN = 2
+            MAXWELL = 3
+
+            @staticmethod
+            def from_int(i):
+                return TaskRootConfiguration.FitterConfiguration.InitGuess(i)
+
+            @staticmethod
+            def from_str(s):
+                return TaskRootConfiguration.FitterConfiguration.InitGuess[s.upper()]
+
+
         def __init__(self):
             super().__init__(key_prefix="")
             # default input values
             self._data["task_type"] = TaskRootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL
+            self._data["init_guess"] = TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO
             self._data["propagation"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration()
             self._data["k_E"] = 1e29    # 1 / (s*s)
             self._data["lamb"] = 4e14 # 1 / s
