@@ -159,13 +159,17 @@ class TaskManager:
         else:
             raise RuntimeError("Impossible case in the WaveFuncType class")
 
-        if conf_fitter.InitGuess == TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO:
+        if conf_fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO:
+            print("Calculation without laser field")
             self.lf_init_guess = _LaserFields.zero
-        elif conf_fitter.InitGuess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+        elif conf_fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+            print("Gaussian type of initial guess for the laser field envelope is used")
             self.lf_init_guess = _LaserFields.laser_field_gauss
-        elif conf_fitter.InitGuess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
+        elif conf_fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
+            print("Squared sinus type of initial guess for the laser field envelope is used")
             self.lf_init_guess = _LaserFields.laser_field_sqrsin
-        elif conf_fitter.InitGuess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
+        elif conf_fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
+            print("Maxwell distribution-like type of initial guess for the laser field envelope is used")
             self.lf_init_guess = _LaserFields.laser_field_maxwell
         else:
             raise RuntimeError("Impossible case in the InitGuess class")

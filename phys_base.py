@@ -32,13 +32,14 @@ def diff_cpu(psi, akx2, np):
     return phi
 
 
-def hamil_cpu(psi, v, akx2, np, ntriv):
+def hamil_cpu(psi, v, akx2, np, eL, ntriv):
     """ Calculates the simplest one-dimensional Hamiltonian mapping of vector psi
         INPUT
-        psi   list of complex vectors of length np
-        v     list of potential energy real vectors of length np
-        akx2  complex kinetic energy vector of length np, = k^2/2m
-        np    number of grid points
+        psi     list of complex vectors of length np
+        v       list of potential energy real vectors of length np
+        akx2    complex kinetic energy vector of length np, = k^2/2m
+        np      number of grid points
+        eL      a laser field energy shift (needed for ntriv = 0)
         ntriv   constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                     0 -- a trivial 2-level system
         OUTPUT
@@ -56,7 +57,7 @@ def hamil_cpu(psi, v, akx2, np, ntriv):
         vpsi = numpy.multiply(v, psi)
         numpy.add(phi, vpsi, out=phi)
     else:
-        phi = numpy.array([0.0] * np).astype(complex)
+        phi = psi * eL
 
     return phi
 
@@ -70,7 +71,7 @@ def hamil2D_cpu(psi, v, akx2, np, E, eL, ntriv, E_full=0.0, orig=False):
         np      number of grid points
         E       a real value of external laser field
         eL      a laser field energy shift
-        E_full  a real value of external laser field
+        E_full  a complex value of external laser field
         ntriv   constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                     0 -- a trivial 2-level system
         orig    a boolean parameter that depends
@@ -85,42 +86,48 @@ def hamil2D_cpu(psi, v, akx2, np, E, eL, ntriv, E_full=0.0, orig=False):
         assert v[i][1].size == np
     assert akx2.size == np
 
-    if orig:
+    if orig or not ntriv:
         # diagonal terms
-        psieL_d = 0.0
+        psieL_l = 0.0
         psieL_u = 0.0
         # non-diagonal terms
         psiE_u = psi[1] * E_full
-        psiE_d = psi[0] * E_full.conjugate()
+        psiE_l = psi[0] * E_full.conjugate()
     else:
         # diagonal terms -- laser field energy shift
-        psieL_d = psi[0] * eL
+        psieL_l = psi[0] * eL
         psieL_u = psi[1] * eL
         # non-diagonal terms
         psiE_u = psi[1] * E
-        psiE_d = psi[0] * E
+        psiE_l = psi[0] * E
 
     if ntriv:
         # diagonal terms
-        # ground state 1D Hamiltonian mapping for the corresponding state
-        phi_dl = hamil_cpu(psi[0], v[0][1], akx2, np, ntriv)
-        phi_du = hamil_cpu(psi[1], v[1][1], akx2, np, ntriv)
+        # 1D Hamiltonians mapping for the corresponding states
+        phi_dl = hamil_cpu(psi[0], v[0][1], akx2, np, eL, ntriv)
+        phi_du = hamil_cpu(psi[1], v[1][1], akx2, np, eL, ntriv)
 
         # adding of the laser field energy shift
-        numpy.add(phi_dl, psieL_d, out=phi_dl)
+        numpy.add(phi_dl, psieL_l, out=phi_dl)
         numpy.subtract(phi_du, psieL_u, out=phi_du)
 
         # adding non-diagonal terms
         phi_l = numpy.subtract(phi_dl, psiE_u)
-        phi_u = numpy.subtract(phi_du, psiE_d)
+        phi_u = numpy.subtract(phi_du, psiE_l)
     else:
-        phi_l = numpy.subtract(psieL_d, psiE_u)
-        phi_u = numpy.add(-psieL_u, -psiE_d)
+        # diagonal terms
+        # 1D Hamiltonians mapping for the corresponding states
+        phi_dl = hamil_cpu(psi[0], v[0][1], akx2, np, -eL, ntriv)
+        phi_du = hamil_cpu(psi[1], v[1][1], akx2, np, eL, ntriv)
+
+        # adding non-diagonal terms
+        phi_l = numpy.subtract(phi_dl, psiE_u)
+        phi_u = numpy.subtract(phi_du, psiE_l)
 
     return [phi_l, phi_u]
 
 
-def residum_cpu(psi, v, akx2, xp, np, emin, emax, E, eL, ntriv):
+def residum_cpu(psi, v, akx2, xp, np, emin, emax, E, eL, ntriv, E_full=0.0):
     """ Scaled and normalized mapping phi = ( O - xp I ) phi
         INPUT
         psi         list of complex vectors of length np
@@ -128,7 +135,8 @@ def residum_cpu(psi, v, akx2, xp, np, emin, emax, E, eL, ntriv):
         xp          sampling interpolation point
         np          number of grid points (must be a power of 2)
         emax, emin  upper and lower limits of energy spectra
-        E           a complex value of external laser field
+        E           a real value of external laser field
+        E_full      a complex value of external laser field
         eL          a laser field energy shift
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
@@ -143,7 +151,7 @@ def residum_cpu(psi, v, akx2, xp, np, emin, emax, E, eL, ntriv):
         assert v[i][1].size == np
     assert akx2.size == np
 
-    hpsi = hamil2D_cpu(psi, v, akx2, np, E, eL, ntriv)
+    hpsi = hamil2D_cpu(psi, v, akx2, np, E, eL, ntriv, E_full)
 
     phi = []
     # changing the range from -2 to 2
@@ -174,7 +182,7 @@ def func(z, t):
     return cmath.exp(-1j * z * t)
 
 
-def prop_cpu(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, ntriv):
+def prop_cpu(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, ntriv, E_full=0.0):
     """ Propagation subroutine using Newton interpolation
         P(O) psi = dv(1) psi + dv2 (O - x1 I) psi + dv3 (O - x2)(O - x1 I) psi + ...
         INPUT
@@ -187,7 +195,8 @@ def prop_cpu(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, ntriv):
         v           list of potential energy vectors of length np
         akx2        kinetic energy vector of length np
         emax, emin  upper and lower limits of energy spectra
-        E           a complex value of external laser field
+        E           a real value of external laser field
+        E_full      a complex value of external laser field
         eL          a laser field energy shift
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
@@ -215,7 +224,7 @@ def prop_cpu(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, ntriv):
     # recurrence loop
     for j in range(nch - 1):
         # mapping by scaled operator of phi
-        phi = residum_cpu(phi, v, akx2, xp[j], np, emin, emax, E, eL, ntriv)
+        phi = residum_cpu(phi, v, akx2, xp[j], np, emin, emax, E, eL, ntriv, E_full)
 
         # accumulation of Newtonian's interpolation
         for n in range(len(psi)):

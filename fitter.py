@@ -11,10 +11,10 @@ from psi_basis import PsiBasis, Psi
 class FittingSolver:
     class FitterDynamicState():
         chi_tlist: list[PsiBasis]
-        psi_omega_tlist: list[PsiBasis]
+        psi_tlist: list[PsiBasis]
         E_tlist: list[complex]
         chi_cur: PsiBasis
-        psi_omega_cur: PsiBasis
+        psi_cur: PsiBasis
         goal_close: List[complex]
 
         def __init__(self, basis_length, E_vel=0.0, freq_mult_vel=0.0, iter_step=0, dir = PropagationSolver.Direction.FORWARD):
@@ -28,16 +28,14 @@ class FittingSolver:
             self.dAdt_happy = 0.0
 
             self.chi_tlist = []
-            self.psi_omega_tlist = []
+            self.psi_tlist = []
 
             self.chi_cur = PsiBasis(basis_length)
-            self.psi_omega_cur = PsiBasis(basis_length)
+            self.psi_cur = PsiBasis(basis_length)
 
             self.goal_close = [complex(0.0)] * basis_length
             self.E_tlist = []
 
-            #self.t_list = []
-            #self.t_list_bw = []
             self.res = PropagationSolver.StepReaction.OK
 
         @staticmethod
@@ -52,14 +50,14 @@ class FittingSolver:
                     new_chi_tlist.append(new_time_point)
                 dct['chi_tlist'] = new_chi_tlist
 
-                new_psi_omega_tlist = []
-                for time_point in dct['psi_omega_tlist']:
+                new_psi_tlist = []
+                for time_point in dct['psi_tlist']:
                     new_time_point = []
                     for level in time_point:
                         new_level = numpy.array(level).astype(complex)
                         new_time_point.append(new_level)
-                    new_psi_omega_tlist.append(new_time_point)
-                dct['psi_omega_tlist'] = new_psi_omega_tlist
+                    new_psi_tlist.append(new_time_point)
+                dct['psi_tlist'] = new_psi_tlist
 
                 new_E_tlist = numpy.array(dct['E_tlist']).astype(complex)
                 dct['E_tlist'] = new_E_tlist
@@ -105,7 +103,6 @@ class FittingSolver:
 
     solvers: list[PropagationSolver]
     propagation_reporters: list[PropagationReporter]
-
 
     def __initialize_propagation(self, prop_id: str, laser_field_envelope, ntriv):
 
@@ -171,7 +168,6 @@ class FittingSolver:
 
         #self.TMP_delta_E = []
 
-
     # single propagation to the given direction; returns new chiT
     def __single_propagation(self, dx, x, t_step, direct: PropagationSolver.Direction, chiT: PsiBasis, goal_close_abs):
         self.dyn.dir = direct
@@ -179,44 +175,41 @@ class FittingSolver:
         fin_psi_basis: PsiBasis
         chiT_omega = PsiBasis(self.basis_length)
         self.dyn.chi_cur = None
-        self.dyn.psi_omega_cur = None
+        self.dyn.psi_cur = None
         if direct == PropagationSolver.Direction.FORWARD:
             ind_dir = "f"
             laser_field = self.LaserFieldEnvelope
 
             if self.dyn.iter_step > 0:
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
-                #self.dyn.t_list = []
 
-            psi_init_omega_copy = copy.deepcopy(self.psi_init_basis)
+            psi_init_copy = copy.deepcopy(self.psi_init_basis)
 
-            self.dyn.psi_omega_tlist = [ psi_init_omega_copy ]
-            self.dyn.psi_omega_cur = self.dyn.psi_omega_tlist[0]
+            self.dyn.psi_tlist = [ psi_init_copy ]
+            self.dyn.psi_cur = self.dyn.psi_tlist[0]
             init_psi_basis = self.psi_init_basis
             fin_psi_basis = self.psi_goal_basis
             t_init = 0.0
-            #self.dyn.t_list.append(t_init)
         else:
             ind_dir = "b"
             laser_field = self.LaserFieldEnvelopeBackward
-            #self.dyn.t_list_bw = []
+
             if self.dyn.iter_step > 0:
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
 
             if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                 chiT = copy.deepcopy(self.psi_goal_basis)
-                chiT_omega = copy.deepcopy(self.psi_goal_basis)
-                for vect in range(self.basis_length):
-                    chiT_omega.psis[vect].f[1] *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
-                    chiT_omega.psis[vect].f[0] *= cmath.exp(-1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
+#                chiT_omega = copy.deepcopy(self.psi_goal_basis)
+#                for vect in range(self.basis_length):
+#                    chiT_omega.psis[vect].f[1] *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
+#                    chiT_omega.psis[vect].f[0] *= cmath.exp(-1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
 
-                self.dyn.chi_tlist = [ chiT_omega ]
+                self.dyn.chi_tlist = [ chiT ]
 
             self.dyn.chi_cur = self.dyn.chi_tlist[0]
             init_psi_basis = chiT
             fin_psi_basis = self.psi_init_basis
             t_init = self.conf_fitter.propagation.T
-            #self.dyn.t_list_bw.append(t_init)
 
         self.__initialize_propagation("iter_" + str(self.dyn.iter_step) + ind_dir, laser_field, self.ntriv)
 
@@ -252,7 +245,7 @@ class FittingSolver:
         #self.TMP_delta_E = []
         while True:
             chi_new: PsiBasis = PsiBasis(self.basis_length)
-            psi_omega_new: PsiBasis = PsiBasis(self.basis_length)
+            psi_new: PsiBasis = PsiBasis(self.basis_length)
 
             for vect in range(self.basis_length):
                 solver = self.solvers[vect]
@@ -267,17 +260,21 @@ class FittingSolver:
                 if not solver.step(t_init):
                     finished.add(vect)
 
-                psi_omega_copy = copy.deepcopy(solver.dyn.psi_omega)
+                if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+                    psi_copy = copy.deepcopy(solver.dyn.psi)
+                else:
+                    psi_copy = copy.deepcopy(solver.dyn.psi_omega)
 
-                #print("|psi6| = ", abs(psi_omega_copy.f[0]) + abs(psi_omega_copy.f[1]))
+                #print("|psi6| = ", abs(psi_copy.f[0]) + abs(psi_copy.f[1]))
 
                 if direct == PropagationSolver.Direction.BACKWARD:
-                    chi_new.psis[vect] = psi_omega_copy
+                    chi_new.psis[vect] = psi_copy
                 else:
-                    psi_omega_new.psis[vect] = psi_omega_copy
+                    psi_new.psis[vect] = psi_copy
 
                 self.do_the_thing(solver.dyn, solver.instr)
-                #print("|psi7| = ", abs(psi_omega_copy.f[0]) + abs(psi_omega_copy.f[1]))
+
+                #print("|psi7| = ", abs(psi_copy.f[0]) + abs(psi_copy.f[1]))
 
             # Checking sanity
             t_checked = self.solvers[0].dyn.t
@@ -289,14 +286,12 @@ class FittingSolver:
                     raise AssertionError("Different laser field energies in different solvers")
 
             if direct == PropagationSolver.Direction.BACKWARD:
-                #self.dyn.t_list_bw.append(solver.dyn.t)
                 self.dyn.chi_cur = chi_new
                 self.dyn.chi_tlist.append(chi_new)
             else:
                 E_tlist_new.append(E_checked)
-                #self.dyn.t_list.append(t_checked)
-                self.dyn.psi_omega_cur = psi_omega_new
-                self.dyn.psi_omega_tlist.append(psi_omega_new)
+                self.dyn.psi_cur = psi_new
+                self.dyn.psi_tlist.append(psi_new)
 
             do_continue = len(finished) < self.basis_length
             if not do_continue: break
@@ -636,10 +631,10 @@ class FittingSolver:
                 chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
 
                 # psi/chi ~ forward/backward propagation wf, {0;1} ~ # of basis vector, {g;e} ~ ground/excited state
-                psi0_g = self.dyn.psi_omega_cur.psis[0].f[0]
-                psi1_e = self.dyn.psi_omega_cur.psis[1].f[1]
-                psi0_e = self.dyn.psi_omega_cur.psis[0].f[1]
-                psi1_g = self.dyn.psi_omega_cur.psis[1].f[0]
+                psi0_g = self.dyn.psi_cur.psis[0].f[0]
+                psi1_e = self.dyn.psi_cur.psis[1].f[1]
+                psi0_e = self.dyn.psi_cur.psis[0].f[1]
+                psi1_g = self.dyn.psi_cur.psis[1].f[0]
 
                 chi0_g = chi_basis.psis[0].f[0]
                 chi1_e = chi_basis.psis[1].f[1]
@@ -654,7 +649,7 @@ class FittingSolver:
                 E_init = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma)
                 s = E_init / conf_prop.E0
                 delta_E = - s * (self.a0 * sum).imag / self.conf_fitter.h_lambda #/ phys_base.Red_Planck_h * phys_base.cm_to_erg
-                #delta_E *= cmath.exp(-2.0 * 1j * math.pi * conf_prop.nu_L * (dyn.t - (abs(stat.dt) / 2.0)))
+                delta_E *= cmath.exp(-2.0 * 1j * math.pi * conf_prop.nu_L * (dyn.t - (abs(stat.dt) / 2.0)))
 
                 #print(f"===== Got {delta_E}")
                 #if abs(self.TMP_delta_E) > abs(delta_E):
@@ -682,7 +677,7 @@ class FittingSolver:
         # optimal control algorithm
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
             chie_new_psig_old = math_base.cprod(dyn.psi_omega.f[1],
-                                                self.dyn.psi_omega_tlist[conf_prop.nt - prop.dyn.l].psis[0].f[0],
+                                                self.dyn.psi_tlist[conf_prop.nt - prop.dyn.l].psis[0].f[0],
                                                 stat.dx, conf_prop.np)
 
             E = -2.0 * chie_new_psig_old.imag / self.conf_fitter.h_lambda

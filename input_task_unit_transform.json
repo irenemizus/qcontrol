@@ -2,12 +2,15 @@
   "fitter": {
     "task_type": "optimal_control_unit_transform",
     "epsilon": 1e-8,
+    "impulses_number": 1,
     "iter_max": -1,
     "h_lambda": 5.0,
     "init_guess": "maxwell",
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
+      "np": 1,
+      "L": 1.0,
       "nch": 64,
       "E0": 5.0,
       "t0": 0.0,
