@@ -269,6 +269,7 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
+import phys_base
 from tools import print_err
 
 import sys
@@ -538,16 +539,34 @@ def main(argv):
     # checking of triviality of the system
     ntriv = task_manager_imp.ntriv
 
-    # main calculation part
-    fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
-    fit_reporter_imp.open()
+    with open("table_glob.txt", "w") as fout:
+        nu_L_ac = conf_task.fitter.propagation.nu_L #conf_task.fitter.propagation.Du / phys_base.Hz_to_cm
+        nu_L_start = nu_L_ac / 1.00036 # * 1.9
+        nu_L_step = pow(1.00036, 1.0 / 100)
+        nu_L_cur = nu_L_start
+        for step in range(200):
+            #conf_task.fitter.propagation.nu_L = nu_L_cur
 
-    fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
-                                          _warning_collocation_points,
-                                          _warning_time_steps
-                                          )
-    fitting_solver.time_propagation(dx, x, t_step, t_list)
-    fit_reporter_imp.close()
+            # main calculation part
+            fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
+            fit_reporter_imp.open()
+
+            fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+                                                  _warning_collocation_points,
+                                                  _warning_time_steps
+                                                  )
+            fitting_solver.time_propagation(dx, x, t_step, t_list)
+            fit_reporter_imp.close()
+
+            nu_L_cur *= nu_L_step
+
+            gc_cur = 0.0
+            with open("output/tab_iter.csv", "r") as f:
+                lines = f.readlines()
+                gc_cur = float(lines[-1].strip().split(" ")[-1])
+
+            fout.write(f"{nu_L_cur:.6E}    {gc_cur}\n")
+            fout.flush()
 
 
 if __name__ == "__main__":

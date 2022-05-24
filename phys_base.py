@@ -32,14 +32,13 @@ def diff_cpu(psi, akx2, np):
     return phi
 
 
-def hamil_cpu(psi, v, akx2, np, eL, ntriv):
+def hamil_cpu(psi, v, akx2, np, ntriv):
     """ Calculates the simplest one-dimensional Hamiltonian mapping of vector psi
         INPUT
         psi     list of complex vectors of length np
         v       list of potential energy real vectors of length np
         akx2    complex kinetic energy vector of length np, = k^2/2m
         np      number of grid points
-        eL      a laser field energy shift (needed for ntriv = 0)
         ntriv   constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                     0 -- a trivial 2-level system
         OUTPUT
@@ -57,7 +56,7 @@ def hamil_cpu(psi, v, akx2, np, eL, ntriv):
         vpsi = numpy.multiply(v, psi)
         numpy.add(phi, vpsi, out=phi)
     else:
-        phi = psi * eL
+        phi = numpy.multiply(v, psi)
 
     return phi
 
@@ -87,42 +86,36 @@ def hamil2D_cpu(psi, v, akx2, np, E, eL, ntriv, E_full=0.0, orig=False):
     assert akx2.size == np
 
     if orig or not ntriv:
+        #without laser field energy shift
         # diagonal terms
         psieL_l = 0.0
         psieL_u = 0.0
         # non-diagonal terms
-        psiE_u = psi[1] * E_full
         psiE_l = psi[0] * E_full.conjugate()
+        psiE_u = psi[1] * E_full
     else:
-        # diagonal terms -- laser field energy shift
+        # with laser field energy shift
+        # diagonal terms
         psieL_l = psi[0] * eL
         psieL_u = psi[1] * eL
         # non-diagonal terms
-        psiE_u = psi[1] * E
         psiE_l = psi[0] * E
+        psiE_u = psi[1] * E
+
+    # diagonal terms
+    # 1D Hamiltonians mapping for the corresponding states
+    phi_dl = hamil_cpu(psi[0], v[0][1], akx2, np, ntriv)
+    phi_du = hamil_cpu(psi[1], v[1][1], akx2, np, ntriv)
 
     if ntriv:
         # diagonal terms
-        # 1D Hamiltonians mapping for the corresponding states
-        phi_dl = hamil_cpu(psi[0], v[0][1], akx2, np, eL, ntriv)
-        phi_du = hamil_cpu(psi[1], v[1][1], akx2, np, eL, ntriv)
-
         # adding of the laser field energy shift
         numpy.add(phi_dl, psieL_l, out=phi_dl)
         numpy.subtract(phi_du, psieL_u, out=phi_du)
 
-        # adding non-diagonal terms
-        phi_l = numpy.subtract(phi_dl, psiE_u)
-        phi_u = numpy.subtract(phi_du, psiE_l)
-    else:
-        # diagonal terms
-        # 1D Hamiltonians mapping for the corresponding states
-        phi_dl = hamil_cpu(psi[0], v[0][1], akx2, np, -eL, ntriv)
-        phi_du = hamil_cpu(psi[1], v[1][1], akx2, np, eL, ntriv)
-
-        # adding non-diagonal terms
-        phi_l = numpy.subtract(phi_dl, psiE_u)
-        phi_u = numpy.subtract(phi_du, psiE_l)
+    # adding non-diagonal terms
+    phi_l = numpy.subtract(phi_dl, psiE_u)
+    phi_u = numpy.subtract(phi_du, psiE_l)
 
     return [phi_l, phi_u]
 
@@ -221,6 +214,7 @@ def prop_cpu(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, ntriv, E_full=0.0):
     for n in range(len(psi)):
         psi[n] *= dv[0]
 
+    #print("psi2 = ", psi)
     # recurrence loop
     for j in range(nch - 1):
         # mapping by scaled operator of phi
@@ -231,9 +225,13 @@ def prop_cpu(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, ntriv, E_full=0.0):
             phidv = phi[n] * dv[j + 1]
             numpy.add(psi[n], phidv, out=psi[n])
 
+    #print("psi3 = ", psi)
+
     coef = cmath.exp(-1j * 2.0 * t_sc * (emax + emin) / (emax - emin))
     for n in range(len(psi)):
         psi[n] *= coef
+
+    #print("psi4 = ", psi)
 
     return psi
 

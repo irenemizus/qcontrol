@@ -4,7 +4,7 @@
     "epsilon": 1e-8,
     "impulses_number": 1,
     "iter_max": -1,
-    "h_lambda": 5.0,
+    "h_lambda": 0.0005,
     "init_guess": "maxwell",
     "propagation": {
       "pot_type": "none",
@@ -12,13 +12,14 @@
       "np": 1,
       "L": 1.0,
       "nch": 64,
-      "E0": 5.0,
-      "t0": 0.0,
       "Du": 100,
-      "nt": 64,
-      "T": 3.335635e-13,
-      "sigma": 0.83391e-13,
-      "nu_L": 0.299793e13
+      "t0": 0.0,
+      "E0": 18.0,
+      "nt": 500,
+      "T": 33.52e-13,
+      "sigma": 7.51e-13,
+      "~nu_L": 0.299793e13,
+      "nu_L": 2.95328E+12
     },
     "mod_log": 500
   }

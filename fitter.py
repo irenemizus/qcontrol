@@ -443,7 +443,8 @@ class FittingSolver:
                                                   dx, self.conf_fitter.propagation.np))
 
             for t in t_list:
-                E_tlist_init.append(self.laser_field(self.conf_fitter.propagation.E0, t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma))
+                cos = math.cos(2.0 * math.pi * self.conf_fitter.propagation.nu_L * t)
+                E_tlist_init.append(self.laser_field(self.conf_fitter.propagation.E0, t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma) * cos)
 
             self.reporter.print_iter_point_fitter(-1, goal_close_abs_init, E_tlist_init, t_list,
                                               self.conf_fitter.propagation.nt)
@@ -482,7 +483,8 @@ class FittingSolver:
 
     def propagation_dynamic_state_factory(self, l, t, psi: Psi, psi_omega: Psi, E, freq_mult, dir):
         psi_omega_copy = copy.deepcopy(psi_omega)
-        return PropagationSolver.DynamicState(l, t, psi, psi_omega_copy, E, freq_mult, dir)
+        psi_copy = copy.deepcopy(psi)
+        return PropagationSolver.DynamicState(l, t, psi_copy, psi_omega_copy, E, freq_mult, dir)
 
 
     def do_the_thing(self, dyn: PropagationSolver.DynamicState, instr: PropagationSolver.InstrumentationOutputData):
@@ -621,12 +623,18 @@ class FittingSolver:
                 # psi/chi ~ forward/backward propagation wf, init ~ t = 0.0, {0;1} ~ # of basis vector, {g;e} ~ ground/excited state
                 chi0_init_g = chi_basis_0.psis[0].f[0]
                 chi1_init_e = chi_basis_0.psis[1].f[1]
+                chi0_init_e = chi_basis_0.psis[0].f[1]
+                chi1_init_g = chi_basis_0.psis[1].f[0]
 
                 psi0_init_g = self.psi_init_basis.psis[0].f[0]
                 psi1_init_e = self.psi_init_basis.psis[1].f[1]
+                psi0_init_e = self.psi_init_basis.psis[0].f[1]
+                psi1_init_g = self.psi_init_basis.psis[1].f[0]
 
-                self.a0 = math_base.cprod(psi0_init_g, chi0_init_g, stat.dx, conf_prop.np) + math_base.cprod(
-                    psi1_init_e, chi1_init_e, stat.dx, conf_prop.np)
+                self.a0 = math_base.cprod(psi0_init_g, chi0_init_g, stat.dx, conf_prop.np) + \
+                          math_base.cprod(psi0_init_e, chi0_init_e, stat.dx, conf_prop.np) + \
+                          math_base.cprod(psi1_init_g, chi1_init_g, stat.dx, conf_prop.np) + \
+                          math_base.cprod(psi1_init_e, chi1_init_e, stat.dx, conf_prop.np)
             else:
                 chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
 
@@ -646,10 +654,10 @@ class FittingSolver:
                       math_base.cprod(chi1_g, psi1_g, stat.dx, conf_prop.np) + \
                       math_base.cprod(chi1_e, psi1_e, stat.dx, conf_prop.np)
 
-                E_init = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma)
-                s = E_init / conf_prop.E0
+                s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
+                E_init = s * conf_prop.E0 * math.cos(2.0 * math.pi * conf_prop.nu_L * (dyn.t - (abs(stat.dt) / 2.0)))
                 delta_E = - s * (self.a0 * sum).imag / self.conf_fitter.h_lambda #/ phys_base.Red_Planck_h * phys_base.cm_to_erg
-                delta_E *= cmath.exp(-2.0 * 1j * math.pi * conf_prop.nu_L * (dyn.t - (abs(stat.dt) / 2.0)))
+                #delta_E *= cmath.exp(-2.0 * 1j * math.pi * conf_prop.nu_L * (dyn.t - (abs(stat.dt) / 2.0)))
 
                 #print(f"===== Got {delta_E}")
                 #if abs(self.TMP_delta_E) > abs(delta_E):
@@ -685,7 +693,8 @@ class FittingSolver:
         # optimal control unitary transformation algorithm
         elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             if self.dyn.iter_step == 0:
-                E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma)
+                cos = math.cos(2.0 * math.pi * conf_prop.nu_L * dyn.t)
+                E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma) * cos
             else:
                 if prop.dyn.l == 0:
                     E = self.dyn.E_tlist[-1]

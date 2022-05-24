@@ -159,10 +159,10 @@ class PropagationSolver:
     def _ener_eval(psi: Psi, v, akx2, dx, np, eL, ntriv):
         cener = []
 
-        phi_l = phys_base.hamil_cpu(psi.f[0], v[0][1], akx2, np, eL, ntriv)
+        phi_l = phys_base.hamil_cpu(psi.f[0], v[0][1], akx2, np, ntriv)
         cener.append(math_base.cprod(psi.f[0], phi_l, dx, np))
 
-        phi_u = phys_base.hamil_cpu(psi.f[1], v[1][1], akx2, np, -eL, ntriv)
+        phi_u = phys_base.hamil_cpu(psi.f[1], v[1][1], akx2, np, ntriv)
         cener.append(math_base.cprod(psi.f[1], phi_u, dx, np))
 
         return cener
@@ -315,7 +315,8 @@ class PropagationSolver:
         dt = dir.value * t_step
         psi = copy.deepcopy(psi0)
 
-        #print("|psi0| = ", abs(psi.f[0]) + abs(psi.f[1]))
+        #print("psi0 = ", psi.f)
+
         # initial population
         overlp00 = self._pop_eval(psi0, psi, dx, self.np)
         overlpf0 = self._pop_eval(psif, psi, dx, self.np)
@@ -353,12 +354,13 @@ class PropagationSolver:
 
         self.dyn.t = self.stat.dt * self.dyn.l + t_start
 
-        self.dyn.freq_mult = self.freq_multiplier(self.dyn, self.stat)
         eL = self.nu_L * self.dyn.freq_mult * phys_base.Hz_to_cm / 2.0
-        exp_L = cmath.exp(1j * math.pi * self.nu_L * self.dyn.freq_mult * self.dyn.t)
 
         # Here we're transforming the problem to the one for psi_omega -- if needed
         if self.ntriv:
+            self.dyn.freq_mult = self.freq_multiplier(self.dyn, self.stat)
+            exp_L = cmath.exp(1j * math.pi * self.nu_L * self.dyn.freq_mult * self.dyn.t)
+
             psi_omega_l = self.dyn.psi.f[0] / exp_L
             self.dyn.psi_omega.f[0][:] = psi_omega_l[:]
             psi_omega_u = self.dyn.psi.f[1] * exp_L
@@ -386,13 +388,13 @@ class PropagationSolver:
         #print("t_sc = ", t_sc)
 
         self.dyn.E = self.laser_field_envelope(self, self.stat, self.dyn)
-        E_full = self.dyn.E * exp_L * exp_L
 
         psigc_psie = 0.0
         psigc_dv_psie = 0.0
 
         cnorm = []
         if self.ntriv:
+            E_full = self.dyn.E * exp_L * exp_L
             self.dyn.psi_omega = Psi(
                 f=phys_base.prop_cpu(self.dyn.psi_omega.f, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax,
                                      self.dyn.E, eL, self.ntriv), lvls=self.dyn.psi_omega.lvls())
@@ -419,9 +421,15 @@ class PropagationSolver:
             self.dyn.psi.f[1] = self.dyn.psi_omega.f[1] / exp_L
 
         else:
+            E_full = self.dyn.E
+
+            #print("psi1 = ", self.dyn.psi.f)
+
             self.dyn.psi = Psi(
                 f=phys_base.prop_cpu(self.dyn.psi.f, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax,
                                      self.dyn.E, eL, self.ntriv, E_full), lvls=self.dyn.psi.lvls())
+
+            #print("psi5 = ", self.dyn.psi.f)
 
             cnorm.append(math_base.cprod(self.dyn.psi.f[0], self.dyn.psi.f[0], self.stat.dx, self.np))
             cnorm.append(math_base.cprod(self.dyn.psi.f[1], self.dyn.psi.f[1], self.stat.dx, self.np))
@@ -431,6 +439,8 @@ class PropagationSolver:
             if abs(cnorm_sum) > 0.0:
                 self.dyn.psi.f[0] /= math.sqrt(abs(cnorm_sum))
                 self.dyn.psi.f[1] /= math.sqrt(abs(cnorm_sum))
+
+            #print("psi6 = ", self.dyn.psi.f)
 
         #print("|psi4| = ", abs(self.dyn.psi.f[0]) + abs(self.dyn.psi.f[1]))
 

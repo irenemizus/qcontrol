@@ -1,7 +1,8 @@
 import cmath
 import math
-import phys_base
 import numpy
+
+import phys_base
 from config import TaskRootConfiguration
 from propagation import PropagationSolver
 from psi_basis import PsiBasis
@@ -183,14 +184,6 @@ class TaskManager:
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L):
         raise NotImplementedError()
-
-    def ener_goal(self, psif: PsiBasis, v, akx2, np):
-        n = len(psif)
-        phif = []
-        for i in range(n):
-            phif.append([phys_base.hamil_cpu(psif.psis[i].f[0], v[0][1], akx2, np, self.ntriv),
-                         phys_base.hamil_cpu(psif.psis[i].f[1], v[1][1], akx2, np, self.ntriv)])
-        return phif
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
         raise NotImplementedError()
@@ -459,15 +452,19 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
 
         v = []
-        #Dl = 1521.6693
-        Dl = 0.0
-        # Lower morse potential
-        v_l = numpy.array([Dl] * np)
-        v.append((Dl, v_l))
+        #D_l = -nu_L * phys_base.Hz_to_cm / 2.0
 
-        # Upper morse potential
-        #D_u = nu_L * phys_base.Hz_to_cm
-        D_u = Du + Dl
+        # Lower potential
+        #D_l = 0.0
+        D_l = -Du / 2.0
+        v_l = numpy.array([D_l] * np)
+        v.append((D_l, v_l))
+
+        #D_u = nu_L * phys_base.Hz_to_cm / 2.0
+        #D_u = Du / 2.0
+
+        # Upper potential
+        D_u = Du + D_l
         v_u = numpy.array([D_u] * np)
         v.append((D_u, v_u))
 
