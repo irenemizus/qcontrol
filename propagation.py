@@ -355,6 +355,7 @@ class PropagationSolver:
         self.dyn.t = self.stat.dt * self.dyn.l + t_start
 
         eL = self.nu_L * self.dyn.freq_mult * phys_base.Hz_to_cm / 2.0
+        exp_L = 1.0
 
         # Here we're transforming the problem to the one for psi_omega -- if needed
         if self.ntriv:
@@ -396,8 +397,9 @@ class PropagationSolver:
         if self.ntriv:
             E_full = self.dyn.E * exp_L * exp_L
             self.dyn.psi_omega = Psi(
-                f=phys_base.prop_cpu(self.dyn.psi_omega.f, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax,
-                                     self.dyn.E, eL, self.ntriv), lvls=self.dyn.psi_omega.lvls())
+                f=phys_base.prop_cpu(psi=self.dyn.psi_omega.f, t_sc=t_sc, nch=self.nch, np=self.np, v=self.stat.v,
+                                     akx2=self.stat.akx2, emin=emin, emax=emax, E=self.dyn.E, eL=eL, ntriv=self.ntriv),
+                lvls=self.dyn.psi_omega.lvls())
 
             #print("|psi2| = ", abs(self.dyn.psi_omega.f[0]) + abs(self.dyn.psi_omega.f[1]))
 
@@ -426,8 +428,9 @@ class PropagationSolver:
             #print("psi1 = ", self.dyn.psi.f)
 
             self.dyn.psi = Psi(
-                f=phys_base.prop_cpu(self.dyn.psi.f, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax,
-                                     self.dyn.E, eL, self.ntriv, E_full), lvls=self.dyn.psi.lvls())
+                f=phys_base.prop_cpu(psi=self.dyn.psi.f, t_sc=t_sc, nch=self.nch, np=self.np, v=self.stat.v,
+                                     akx2=self.stat.akx2, emin=emin, emax=emax, E=self.dyn.E, eL=eL, ntriv=self.ntriv, E_full=E_full),
+                lvls=self.dyn.psi.lvls())
 
             #print("psi5 = ", self.dyn.psi.f)
 
@@ -445,7 +448,8 @@ class PropagationSolver:
         #print("|psi4| = ", abs(self.dyn.psi.f[0]) + abs(self.dyn.psi.f[1]))
 
         # calculating of a current energy
-        phi = phys_base.hamil2D_cpu(self.dyn.psi.f, self.stat.v, self.stat.akx2, self.np, self.dyn.E, eL, self.ntriv, E_full, orig=True)
+        phi = phys_base.hamil2D_cpu(psi=self.dyn.psi.f, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
+                                    eL=eL, ntriv=self.ntriv, E_full=E_full, orig=True)
 
         cener = []
         cener.append(math_base.cprod(self.dyn.psi.f[0], phi[0], self.stat.dx, self.np))

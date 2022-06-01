@@ -413,7 +413,7 @@ def main(argv):
                 "For the 'task_type' = '%s' the value of a basic frequency of the laser field, 'nu_L', has to be equal to zero"
                 % str(conf_task.fitter.task_type).split(".")[-1].lower())
 
-        if conf_task.fitter.init_guess != "zero":
+        if conf_task.fitter.init_guess != conf_task.fitter.InitGuess.ZERO:
             raise ValueError(
                 "For the 'task_type' = '%s' the initial guess type for the laser field envelope, 'init_guess', has to be 'zero'"
                 % str(conf_task.fitter.task_type).split(".")[-1].lower())
@@ -539,34 +539,34 @@ def main(argv):
     # checking of triviality of the system
     ntriv = task_manager_imp.ntriv
 
-    with open("table_glob.txt", "w") as fout:
-        nu_L_ac = conf_task.fitter.propagation.nu_L #conf_task.fitter.propagation.Du / phys_base.Hz_to_cm
-        nu_L_start = nu_L_ac / 1.00036 # * 1.9
-        nu_L_step = pow(1.00036, 1.0 / 100)
-        nu_L_cur = nu_L_start
-        for step in range(200):
+    #with open("table_glob.txt", "w") as fout:
+    #    nu_L_ac = conf_task.fitter.propagation.nu_L #conf_task.fitter.propagation.Du / phys_base.Hz_to_cm
+    #    nu_L_start = nu_L_ac / 1.00036 # * 1.9
+    #    nu_L_step = pow(1.00036, 1.0 / 100)
+    #    nu_L_cur = nu_L_start
+    #    for step in range(200):
             #conf_task.fitter.propagation.nu_L = nu_L_cur
 
-            # main calculation part
-            fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
-            fit_reporter_imp.open()
+    # main calculation part
+    fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
+    fit_reporter_imp.open()
 
-            fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
-                                                  _warning_collocation_points,
-                                                  _warning_time_steps
-                                                  )
-            fitting_solver.time_propagation(dx, x, t_step, t_list)
-            fit_reporter_imp.close()
+    fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+                                          _warning_collocation_points,
+                                          _warning_time_steps
+                                          )
+    fitting_solver.time_propagation(dx, x, t_step, t_list)
+    fit_reporter_imp.close()
 
-            nu_L_cur *= nu_L_step
+#            nu_L_cur *= nu_L_step
 
-            gc_cur = 0.0
-            with open("output/tab_iter.csv", "r") as f:
-                lines = f.readlines()
-                gc_cur = float(lines[-1].strip().split(" ")[-1])
+#            gc_cur = 0.0
+#            with open("output/tab_iter.csv", "r") as f:
+#                lines = f.readlines()
+#                gc_cur = float(lines[-1].strip().split(" ")[-1])
 
-            fout.write(f"{nu_L_cur:.6E}    {gc_cur}\n")
-            fout.flush()
+#            fout.write(f"{nu_L_cur:.6E}    {gc_cur}\n")
+#            fout.flush()
 
 
 if __name__ == "__main__":

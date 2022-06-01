@@ -70,7 +70,7 @@ def initak(n, dx, iorder, ntriv):
         OUTPUT
         ak      complex one dimensional array of length n """
 
-    ak = numpy.zeros(n, numpy.complex)
+    ak = numpy.zeros(n, numpy.complex128)
 
     if ntriv:
         dk = 2.0 * math.pi / (n - 1) / dx
@@ -154,12 +154,12 @@ def points(nch, t, func):
     jj = reorder(nch)
 
     # calculating of the Chebyshev interpolation points
-    xp = numpy.zeros(nch, numpy.float)
+    xp = numpy.zeros(nch, numpy.float64)
     for i in range(nch):
         phase = float(2 * jj[i] + 1) / float(2 * nch) * math.pi
         xp[i] = 2.0 * math.cos(phase)
 
-    dv = numpy.zeros(nch, numpy.complex)
+    dv = numpy.zeros(nch, numpy.complex128)
     # calculating the first two terms of the divided difference
     dv[0] = func(xp[0], t)
     dv[1] = (func(xp[1], t) - dv[0]) / (xp[1] - xp[0])

@@ -709,7 +709,7 @@ class PlotFitterReporter(FitterReporter):
         E_abs = []
         for i in range(nt + 1):
             #E_abs.append(abs(E[i]))
-            E_abs.append(E[i])
+            E_abs.append(E[i].real)
 
         self.E_abs[iter] = {'t': t, 'y': E_abs}
 

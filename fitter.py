@@ -291,7 +291,8 @@ class FittingSolver:
             else:
                 E_tlist_new.append(E_checked)
                 self.dyn.psi_cur = psi_new
-                self.dyn.psi_tlist.append(psi_new)
+                if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
+                    self.dyn.psi_tlist.append(psi_new)
 
             do_continue = len(finished) < self.basis_length
             if not do_continue: break
@@ -443,6 +444,7 @@ class FittingSolver:
                                                   dx, self.conf_fitter.propagation.np))
 
             for t in t_list:
+                #cos = cmath.exp(1j * 2.0 * math.pi * self.conf_fitter.propagation.nu_L * t)
                 cos = math.cos(2.0 * math.pi * self.conf_fitter.propagation.nu_L * t)
                 E_tlist_init.append(self.laser_field(self.conf_fitter.propagation.E0, t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma) * cos)
 
@@ -655,6 +657,7 @@ class FittingSolver:
                       math_base.cprod(chi1_e, psi1_e, stat.dx, conf_prop.np)
 
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
+                #E_init = s * conf_prop.E0 * cmath.exp(1j * 2.0 * math.pi * conf_prop.nu_L * (dyn.t - (abs(stat.dt) / 2.0)))
                 E_init = s * conf_prop.E0 * math.cos(2.0 * math.pi * conf_prop.nu_L * (dyn.t - (abs(stat.dt) / 2.0)))
                 delta_E = - s * (self.a0 * sum).imag / self.conf_fitter.h_lambda #/ phys_base.Red_Planck_h * phys_base.cm_to_erg
                 #delta_E *= cmath.exp(-2.0 * 1j * math.pi * conf_prop.nu_L * (dyn.t - (abs(stat.dt) / 2.0)))
@@ -669,7 +672,6 @@ class FittingSolver:
                     E = E_init + delta_E
                 else:
                     E = self.dyn.E_tlist[prop.dyn.l] + delta_E
-                #assert abs(E) < conf_prop.E0 * 100
         else:
             E = self.dyn.E_patched
 
@@ -693,6 +695,7 @@ class FittingSolver:
         # optimal control unitary transformation algorithm
         elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             if self.dyn.iter_step == 0:
+                #cos = cmath.exp(1j * 2.0 * math.pi * conf_prop.nu_L * dyn.t)
                 cos = math.cos(2.0 * math.pi * conf_prop.nu_L * dyn.t)
                 E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma) * cos
             else:

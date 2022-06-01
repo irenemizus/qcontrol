@@ -20,6 +20,7 @@ class fitter_Tests(unittest.TestCase):
             "epsilon": 1e-15,
             "impulses_number": 0,
             "delay": 600e-15,
+            "init_guess": "zero",
             "propagation": {
                 "m": 0.5,
                 "pot_type": "harmonic",
@@ -59,43 +60,49 @@ class fitter_Tests(unittest.TestCase):
         grid = grid_setup.GridConstructor(conf.propagation)
         dx, x = grid.grid_setup()
 
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
+        # checking of triviality of the system
+        ntriv = task_manager_imp.ntriv
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_single_harm_.py")
-        prop_reporter.print_all("test_data/prop_single_harm_.py", "test_data/fitter_single_harm_.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_single_harm_.py")
+        #prop_reporter.print_all("test_data/prop_single_harm_.py", "test_data/fitter_single_harm_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
-                                      0.000001, complex(0.001, 0.001), 0.000001,
+                                      0.000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.000001,
                                       0.0001, 0.0001), 1.e-51)
         tvals_prop_up_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
-                                      0.000001, complex(0.001, 0.001), 0.001,
+                                      0.000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001), 1.e-51)
@@ -124,6 +131,7 @@ class fitter_Tests(unittest.TestCase):
             "epsilon": 1e-15,
             "impulses_number": 0,
             "delay": 600e-15,
+            "init_guess": "zero",
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -163,43 +171,50 @@ class fitter_Tests(unittest.TestCase):
         grid = grid_setup.GridConstructor(conf.propagation)
         dx, x = grid.grid_setup()
 
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
 
+        # checking of triviality of the system
+        ntriv = task_manager_imp.ntriv
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        #fitting_solver.time_propagation(dx, x)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fit_iter_single_morse.py")
-        #prop_reporter.print_all("test_data/prop_single_morse.py", "test_data/fitter_single_morse.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_single_morse_.py")
+        #prop_reporter.print_all("test_data/prop_single_morse_.py", "test_data/fitter_single_morse_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.0001, 0.001, 0.001, 0.001, 0.000001,
-                                            0.0000001, complex(0.001, 0.001), 0.0000001,
+                                            0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
                                              0.0001, 0.0001), 1.e-51)
         tvals_prop_up_comparer = TableComparer((0.0001, 0.001, 0.001, 0.001, 0.000001,
-                                            0.0000001, complex(0.001, 0.001), 0.001,
+                                            0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                                 0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001), 1.e-51)
@@ -210,8 +225,7 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_single_morse.psi_up_tab))
 
         self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_single_morse.tvals_tab))
-        self.assertTrue(
-            tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_single_morse.tvals_up_tab))
+        self.assertTrue(tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_single_morse.tvals_up_tab))
 
         self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_single_morse.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_single_morse.iter_tab))
@@ -229,6 +243,7 @@ class fitter_Tests(unittest.TestCase):
             "epsilon": 1e-15,
             "impulses_number": 0,
             "delay": 600e-15,
+            "init_guess": "zero",
             "propagation": {
               "m": 0.5,
               "pot_type": "morse",
@@ -268,43 +283,50 @@ class fitter_Tests(unittest.TestCase):
         grid = grid_setup.GridConstructor(conf.propagation)
         dx, x = grid.grid_setup()
 
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
 
+        # checking of triviality of the system
+        ntriv = task_manager_imp.ntriv
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        #fitting_solver.time_propagation(dx, x)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fit_iter_filter.py")
-        #prop_reporter.print_all("test_data/prop_filter.py", "test_data/fitter_filter.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_filter_.py")
+        #prop_reporter.print_all("test_data/prop_filter_.py", "test_data/fitter_filter_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.0001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.0000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
                                       0.0001, 0.0001), 1.e-51)
         tvals_prop_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.0001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.0001, 0.0001), 1.e-51)
@@ -334,6 +356,7 @@ class fitter_Tests(unittest.TestCase):
             "epsilon": 1e-15,
             "impulses_number": 1,
             "delay": 600e-15,
+            "init_guess": "gauss",
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -373,43 +396,50 @@ class fitter_Tests(unittest.TestCase):
         grid = grid_setup.GridConstructor(conf.propagation)
         dx, x = grid.grid_setup()
 
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
 
+        # checking of triviality of the system
+        ntriv = task_manager_imp.ntriv
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        #fitting_solver.time_propagation(dx, x)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fit_iter_trans_woc.py")
-        #prop_reporter.print_all("test_data/prop_trans_woc.py", "test_data/fitter_trans_woc.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_trans_woc_.py")
+        #prop_reporter.print_all("test_data/prop_trans_woc_.py", "test_data/fitter_trans_woc_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.0000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
                                       0.0001, 0.0001), 1.e-51)
         tvals_prop_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001), 1.e-51)
@@ -439,6 +469,7 @@ class fitter_Tests(unittest.TestCase):
             "epsilon": 1e-15,
             "impulses_number": 2,
             "delay": 300e-15,
+            "init_guess": "gauss",
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -478,43 +509,50 @@ class fitter_Tests(unittest.TestCase):
         grid = grid_setup.GridConstructor(conf.propagation)
         dx, x = grid.grid_setup()
 
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
 
+        # checking of triviality of the system
+        ntriv = task_manager_imp.ntriv
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        #fitting_solver.time_propagation(dx, x)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fit_iter_int_ctrl.py")
-        #prop_reporter.print_all("test_data/prop_int_ctrl.py", "test_data/fitter_int_ctrl.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_int_ctrl_.py")
+        #prop_reporter.print_all("test_data/prop_int_ctrl_.py", "test_data/fitter_int_ctrl_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.0000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
                                       0.0001, 0.0001), 1.e-51)
         tvals_prop_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001), 1.e-51)
@@ -544,6 +582,7 @@ class fitter_Tests(unittest.TestCase):
             "epsilon": 1e-15,
             "impulses_number": 1,
             "delay": 600e-15,
+            "init_guess": "gauss",
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -583,43 +622,50 @@ class fitter_Tests(unittest.TestCase):
         grid = grid_setup.GridConstructor(conf.propagation)
         dx, x = grid.grid_setup()
 
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
 
+        # checking of triviality of the system
+        ntriv = task_manager_imp.ntriv
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        #fitting_solver.time_propagation(dx, x)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_pop.py")
-        #prop_reporter.print_all("test_data/prop_loc_ctrl_pop.py", "test_data/fitter_loc_ctrl_pop.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_pop_.py")
+        #prop_reporter.print_all("test_data/prop_loc_ctrl_pop_.py", "test_data/fitter_loc_ctrl_pop_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.0000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
                                       0.0001, 0.0001), 1.e-51)
         tvals_prop_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001), 1.e-51)
@@ -649,6 +695,7 @@ class fitter_Tests(unittest.TestCase):
             "epsilon": 1e-15,
             "impulses_number": 1,
             "delay": 600e-15,
+            "init_guess": "gauss",
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -688,43 +735,49 @@ class fitter_Tests(unittest.TestCase):
         grid = grid_setup.GridConstructor(conf.propagation)
         dx, x = grid.grid_setup()
 
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
 
+        # checking of triviality of the system
+        ntriv = task_manager_imp.ntriv
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        #fitting_solver.time_propagation(dx, x)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_proj.py")
-        #prop_reporter.print_all("test_data/prop_loc_ctrl_proj.py", "test_data/fitter_loc_ctrl_proj.py")
-
+        #fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_proj_.py")
+        #prop_reporter.print_all("test_data/prop_loc_ctrl_proj_.py", "test_data/fitter_loc_ctrl_proj_.py")
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.0000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
                                       0.0001, 0.0001), 1.e-51)
         tvals_prop_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001), 1.e-51)
@@ -756,6 +809,7 @@ class fitter_Tests(unittest.TestCase):
             "delay": 600e-15,
             "iter_max": 1,
             "h_lambda": 0.0066,
+            "init_guess": "gauss",
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -795,43 +849,50 @@ class fitter_Tests(unittest.TestCase):
         grid = grid_setup.GridConstructor(conf.propagation)
         dx, x = grid.grid_setup()
 
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
         # evaluating of initial wavefunction
         psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e)
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
 
+        # checking of triviality of the system
+        ntriv = task_manager_imp.ntriv
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        #fitting_solver.time_propagation(dx, x)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot.py")
-        #prop_reporter.print_all("test_data/prop_opt_ctrl_krot.py", "test_data/fitter_opt_ctrl_krot.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot_.py")
+        #prop_reporter.print_all("test_data/prop_opt_ctrl_krot_.py", "test_data/fitter_opt_ctrl_krot_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.0000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
                                       0.0001, 0.0001), 1.e-51)
         tvals_prop_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                       0.0001, 0.0001), 1.e-51)
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001), 1.e-51)

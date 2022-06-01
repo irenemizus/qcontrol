@@ -9,8 +9,8 @@ hart_to_cm = 219474.6313708 # 1 / cm / hartree
 cm_to_erg = 1.98644568e-16 # erg * cm
 dalt_to_au = 1822.888486 # a.u. / D
 Red_Planck_h = 1.054572e-27 # erg * s
-Hz_to_cm = 3.33563492e-11 # s / cm
-
+#Hz_to_cm = 3.33563492e-11 # s / cm
+Hz_to_cm = 3.33564095e-11 # s / cm
 
 def diff_cpu(psi, akx2, np):
     """ Calculates kinetic energy mapping carried out in momentum space
@@ -144,7 +144,7 @@ def residum_cpu(psi, v, akx2, xp, np, emin, emax, E, eL, ntriv, E_full=0.0):
         assert v[i][1].size == np
     assert akx2.size == np
 
-    hpsi = hamil2D_cpu(psi, v, akx2, np, E, eL, ntriv, E_full)
+    hpsi = hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=E, eL=eL, ntriv=ntriv, E_full=E_full)
 
     phi = []
     # changing the range from -2 to 2
@@ -218,7 +218,7 @@ def prop_cpu(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, ntriv, E_full=0.0):
     # recurrence loop
     for j in range(nch - 1):
         # mapping by scaled operator of phi
-        phi = residum_cpu(phi, v, akx2, xp[j], np, emin, emax, E, eL, ntriv, E_full)
+        phi = residum_cpu(psi=phi, v=v, akx2=akx2, xp=xp[j], np=np, emin=emin, emax=emax, E=E, eL=eL, ntriv=ntriv, E_full=E_full)
 
         # accumulation of Newtonian's interpolation
         for n in range(len(psi)):

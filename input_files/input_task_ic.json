@@ -7,6 +7,7 @@
     "epsilon": 1e-15,
     "impulses_number": 2,
     "delay": 600e-15,
+    "init_guess": "gauss",
     "propagation": {
       "m": 0.5,
       "pot_type": "morse",

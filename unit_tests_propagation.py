@@ -5,6 +5,7 @@ from propagation import *
 import grid_setup
 import task_manager
 from config import TaskRootConfiguration
+from psi_basis import PsiBasis
 from test_tools import *
 
 
@@ -23,10 +24,10 @@ class test_facilities_Tests(unittest.TestCase):
     def test_table_comparer(self):
         psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                        0.0000001, complex(0.001, 0.001), 0.0000001,
+                                        0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
                                         0.0001, 0.0001), 1.e-51)
         tvals_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                           0.0000001, complex(0.001, 0.001), 0.001,
+                                           0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                            0.0001, 0.0001), 1.e-51)
 
         self.assertTrue(psi_comparer.compare(test_data.prop_trans_woc.psi_tab, test_data.prop_trans_woc.psi_tab))
@@ -49,6 +50,7 @@ class propagation_Tests(unittest.TestCase):
             "epsilon": 1e-15,
             "impulses_number": 1,
             "delay": 600e-15,
+            "init_guess": "gauss",
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -80,35 +82,39 @@ class propagation_Tests(unittest.TestCase):
         grid = grid_setup.GridConstructor(conf.propagation)
         dx, x = grid.grid_setup()
 
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
+        psi0 = PsiBasis(1)
         # evaluating of initial wavefunction
-        psi0 = [
-            task_manager._PsiFunctions.morse(x,
+        psi0.psis[0].f[0] = task_manager._PsiFunctions.morse(x,
                                              conf.propagation.np,
                                              conf.propagation.x0,
                                              conf.propagation.p0,
                                              conf.propagation.m,
                                              conf.propagation.De,
-                                             conf.propagation.a),
-            task_manager._PsiFunctions.zero(conf.propagation.np)
-        ]
+                                             conf.propagation.a,
+                                             conf.propagation.L)
+        psi0.psis[0].f[1] = task_manager._PsiFunctions.zero(conf.propagation.np)
 
+        psif = PsiBasis(1)
         # evaluating of the final goal
-        psif = [
-            task_manager._PsiFunctions.zero(conf.propagation.np),
-            task_manager._PsiFunctions.morse(x,
+        psif.psis[0].f[0] = task_manager._PsiFunctions.zero(conf.propagation.np)
+        psif.psis[0].f[1] = task_manager._PsiFunctions.morse(x,
                                               conf.propagation.np,
                                               conf.propagation.x0p + conf.propagation.x0,
                                               conf.propagation.p0,
                                               conf.propagation.m,
                                               conf.propagation.De_e,
-                                              conf.propagation.a_e)
-        ]
+                                              conf.propagation.a_e,
+                                              conf.propagation.L)
 
-        return conf, dx, x, psi0, psif
+        return conf, dx, x, psi0, psif, t_step, t_list
 
 
     def test_prop_forward(self):
-        conf, dx, x, psi0, psif = self._test_setup()
+        conf, dx, x, psi0, psif, t_step, t_list = self._test_setup()
 
         def _warning_collocation_points(np, np_min):
             pass
@@ -119,12 +125,12 @@ class propagation_Tests(unittest.TestCase):
         def process_instrumentation(instr: PropagationSolver.InstrumentationOutputData):
             pass
 
-        def freq_multiplier(stat: PropagationSolver.StaticState):
+        def freq_multiplier(dyn: PropagationSolver.DynamicState, stat: PropagationSolver.StaticState):
             return 1.0
 
-        def laser_field_envelope(stat: PropagationSolver.StaticState,
+        def laser_field_envelope(prop: PropagationSolver, stat: PropagationSolver.StaticState,
                                dyn: PropagationSolver.DynamicState):
-            return task_manager._LaserFields.laser_field(conf.propagation.E0, dyn.t,
+            return task_manager._LaserFields.laser_field_gauss(conf.propagation.E0, dyn.t,
                                          conf.propagation.t0, conf.propagation.sigma)
 
         def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult, dir):
@@ -135,6 +141,7 @@ class propagation_Tests(unittest.TestCase):
 
         mod_fileout = 10000
         lmin = 0
+        ntriv = 1
 
         reporter_impl = TestPropagationReporter(mod_fileout, lmin)
         reporter_impl.open()
@@ -148,9 +155,10 @@ class propagation_Tests(unittest.TestCase):
             freq_multiplier=freq_multiplier,
             dynamic_state_factory=dynamic_state_factory,
             mod_log=conf.mod_log,
+            ntriv=ntriv,
             conf_prop=conf.propagation)
 
-        solver.start(dx, x, psi0, psif, PropagationSolver.Direction.FORWARD)
+        solver.start(dx, x, t_step, psi0.psis[0], psif.psis[0], PropagationSolver.Direction.FORWARD)
 
         # main propagation loop
         while solver.step(0.0):
@@ -159,14 +167,14 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        #reporter_impl.print_all("test_data/prop_trans_woc_forw.py", None)
+        #reporter_impl.print_all("test_data/prop_trans_woc_forw_.py", None)
 
         psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.0000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
                                       0.0001, 0.0001), 1.e-51)
         tvals_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                       0.0001, 0.0001), 1.e-51)
 
         self.assertTrue(psi_comparer.compare(reporter_impl.psi_tab, test_data.prop_trans_woc_forw.psi_tab))
@@ -177,7 +185,7 @@ class propagation_Tests(unittest.TestCase):
 
 
     def test_prop_backward(self):
-        conf, dx, x, psi0, psif = self._test_setup()
+        conf, dx, x, psi0, psif, t_step, t_list = self._test_setup()
 
         def _warning_collocation_points(np, np_min):
             pass
@@ -188,12 +196,12 @@ class propagation_Tests(unittest.TestCase):
         def process_instrumentation(instr: PropagationSolver.InstrumentationOutputData):
             pass
 
-        def freq_multiplier(stat: PropagationSolver.StaticState):
+        def freq_multiplier(dyn: PropagationSolver.DynamicState, stat: PropagationSolver.StaticState):
             return 1.0
 
-        def laser_field_envelope(stat: PropagationSolver.StaticState,
+        def laser_field_envelope(prop: PropagationSolver, stat: PropagationSolver.StaticState,
                                dyn: PropagationSolver.DynamicState):
-            return task_manager._LaserFields.laser_field(conf.propagation.E0, dyn.t,
+            return task_manager._LaserFields.laser_field_gauss(conf.propagation.E0, dyn.t,
                                          conf.propagation.t0, conf.propagation.sigma)
 
         def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult, dir):
@@ -204,6 +212,7 @@ class propagation_Tests(unittest.TestCase):
 
         mod_fileout = 10000
         lmin = 0
+        ntriv = 1
 
         reporter_impl = TestPropagationReporter(mod_fileout, lmin)
         reporter_impl.open()
@@ -217,9 +226,10 @@ class propagation_Tests(unittest.TestCase):
             freq_multiplier=freq_multiplier,
             dynamic_state_factory=dynamic_state_factory,
             mod_log=conf.mod_log,
+            ntriv=ntriv,
             conf_prop=conf.propagation)
 
-        solver.start(dx, x, psif, psi0, PropagationSolver.Direction.BACKWARD)
+        solver.start(dx, x, t_step, psif.psis[0], psi0.psis[0], PropagationSolver.Direction.BACKWARD)
 
         # main propagation loop
         while solver.step(conf.propagation.T):
@@ -228,14 +238,14 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        #reporter_impl.print_all("test_data/prop_trans_woc_back.py", None)
+        #reporter_impl.print_all("test_data/prop_trans_woc_back_.py", None)
 
         psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.0000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
                                       0.0001, 0.0001), 1.e-51)
         tvals_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), 0.001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
                                       0.0001, 0.0001), 1.e-51)
 
         self.assertTrue(psi_comparer.compare(reporter_impl.psi_tab, test_data.prop_trans_woc_back.psi_tab))

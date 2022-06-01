@@ -2,13 +2,6 @@ import unittest
 from math_base import *
 from phys_base import func
 
-class coord_grid_Tests(unittest.TestCase):
-    def test_16(self):
-        self.assertTrue(numpy.allclose(coord_grid(0.2, 16), numpy.array([-1.5, -1.3, -1.1, -0.9,
-                                                             -0.7, -0.5, -0.3, -0.1,
-                                                              0.1,  0.3,  0.5,  0.7,
-                                                              0.9,  1.1,  1.3,  1.5])))
-
 
 class cprod_Tests(unittest.TestCase):
     def test_4norm(self):
@@ -27,7 +20,7 @@ class initak_Tests(unittest.TestCase):
     def test_4(self):
         dk = 10.0 * math.pi / 3.0
         dk2 = complex(dk * dk, 0)
-        self.assertTrue(numpy.allclose(initak(4, 0.2, 2), numpy.array([0, -dk2, -4.0 * dk2, -dk2])))
+        self.assertTrue(numpy.allclose(initak(4, 0.2, 2, 1), numpy.array([0, -dk2, -4.0 * dk2, -dk2])))
 
 
 class fold_Tests(unittest.TestCase):

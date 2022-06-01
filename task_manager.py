@@ -2,7 +2,6 @@ import cmath
 import math
 import numpy
 
-import phys_base
 from config import TaskRootConfiguration
 from propagation import PropagationSolver
 from psi_basis import PsiBasis
@@ -368,7 +367,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
         super().__init__(wf_type, conf_fitter)
 
     @staticmethod
-    def _pot(x, np, m, De, a, x0p, De_e, a_e, Du):
+    def _pot(x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
         # Lower morse potential
         v = MorseSingleStateTaskManager._pot_level1(x, m, De, a)
 
@@ -396,7 +395,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
             OUTPUT
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
 
-        return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du)
+        return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du, nu_L)
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
         psi_goal_obj = PsiBasis(1)
