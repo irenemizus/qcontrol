@@ -312,7 +312,7 @@ class fitter_Tests(unittest.TestCase):
 
         fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
@@ -909,6 +909,109 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_opt_ctrl_krot.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_krot.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_krot.iter_tab_E))
+
+
+    def test_opt_ctrl_ut_H1(self):
+        conf = TaskRootConfiguration.FitterConfiguration()
+
+        user_conf = {
+            "task_type": "optimal_control_unit_transform",
+            "epsilon": 1e-8,
+            "impulses_number": 1,
+            "iter_max": 7,
+            "h_lambda": 0.5,
+            "init_guess": "sqrsin",
+            "propagation": {
+                  "pot_type": "none",
+                  "wf_type": "const",
+                  "np": 1,
+                  "L": 1.0,
+                  "nch": 64,
+                  "Du": 100,
+                  "t0": 0.0,
+                  "E0": 40.0,
+                  "nt": 1000,
+                  "T": 33.35635E-13,
+                  "sigma": 66.7127E-13,
+                  "nu_L": 0.299793e13
+            },
+            "mod_log": 500
+        }
+
+        conf.load(user_conf)
+        print(conf)
+
+        mod_fileout = 100
+        lmin = 0
+        imod_fileout = 1
+        imin = -1
+
+        task_manager_imp = task_manager.create(conf)
+
+        # setup of the grid
+        grid = grid_setup.GridConstructor(conf.propagation)
+        dx, x = grid.grid_setup()
+
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
+        # evaluating of initial wavefunction
+        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
+
+        # evaluating of the final goal
+        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
+
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
+
+        # checking of triviality of the system
+        ntriv = task_manager_imp.ntriv
+
+        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
+        fit_reporter_imp.open()
+
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+                                              None, None)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fit_reporter_imp.close()
+
+        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+
+        # Uncomment in case of emergency :)
+        #fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_ut_H1.py")
+        #prop_reporter.print_all("test_data/prop_opt_ctrl_ut_H1.py", "test_data/fitter_opt_ctrl_ut_H1.py")
+
+        psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
+        tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.0000001,
+                                      0.0001, 0.0001), 1.e-51)
+        tvals_prop_up_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
+                                      0.0001, 0.0001), 1.e-51)
+
+        tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001), 1.e-51)
+        iter_fit_comparer = TableComparer((0, 0.0001), 1.e-51)
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-51)
+
+        self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_opt_ctrl_ut_H1.psi_tab))
+        self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_opt_ctrl_ut_H1.psi_up_tab))
+
+        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_opt_ctrl_ut_H1.tvals_tab))
+        self.assertTrue(
+            tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_opt_ctrl_ut_H1.tvals_up_tab))
+
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_opt_ctrl_ut_H1.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_ut_H1.iter_tab))
+        self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_ut_H1.iter_tab_E))
 
 
 if __name__ == '__main__':
