@@ -1,19 +1,6 @@
 import math
+from typing import Dict
 import numpy
-
-
-def coord_grid(dx, np):
-    """ Setting of the coordinate grid; it should be symmetric,
-        equidistant and centered at about minimum of the potential
-        INPUT
-        dx  coordinate grid step
-        np  number of grid points
-        OUTPUT
-        x  vector of length np defining positions of grid points """
-
-    shift = float(np - 1) * dx / 2.0
-    x = [float(i) * dx - shift for i in range(np)]
-    return numpy.array(x)
 
 
 def cprod(cx1, cx2, dx, np):
@@ -68,7 +55,7 @@ def cprod3(cx1, cx, cx2, dx, np):
     return numpy.vdot(cx2, cx1cx) * dx
 
 
-def initak(n, dx, iorder):
+def initak(n, dx, iorder, ntriv):
     """ Initializes an array ak, which can be used for
         multiplication in the frequency domain of an FFT.
         The array will contain the values (1j*k)^iorder,
@@ -78,16 +65,19 @@ def initak(n, dx, iorder):
         dx      coordinate grid step in the time domain
         iorder  the power of 1j*k (equivalent to the order of the
                 derivative when the FFT is used for differentiating)
+        ntriv   constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+                                    0 -- a trivial 2-level system
         OUTPUT
         ak      complex one dimensional array of length n """
 
-    dk = 2.0 * math.pi / (n - 1) / dx
+    ak = numpy.zeros(n, numpy.complex128)
 
-    ak = numpy.zeros(n, numpy.complex)
+    if ntriv:
+        dk = 2.0 * math.pi / (n - 1) / dx
 
-    for i in range(int(n / 2)):
-        ak[i + 1] = pow(1j * dk * float(i + 1), iorder)
-        ak[n - i - 1] = pow(-1, iorder) * ak[i + 1]
+        for i in range(int(n / 2)):
+            ak[i + 1] = pow(1j * dk * float(i + 1), iorder)
+            ak[n - i - 1] = pow(-1, iorder) * ak[i + 1]
 
     return ak
 
@@ -114,7 +104,7 @@ def fold(src):
 # All the possible values of reorder() function
 # are gonna be kept in this dictionary in order
 # to avoid repeating calculation
-reorder_CACHE = {}
+reorder_CACHE: Dict[int, list[int]] = {}
 
 
 def reorder(nch):
@@ -164,12 +154,12 @@ def points(nch, t, func):
     jj = reorder(nch)
 
     # calculating of the Chebyshev interpolation points
-    xp = numpy.zeros(nch, numpy.float)
+    xp = numpy.zeros(nch, numpy.float64)
     for i in range(nch):
         phase = float(2 * jj[i] + 1) / float(2 * nch) * math.pi
         xp[i] = 2.0 * math.cos(phase)
 
-    dv = numpy.zeros(nch, numpy.complex)
+    dv = numpy.zeros(nch, numpy.complex128)
     # calculating the first two terms of the divided difference
     dv[0] = func(xp[0], t)
     dv[1] = (func(xp[1], t) - dv[0]) / (xp[1] - xp[0])

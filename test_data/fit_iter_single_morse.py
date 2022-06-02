@@ -1,7 +1,7 @@
 from numpy import array
 
 iter_tab = [
-    (0, 0.0),
+    (0, 0.9999999373130112),
 ]
 
 iter_tab_E = [

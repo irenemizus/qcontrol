@@ -3,11 +3,13 @@ import cmath
 import copy
 from enum import Enum
 import datetime
+from typing import Callable, List, Optional
 
 import numpy
 
 import math_base
 import phys_base
+from psi_basis import Psi
 from reporter import PropagationReporter
 
 
@@ -15,12 +17,19 @@ class PropagationSolver:
     # These values are calculated once and forever
     # They should NEVER change
     class StaticState:
-        def __init__(self, psi0=None, psif=None, moms0: phys_base.ExpectationValues=None,
-                     cnorm0=None, cnormf=None,
-                     cener0=None, cenerf=None,
-                     overlp00=None, overlpf0=None,
-                     dt=0.0, dx=0.0, x=None, v=None, akx2=None):
-            assert (psi0 is None and psif is None) or (psi0[0] is not psif[0] and psi0[1] is not psif[1]), \
+        psi0: Psi
+        psif: Psi
+
+        def __init__(self, psi0: Psi, psif: Psi, moms0: phys_base.ExpectationValues,
+                     cnorm0: List[complex],
+                     cnormf: List[complex],
+                     cener0: List[complex],
+                     cenerf: List[complex],
+                     overlp00: List[complex],
+                     overlpf0: List[complex],
+                     dt: float = 0.0, dx: float = 0.0,
+                     x: numpy.ndarray = numpy.array(0), v=None, akx2=None):
+            assert (psi0 is None and psif is None) or (psi0.f[0] is not psif.f[0] and psi0.f[1] is not psif.f[1]), \
                 "A single array is passed twice (as psi0 and psif). Clone it!"
 
             self.psi0 = psi0
@@ -38,11 +47,16 @@ class PropagationSolver:
             self.v = v
             self.akx2 = akx2
 
-
     # These parameters are updated on each calculation step
     class DynamicState:
-        def __init__(self, l=0, t=0.0, psi=None, psi_omega=None, E=0.0, freq_mult=1.0, dir=None):
-            assert (psi is None and psi_omega is None) or (psi[0] is not psi_omega[0] and psi[1] is not psi_omega[1] ), "A single array is passed twice (as psi and psi_omega). Clone it!"
+        psi: Psi
+        psi_omega: Psi
+
+        def __init__(self, l=0, t=0.0, psi: Psi = Psi(None), psi_omega: Psi = Psi(None),
+                     E=0.0, freq_mult=1.0, dir=None):
+            assert (psi is None and psi_omega is None) or \
+                   (psi.f[0] is not psi_omega.f[0] and psi.f[1] is not psi_omega.f[1]), \
+                "A single array is passed twice (as psi and psi_omega). Clone it!"
 
             self.l = l
             self.t = t
@@ -52,12 +66,13 @@ class PropagationSolver:
             self.freq_mult = freq_mult
             self.dir = dir
 
-
     # These parameters are recalculated from scratch on each step,
     # and then follows an output of them to the user
     class InstrumentationOutputData:
-        def __init__(self, moms: phys_base.ExpectationValues, cnorm, psigc_psie, psigc_dv_psie,
-                     cener, E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after):
+        psigc_psie: complex
+
+        def __init__(self, moms: phys_base.ExpectationValues, cnorm, psigc_psie: complex, psigc_dv_psie: complex,
+                     cener: list[complex], E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after):
             self.moms = moms
             self.cnorm = cnorm
             self.psigc_psie = psigc_psie
@@ -72,18 +87,20 @@ class PropagationSolver:
             self.time_before = time_before
             self.time_after = time_after
 
-
     # The user's decision to correct/iterate or not to correct/iterate a step
     class StepReaction(Enum):
         OK = 0
         CORRECT = 1
         ITERATE = 2
 
-
     class Direction(Enum):
         FORWARD = 1
         BACKWARD = -1
 
+    stat: Optional[StaticState]
+    dyn: Optional[DynamicState]
+    instr: Optional[InstrumentationOutputData]
+    freq_multiplier: Optional[Callable[[DynamicState, StaticState], float]]
 
     def __init__(
             self,
@@ -92,9 +109,10 @@ class PropagationSolver:
             _warning_time_steps,
             reporter: PropagationReporter,
             laser_field_envelope,
-            freq_multiplier,
+            freq_multiplier: Callable[[DynamicState, StaticState], float],
             dynamic_state_factory,
             mod_log,
+            ntriv,
             conf_prop):
         self.milliseconds_full = 0.0
         self.pot = pot
@@ -105,6 +123,7 @@ class PropagationSolver:
         self.freq_multiplier = freq_multiplier
         self.dynamic_state_factory = dynamic_state_factory
         self.mod_log = mod_log
+        self.ntriv = ntriv
 
         self.m = conf_prop.m
         self.L = conf_prop.L
@@ -129,42 +148,44 @@ class PropagationSolver:
         self.dyn = None
         self.instr = None
 
-
     @staticmethod
-    def _norm_eval(psi, dx, np):
+    def _norm_eval(psi: Psi, dx, np):
         cnorm = []
-        cnorm.append(math_base.cprod(psi[0], psi[0], dx, np))
-        cnorm.append(math_base.cprod(psi[1], psi[1], dx, np))
+        cnorm.append(math_base.cprod(psi.f[0], psi.f[0], dx, np))
+        cnorm.append(math_base.cprod(psi.f[1], psi.f[1], dx, np))
         return cnorm
 
-
     @staticmethod
-    def _ener_eval(psi, v, akx2, dx, np):
+    def _ener_eval(psi: Psi, v, akx2, dx, np, eL, ntriv):
         cener = []
 
-        phi_l = phys_base.hamil(psi[0], v[0][1], akx2, np)
-        cener.append(math_base.cprod(phi_l, psi[0], dx, np))
+        phi_l = phys_base.hamil_cpu(psi.f[0], v[0][1], akx2, np, ntriv)
+        cener.append(math_base.cprod(psi.f[0], phi_l, dx, np))
 
-        phi_u = phys_base.hamil(psi[1], v[1][1], akx2, np)
-        cener.append(math_base.cprod(phi_u, psi[1], dx, np))
+        phi_u = phys_base.hamil_cpu(psi.f[1], v[1][1], akx2, np, ntriv)
+        cener.append(math_base.cprod(psi.f[1], phi_u, dx, np))
 
         return cener
 
-
     @staticmethod
-    def _pop_eval(psi_goal, psi, dx, np):
+    def _pop_eval(psi_goal: Psi, psi: Psi, dx, np):
         overlp = []
-        overlp.append(math_base.cprod(psi_goal[0], psi[0], dx, np))
-        overlp.append(math_base.cprod(psi_goal[1], psi[1], dx, np))
+        overlp.append(math_base.cprod(psi_goal.f[0], psi.f[0], dx, np))
+        overlp.append(math_base.cprod(psi_goal.f[1], psi.f[1], dx, np))
 
         return overlp
-
 
     def report_static(self):
         # check if input data are correct in terms of the given problem
         # calculating the initial energy range of the Hamiltonian operator H
-        emax0 = self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0
-        emin0 = self.stat.v[0][0]
+        emax0g = self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)])# + 2.0
+        emin0g = self.stat.v[0][0]
+
+        emax0e = self.stat.v[1][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)])# + 2.0
+        emin0e = self.stat.v[1][0]
+
+        emax0 = max(emax0g, emin0g, emax0e, emin0e)
+        emin0 = min(emax0g, emin0g, emax0e, emin0e)
 
         # calculating the initial minimum number of collocation points that is needed for convergence
         np_min0 = int(
@@ -175,8 +196,7 @@ class PropagationSolver:
 
         # calculating the initial minimum number of time steps that is needed for convergence
         nt_min0 = int(
-            math.ceil((emax0 - emin0) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h
-                      )
+            math.ceil((emax0 - emin0) * self.T * phys_base.cm_to_erg / 2.0 / phys_base.Red_Planck_h)
         )
 
         if self.np < np_min0:
@@ -189,21 +209,22 @@ class PropagationSolver:
         cener0_tot = self.stat.cener0[0] + self.stat.cener0[1]
         overlp0 =  self.stat.overlp00[0] + self.stat.overlp00[1]
         overlpf = self.stat.overlpf0[0] + self.stat.overlpf0[1]
-        overlp0_abs = abs(overlp0) + abs(overlpf)
-        max_ind_psi_l = numpy.argmax(self.stat.psi0[0])
-        max_ind_psi_u = numpy.argmax(self.stat.psi0[1])
+        overlp0_abs = [abs(overlp0), abs(overlpf)]
+        max_ind_psi_l = numpy.argmax(self.stat.psi0.f[0])
+        max_ind_psi_u = numpy.argmax(self.stat.psi0.f[1])
 
         fm_start = 1.0
 
         # plotting initial values
         self.reporter.print_time_point_prop(self.dyn.l, self.stat.psi0, self.dyn.t, self.stat.x, self.np, self.stat.moms0,
                                        self.stat.cener0[0].real, self.stat.cener0[1].real,
-                                       overlp0, overlpf, overlp0_abs, cener0_tot.real,
-                                       abs(self.stat.psi0[0][max_ind_psi_l]), self.stat.psi0[0][max_ind_psi_l].real,
-                                       abs(self.stat.psi0[1][max_ind_psi_u]), self.stat.psi0[1][max_ind_psi_u].real,
+                                       self.stat.overlp00, self.stat.overlpf0, overlp0_abs, cener0_tot.real,
+                                       abs(self.stat.psi0.f[0][max_ind_psi_l]), self.stat.psi0.f[0][max_ind_psi_l].real,
+                                       abs(self.stat.psi0.f[1][max_ind_psi_u]), self.stat.psi0.f[1][max_ind_psi_u].real,
                                        abs(self.dyn.E), fm_start)
 
         print("Initial emax = ", emax0)
+        print("Initial emin = ", emin0)
 
         print(" Initial state features: ")
         print("Initial normalization (ground state): ", abs(self.stat.cnorm0[0]))
@@ -229,20 +250,20 @@ class PropagationSolver:
         cener_tot = self.instr.cener[0] + self.instr.cener[1]
         overlp0 = self.instr.overlp0[0] + self.instr.overlp0[1]
         overlpf = self.instr.overlpf[0] + self.instr.overlpf[1]
-        overlp_abs = abs(overlp0) + abs(overlpf)
+        overlp_abs = [abs(overlp0), abs(overlpf)]
 
         time_span = self.instr.time_after - self.instr.time_before
         milliseconds_per_step = time_span.microseconds / 1000
         self.milliseconds_full += milliseconds_per_step
 
-        max_ind_psi_l = numpy.argmax(abs(self.dyn.psi[0]))
-        max_ind_psi_u = numpy.argmax(abs(self.dyn.psi[1]))
+        max_ind_psi_l = numpy.argmax(abs(self.dyn.psi.f[0]))
+        max_ind_psi_u = numpy.argmax(abs(self.dyn.psi.f[1]))
 
         self.reporter.print_time_point_prop(self.dyn.l, self.dyn.psi, self.dyn.t, self.stat.x, self.np,
                                             self.instr.moms, self.instr.cener[0].real, self.instr.cener[1].real,
-                                            overlp0, overlpf, overlp_abs, cener_tot.real,
-                                            abs(self.dyn.psi[0][max_ind_psi_l]), self.dyn.psi[0][max_ind_psi_l].real,
-                                            abs(self.dyn.psi[1][max_ind_psi_u]), self.dyn.psi[1][max_ind_psi_u].real,
+                                            self.instr.overlp0, self.instr.overlpf, overlp_abs, cener_tot.real,
+                                            abs(self.dyn.psi.f[0][max_ind_psi_l]), self.dyn.psi.f[0][max_ind_psi_l].real,
+                                            abs(self.dyn.psi.f[1][max_ind_psi_u]), self.dyn.psi.f[1][max_ind_psi_u].real,
                                             abs(self.dyn.E), self.dyn.freq_mult)
 
         if self.dyn.l % self.mod_log == 0:
@@ -267,12 +288,12 @@ class PropagationSolver:
                     self.milliseconds_full / self.dyn.l))
 
 
-    def start(self, dx, x, psi0, psif, dir: Direction):
+    def start(self, dx, x, t_step, psi0, psif, dir: Direction):
         # evaluating of potential(s)
-        v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du)
+        v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du, self.nu_L)
 
         # evaluating of k vector
-        akx2 = math_base.initak(self.np, dx, 2)
+        akx2 = math_base.initak(self.np, dx, 2, self.ntriv)
 
         # evaluating of kinetic energy
         akx2 *= -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
@@ -281,24 +302,27 @@ class PropagationSolver:
         cnorm0 = self._norm_eval(psi0, dx, self.np)
 
         # calculating of initial ground/excited energies
-        cener0 = self._ener_eval(psi0, v, akx2, dx, self.np)
+        eL = self.nu_L * phys_base.Hz_to_cm / 2.0
+        cener0 = self._ener_eval(psi0, v, akx2, dx, self.np, eL, self.ntriv)
 
         # final normalization check
         cnormf = self._norm_eval(psif, dx, self.np)
 
         # calculating of final excited/filtered energy
-        cenerf = self._ener_eval(psif, v, akx2, dx, self.np)
+        cenerf = self._ener_eval(psif, v, akx2, dx, self.np, eL, self.ntriv)
 
         # time propagation
-        dt = dir.value * self.T / self.nt
+        dt = dir.value * t_step
         psi = copy.deepcopy(psi0)
+
+        #print("psi0 = ", psi.f)
 
         # initial population
         overlp00 = self._pop_eval(psi0, psi, dx, self.np)
         overlpf0 = self._pop_eval(psif, psi, dx, self.np)
 
         # calculating of initial expectation values
-        moms0 = phys_base.exp_vals_calc(psi, x, akx2, dx, self.np, self.m)
+        moms0 = phys_base.exp_vals_calc(psi, x, akx2, dx, self.np, self.m, self.ntriv)
 
         self.stat = PropagationSolver.StaticState(psi0, psif, moms0, cnorm0, cnormf,
                      cener0, cenerf, overlp00, overlpf0, dt, dx, x, v, akx2)
@@ -309,7 +333,7 @@ class PropagationSolver:
             self.dyn = self.dynamic_state_factory(0, self.T, psi, psi, 0.0, 1.0, dir)
 
         # Calculating the initial field value
-        self.dyn.E = self.laser_field_envelope(self.stat, self.dyn)
+        self.dyn.E = self.laser_field_envelope(self, self.stat, self.dyn)
 
         self.report_static()
 
@@ -322,73 +346,120 @@ class PropagationSolver:
         emax_list = []
         emin_list = []
         # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_l
-        emax_list.append(self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0)
+        emax_list.append(self.stat.v[0][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]))# + 2.0)
         emin_list.append(self.stat.v[0][0])
         # calculating limits of energy ranges of the one-dimensional Hamiltonian operator H_u
-        emax_list.append(self.stat.v[1][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]) + 2.0)
+        emax_list.append(self.stat.v[1][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]))# + 2.0)
         emin_list.append(self.stat.v[1][0])
 
         self.dyn.t = self.stat.dt * self.dyn.l + t_start
 
-        self.dyn.freq_mult = self.freq_multiplier(self.stat)
-
-        # Here we're transforming the problem to the one for psi_omega
-        exp_L = cmath.exp(1j * math.pi * self.nu_L * self.dyn.freq_mult * self.dyn.t)
-        psi_omega_l = self.dyn.psi[0] / exp_L
-        self.dyn.psi_omega[0][:] = psi_omega_l[:]
-        psi_omega_u = self.dyn.psi[1] * exp_L
-        self.dyn.psi_omega[1][:] = psi_omega_u[:]
-
-        # New energy ranges
         eL = self.nu_L * self.dyn.freq_mult * phys_base.Hz_to_cm / 2.0
-        emax_omega = []
-        emin_omega = []
+        exp_L = 1.0
 
-        emax_omega.append(emax_list[0] + self.E0 + eL)
-        emin_omega.append(emin_list[0] - self.E0 + eL)
+        # Here we're transforming the problem to the one for psi_omega -- if needed
+        if self.ntriv:
+            self.dyn.freq_mult = self.freq_multiplier(self.dyn, self.stat)
+            exp_L = cmath.exp(1j * math.pi * self.nu_L * self.dyn.freq_mult * self.dyn.t)
 
-        emax_omega.append(emax_list[1] + self.E0 - eL)
-        emin_omega.append(emin_list[1] - self.E0 - eL)
+            psi_omega_l = self.dyn.psi.f[0] / exp_L
+            self.dyn.psi_omega.f[0][:] = psi_omega_l[:]
+            psi_omega_u = self.dyn.psi.f[1] * exp_L
+            self.dyn.psi_omega.f[1][:] = psi_omega_u[:]
 
-        emax = max(emax_omega[0], emin_omega[0], emax_omega[1], emin_omega[1])
-        emin = min(emax_omega[0], emin_omega[0], emax_omega[1], emin_omega[1])
+            #print("|psi1| = ", abs(self.dyn.psi_omega.f[0]) + abs(self.dyn.psi_omega.f[1]))
+
+            # New energy ranges
+            emax_omega = []
+            emin_omega = []
+
+            emax_omega.append(emax_list[0] + self.E0 + eL)
+            emin_omega.append(emin_list[0] - self.E0 + eL)
+
+            emax_omega.append(emax_list[1] + self.E0 - eL)
+            emin_omega.append(emin_list[1] - self.E0 - eL)
+
+            emax = max(emax_omega[0], emin_omega[0], emax_omega[1], emin_omega[1])
+            emin = min(emax_omega[0], emin_omega[0], emax_omega[1], emin_omega[1])
+        else:
+            emax = max(emax_list[0], emax_list[1], emin_list[0], emin_list[1])
+            emin = min(emax_list[0], emax_list[1], emin_list[0], emin_list[1])
 
         t_sc = self.stat.dt * (emax - emin) * phys_base.cm_to_erg / 4.0 / phys_base.Red_Planck_h
+        #print("t_sc = ", t_sc)
 
-        self.dyn.E = self.laser_field_envelope(self.stat, self.dyn)
-        E_full = self.dyn.E * exp_L * exp_L
+        self.dyn.E = self.laser_field_envelope(self, self.stat, self.dyn)
 
-        self.dyn.psi_omega = phys_base.prop(self.dyn.psi_omega, t_sc, self.nch, self.np, self.stat.v, self.stat.akx2, emin, emax, self.dyn.E, eL)
+        psigc_psie = 0.0
+        psigc_dv_psie = 0.0
 
         cnorm = []
-        cnorm.append(math_base.cprod(self.dyn.psi_omega[0], self.dyn.psi_omega[0], self.stat.dx, self.np))
-        cnorm.append(math_base.cprod(self.dyn.psi_omega[1], self.dyn.psi_omega[1], self.stat.dx, self.np))
-        cnorm_sum = cnorm[0] + cnorm[1]
+        if self.ntriv:
+            E_full = self.dyn.E * exp_L * exp_L
+            self.dyn.psi_omega = Psi(
+                f=phys_base.prop_cpu(psi=self.dyn.psi_omega.f, t_sc=t_sc, nch=self.nch, np=self.np, v=self.stat.v,
+                                     akx2=self.stat.akx2, emin=emin, emax=emax, E=self.dyn.E, eL=eL, ntriv=self.ntriv),
+                lvls=self.dyn.psi_omega.lvls())
 
-        # renormalization
-        if abs(cnorm_sum) > 0.0:
-            self.dyn.psi_omega[0] /= math.sqrt(abs(cnorm_sum))
-            self.dyn.psi_omega[1] /= math.sqrt(abs(cnorm_sum))
+            #print("|psi2| = ", abs(self.dyn.psi_omega.f[0]) + abs(self.dyn.psi_omega.f[1]))
 
-        psigc_psie = math_base.cprod(self.dyn.psi_omega[1], self.dyn.psi_omega[0], self.stat.dx, self.np)
-        psigc_dv_psie = math_base.cprod3(self.dyn.psi_omega[1], self.stat.v[0][1] - self.stat.v[1][1], self.dyn.psi_omega[0], self.stat.dx, self.np)
 
-        # converting back to psi
-        self.dyn.psi[0] = self.dyn.psi_omega[0] * exp_L
-        self.dyn.psi[1] = self.dyn.psi_omega[1] / exp_L
+            cnorm.append(math_base.cprod(self.dyn.psi_omega.f[0], self.dyn.psi_omega.f[0], self.stat.dx, self.np))
+            cnorm.append(math_base.cprod(self.dyn.psi_omega.f[1], self.dyn.psi_omega.f[1], self.stat.dx, self.np))
+            cnorm_sum = cnorm[0] + cnorm[1]
+
+            # renormalization
+            if abs(cnorm_sum) > 0.0:
+                self.dyn.psi_omega.f[0] /= math.sqrt(abs(cnorm_sum))
+                self.dyn.psi_omega.f[1] /= math.sqrt(abs(cnorm_sum))
+
+            #print("|psi3| = ", abs(self.dyn.psi_omega.f[0]) + abs(self.dyn.psi_omega.f[1]))
+
+            psigc_psie = math_base.cprod(self.dyn.psi_omega.f[1], self.dyn.psi_omega.f[0], self.stat.dx, self.np)
+            psigc_dv_psie = math_base.cprod3(self.dyn.psi_omega.f[1], self.stat.v[0][1] - self.stat.v[1][1], self.dyn.psi_omega.f[0], self.stat.dx, self.np)
+
+            # converting back to psi
+            self.dyn.psi.f[0] = self.dyn.psi_omega.f[0] * exp_L
+            self.dyn.psi.f[1] = self.dyn.psi_omega.f[1] / exp_L
+
+        else:
+            E_full = self.dyn.E
+
+            #print("psi1 = ", self.dyn.psi.f)
+
+            self.dyn.psi = Psi(
+                f=phys_base.prop_cpu(psi=self.dyn.psi.f, t_sc=t_sc, nch=self.nch, np=self.np, v=self.stat.v,
+                                     akx2=self.stat.akx2, emin=emin, emax=emax, E=self.dyn.E, eL=eL, ntriv=self.ntriv, E_full=E_full),
+                lvls=self.dyn.psi.lvls())
+
+            #print("psi5 = ", self.dyn.psi.f)
+
+            cnorm.append(math_base.cprod(self.dyn.psi.f[0], self.dyn.psi.f[0], self.stat.dx, self.np))
+            cnorm.append(math_base.cprod(self.dyn.psi.f[1], self.dyn.psi.f[1], self.stat.dx, self.np))
+            cnorm_sum = cnorm[0] + cnorm[1]
+
+            # renormalization
+            if abs(cnorm_sum) > 0.0:
+                self.dyn.psi.f[0] /= math.sqrt(abs(cnorm_sum))
+                self.dyn.psi.f[1] /= math.sqrt(abs(cnorm_sum))
+
+            #print("psi6 = ", self.dyn.psi.f)
+
+        #print("|psi4| = ", abs(self.dyn.psi.f[0]) + abs(self.dyn.psi.f[1]))
 
         # calculating of a current energy
-        phi = phys_base.hamil2D_orig(self.dyn.psi, self.stat.v, self.stat.akx2, self.np, E_full)
+        phi = phys_base.hamil2D_cpu(psi=self.dyn.psi.f, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
+                                    eL=eL, ntriv=self.ntriv, E_full=E_full, orig=True)
 
         cener = []
-        cener.append(math_base.cprod(phi[0], self.dyn.psi[0], self.stat.dx, self.np))
-        cener.append(math_base.cprod(phi[1], self.dyn.psi[1], self.stat.dx, self.np))
+        cener.append(math_base.cprod(self.dyn.psi.f[0], phi[0], self.stat.dx, self.np))
+        cener.append(math_base.cprod(self.dyn.psi.f[1], phi[1], self.stat.dx, self.np))
 
         overlp0 = self._pop_eval(self.stat.psi0, self.dyn.psi, self.stat.dx, self.np)
         overlpf = self._pop_eval(self.stat.psif, self.dyn.psi, self.stat.dx, self.np)
 
         # calculating of expectation values
-        moms = phys_base.exp_vals_calc(self.dyn.psi, self.stat.x, self.stat.akx2, self.stat.dx, self.np, self.m)
+        moms = phys_base.exp_vals_calc(self.dyn.psi, self.stat.x, self.stat.akx2, self.stat.dx, self.np, self.m, self.ntriv)
 
         time_after = datetime.datetime.now()
 
@@ -397,14 +468,11 @@ class PropagationSolver:
 
         self.report_dynamic()
 
+        #print("|psi5| = ", abs(self.dyn.psi.f[0]) + abs(self.dyn.psi.f[1]))
+
         self.dyn.l += 1
 
         if self.dyn.l <= self.nt:
             return True
         else:
             return False
-
-
-    @property
-    def time_step(self):
-        return abs(self.stat.dt)

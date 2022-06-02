@@ -9,6 +9,79 @@ class TableComparer:
         self.epsilon = epsilon
         self.delta = delta
 
+    @staticmethod
+    def is_array(el):
+        return  isinstance(el, np.ndarray) or isinstance(el, list) or isinstance(el, tuple)
+
+    @staticmethod
+    def is_complex(el):
+        return isinstance(el, np.complex128) or isinstance(el, complex)
+
+    def compare_el(self, el1, el2, eps):
+        if isinstance(el1, int) and isinstance(el2, int):
+            # Trivially comparing two ints
+            if el1 != el2:
+                return False
+        elif isinstance(el1, float) and isinstance(el2, float) and isinstance(eps, float):
+            # Trivially comparing two floats
+            if abs(el2) < self.delta and abs(el1) < self.delta:
+                pass  # Going on
+            elif abs(el2) < self.delta and abs(el1) >= self.delta:
+                return False
+            elif abs(el1 - el2) / abs(el2) >= abs(eps):
+                return False
+        elif isinstance(el1, complex) and isinstance(el2, complex) and isinstance(eps, complex):
+            # Trivially comparing two complexes
+            if abs(el2.real) < self.delta and abs(el1.real) < self.delta and \
+                    abs(el2.imag) < self.delta and abs(el1.imag) < self.delta:
+                pass  # Going on
+            elif abs(el2.real) < self.delta and abs(el1.real) >= self.delta:
+                return False
+            elif abs(el2.imag) < self.delta and abs(el1.imag) >= self.delta:
+                return False
+            elif abs(el2.imag) < self.delta and abs(el1.imag) < self.delta and \
+                 abs(el2.real) >= self.delta and abs(el1.real) >= self.delta:
+                if abs(el1.real - el2.real) / abs(el2.real) >= abs(eps.real):
+                    return False
+                else:
+                    pass
+            elif abs(el1.real - el2.real) / abs(el2.real) >= eps.real or \
+                    abs(el1.imag - el2.imag) / abs(el2.imag) >= eps.imag:
+                return False
+        elif isinstance(el1, np.ndarray) and isinstance(el2, np.ndarray) and \
+                self.is_complex(eps):
+            # Comparing each element of two complex arrays
+            if len(el1) != len(el2):
+                raise RuntimeError("Complex arrays have different lengths")
+
+            for l in range(len(el1)):
+                if abs(el2[l].real) < self.delta and abs(el1[l].real) < self.delta and \
+                        abs(el2[l].imag) < self.delta and abs(el1[l].imag) < self.delta:
+                    pass  # Going on
+                elif abs(el2[l].real) < self.delta and abs(el1[l].real) >= self.delta:
+                    return False
+                elif abs(el2[l].imag) < self.delta and abs(el1[l].imag) >= self.delta:
+                    return False
+                elif abs(el1[l].real - el2[l].real) / abs(el2[l].real) >= eps.real or \
+                        abs(el1[l].imag - el2[l].imag) / abs(el2[l].imag) >= eps.imag:
+                    return False
+        elif self.is_array(el1) and self.is_array(el2) and isinstance(eps, float):
+            # Comparing each element of two real arrays
+            if len(el1) != len(el2):
+                raise RuntimeError("Real arrays have different lengths")
+
+            for l in range(len(el1)):
+                if abs(el2[l]) < self.delta and abs(el1[l]) < self.delta:
+                    pass  # Going on
+                elif abs(el2[l]) < self.delta and abs(el1[l]) >= self.delta:
+                    return False
+                elif abs(el1[l] - el2[l]) / abs(el2[l]) >= eps:
+                    return False
+        else:
+            raise ValueError("Invalid types to compare")
+
+        return True
+
     def compare(self, tab1, tab2):
         # Comparing tables length
         if len(tab1) != len(tab2):
@@ -17,43 +90,26 @@ class TableComparer:
         # For each line
         for i in range(len(tab1)):
             # Comparing the length of the tab1 line with the one of tab2 line
-            if len(tab1[i]) != len(tab2[i]):
-                return False
+            if not self.is_array(tab1[i]) and not self.is_array(tab2[i]) and not self.is_array(self.epsilon):
+                el1 = tab1[i]
+                el2 = tab2[i]
+                eps = self.epsilon
+                if not self.compare_el(el1, el2, eps):
+                    return False
+            else:
+                if len(tab1[i]) != len(tab2[i]):
+                    return False
 
-            if len(tab1[i]) != len(self.epsilon):
-                return False
+                if len(tab1[i]) != len(self.epsilon):
+                    return False
 
-            for k in range(len(tab1[i])):
-                el1 = tab1[i][k]
-                el2 = tab2[i][k]
-                eps = self.epsilon[k]
-
-                if isinstance(el1, float) and isinstance(el2, float) and isinstance(eps, float):
-                    # Trivially comparing two floats
-                    if abs(el2) < self.delta and abs(el1) < self.delta:
-                        return True
-                    elif abs(el2) < self.delta and abs(el1) >= self.delta:
+                for k in range(len(tab1[i])):
+                    el1 = tab1[i][k]
+                    el2 = tab2[i][k]
+                    eps = self.epsilon[k]
+                    if not self.compare_el(el1, el2, eps):
                         return False
-                    elif abs(el1 - el2) / abs(el2) >= abs(eps):
-                        return False
-                elif isinstance(el1, np.ndarray) and \
-                     isinstance(el2, np.ndarray) and \
-                     isinstance(eps, np.complex):
-                    # Comparing each element of two complex arrays
-                    if len(el1) != len(el2):
-                        raise RuntimeError("Complex arrays have different lengths")
 
-                    for l in range(len(el1)):
-                        if abs(el2[l].real) < self.delta and abs(el1[l].real) < self.delta and \
-                           abs(el2[l].imag) < self.delta and abs(el1[l].imag) < self.delta:
-                            return True
-                        elif abs(el2[l].real) < self.delta and abs(el1[l].real) >= self.delta:
-                            return False
-                        elif abs(el2[l].imag) < self.delta and abs(el1[l].imag) >= self.delta:
-                            return False
-                        elif abs(el1[l].real - el2[l].real) / abs(el2[l].real) >= eps.real or \
-                           abs(el1[l].imag - el2[l].imag) / abs(el2[l].imag) >= eps.imag:
-                            return False
         return True
 
 
@@ -75,28 +131,28 @@ class TestPropagationReporter(PropagationReporter):
     def close(self):
         pass
 
-    def plot(self, psi, t, x, np):
+    def plot(self, psi: Psi, t, x, np):
         self.psi_tab.append((
-            psi[0], t, x
+            psi.f[0], t, x
         ))
 
-    def plot_tvals(self, t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max):
+    def plot_tvals(self, t, moms, ener, overlp0, overlpf, ener_tot, abs_psi_max, real_psi_max):
         self.tvals_tab.append((
             t,
             moms.x_l.real, moms.x2_l.real, moms.p_l.real, moms.p2_l.real,
-            ener, overlp, ener_tot, abs_psi_max, real_psi_max
+            ener, overlp0, overlpf, ener_tot, abs_psi_max, real_psi_max
         ))
 
-    def plot_up(self, psi, t, x, np):
+    def plot_up(self, psi: Psi, t, x, np):
         self.psi_up_tab.append((
-            psi[1], t, x
+            psi.f[1], t, x
         ))
 
-    def plot_tvals_up(self, t, moms, ener, overlp, overlp_tot, abs_psi_max, real_psi_max):
+    def plot_tvals_up(self, t, moms, ener, overlp0, overlpf, overlp_tot, abs_psi_max, real_psi_max):
         self.tvals_up_tab.append((
             t,
             moms.x_u.real, moms.x2_u.real, moms.p_u.real, moms.p2_u.real,
-            ener, overlp, overlp_tot, abs_psi_max, real_psi_max
+            ener, overlp0, overlpf, overlp_tot, abs_psi_max, real_psi_max
         ))
 
     def plot_tvals_fit(self, t, E, freq_mult):
@@ -104,13 +160,13 @@ class TestPropagationReporter(PropagationReporter):
             t, E, freq_mult
         ))
 
-    def print_time_point_prop(self, l, psi, t, x, np, moms, ener, ener_u, overlp, overlp_u, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp0, overlpf, overlp_tot, ener_tot,
                          abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
         if l % self.mod_fileout == 0 and l >= self.lmin:
             self.plot(psi, t, x, np)
             self.plot_up(psi, t, x, np)
-            self.plot_tvals(t, moms, ener, overlp, ener_tot, abs_psi_max, real_psi_max)
-            self.plot_tvals_up(t, moms, ener_u, overlp_u, overlp_tot, abs_psi_max_u, real_psi_max_u)
+            self.plot_tvals(t, moms, ener, overlp0[0], overlpf[0], ener_tot, abs_psi_max, real_psi_max)
+            self.plot_tvals_up(t, moms, ener_u, overlp0[1], overlpf[1], overlp_tot, abs_psi_max_u, real_psi_max_u)
             self.plot_tvals_fit(t, E, freq_mult)
 
 

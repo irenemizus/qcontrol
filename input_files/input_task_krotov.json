@@ -9,6 +9,7 @@
     "delay": 600e-15,
     "iter_max": 8,
     "h_lambda": 0.0066,
+    "init_guess": "gauss",
     "propagation": {
       "m": 0.5,
       "pot_type": "morse",

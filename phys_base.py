@@ -1,19 +1,18 @@
 import cmath
-import math
-
 import numpy
 import copy
 
 import math_base
+from psi_basis import Psi
 
 hart_to_cm = 219474.6313708 # 1 / cm / hartree
 cm_to_erg = 1.98644568e-16 # erg * cm
 dalt_to_au = 1822.888486 # a.u. / D
 Red_Planck_h = 1.054572e-27 # erg * s
-Hz_to_cm = 3.33563492e-11 # s / cm
+#Hz_to_cm = 3.33563492e-11 # s / cm
+Hz_to_cm = 3.33564095e-11 # s / cm
 
-
-def diff(psi, akx2, np):
+def diff_cpu(psi, akx2, np):
     """ Calculates kinetic energy mapping carried out in momentum space
         INPUT
         psi   complex vector of length np
@@ -27,21 +26,21 @@ def diff(psi, akx2, np):
     assert akx2.size == np
 
     psi_freq = numpy.fft.fft(psi)
-
     phi_freq = numpy.multiply(psi_freq, akx2)
-
     phi = numpy.fft.ifft(phi_freq)
 
     return phi
 
 
-def hamil(psi, v, akx2, np):
+def hamil_cpu(psi, v, akx2, np, ntriv):
     """ Calculates the simplest one-dimensional Hamiltonian mapping of vector psi
         INPUT
-        psi   list of complex vectors of length np
-        v     list of potential energy real vectors of length np
-        akx2  complex kinetic energy vector of length np, = k^2/2m
-        np    number of grid points
+        psi     list of complex vectors of length np
+        v       list of potential energy real vectors of length np
+        akx2    complex kinetic energy vector of length np, = k^2/2m
+        np      number of grid points
+        ntriv   constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+                                    0 -- a trivial 2-level system
         OUTPUT
         phi = H psi list of complex vectors of length np """
 
@@ -50,59 +49,34 @@ def hamil(psi, v, akx2, np):
     assert akx2.size == np
 
     # kinetic energy mapping
-    phi = diff(psi, akx2, np)
+    if ntriv:
+        phi = diff_cpu(psi, akx2, np)
 
-    # potential energy mapping and accumulation phi_l = H psi_l
-    vpsi = numpy.multiply(v, psi)
-    numpy.add(phi, vpsi, out=phi)
-
-    return phi
-
-def hamil2D_orig(psi, v, akx2, np, E_full):
-    """ Calculates two-dimensional Hamiltonian mapping of vector psi (without energy shifting)
-        INPUT
-        psi    list of complex vectors of length np
-        v      list of potential energy real vectors of length np
-        akx2   complex kinetic energy vector of length np, = k^2/2m
-        np     number of grid points
-        E_full a real value of external laser field
-        OUTPUT
-        phi = H psi list of complex vectors of length np """
-
-    for i in range(len(psi)):
-        assert psi[i].size == np
-        assert v[i][1].size == np
-    assert akx2.size == np
-
-    phi = []
-    # diagonal terms
-    # ground state 1D Hamiltonian mapping for the lower state
-    phi_dl = hamil(psi[0], v[0][1], akx2, np)
-
-    # excited state 1D Hamiltonian mapping for the upper state
-    phi_du = hamil(psi[1], v[1][1], akx2, np)
-
-    # adding non-diagonal terms
-    psiE_u = psi[1] * E_full
-    phi_l = numpy.subtract(phi_dl, psiE_u)
-    phi.append(phi_l)
-
-    psiE_d = psi[0] * E_full.conjugate()
-    phi_u = numpy.subtract(phi_du, psiE_d)
-    phi.append(phi_u)
+        # potential energy mapping and accumulation phi_l = H psi_l
+        vpsi = numpy.multiply(v, psi)
+        numpy.add(phi, vpsi, out=phi)
+    else:
+        phi = numpy.multiply(v, psi)
 
     return phi
 
 
-def hamil2D(psi, v, akx2, np, E, eL):
+def hamil2D_cpu(psi, v, akx2, np, E, eL, ntriv, E_full=0.0, orig=False):
     """ Calculates two-dimensional Hamiltonian mapping of vector psi
         INPUT
-        psi   list of complex vectors of length np
-        v     list of potential energy real vectors of length np
-        akx2  complex kinetic energy vector of length np, = k^2/2m
-        np    number of grid points
-        E     a real value of external laser field
-        eL    a laser field energy shift
+        psi     list of complex vectors of length np
+        v       list of potential energy real vectors of length np
+        akx2    complex kinetic energy vector of length np, = k^2/2m
+        np      number of grid points
+        E       a real value of external laser field
+        eL      a laser field energy shift
+        E_full  a complex value of external laser field
+        ntriv   constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+                                    0 -- a trivial 2-level system
+        orig    a boolean parameter that depends
+                if an original form of the Hamiltonian should be used (orig = True) or
+                the shifted real version (orig = False -- by default)
+
         OUTPUT
         phi = H psi list of complex vectors of length np """
 
@@ -111,33 +85,42 @@ def hamil2D(psi, v, akx2, np, E, eL):
         assert v[i][1].size == np
     assert akx2.size == np
 
-    phi = []
-    # diagonal terms
-    # ground state 1D Hamiltonian mapping for the lower state
-    phi_dl = hamil(psi[0], v[0][1], akx2, np)
-    # adding of the laser field energy shift
-    psieL_d = psi[0] * eL
-    numpy.add(phi_dl, psieL_d, out=phi_dl)
+    if orig or not ntriv:
+        #without laser field energy shift
+        # diagonal terms
+        psieL_l = 0.0
+        psieL_u = 0.0
+        # non-diagonal terms
+        psiE_l = psi[0] * E_full.conjugate()
+        psiE_u = psi[1] * E_full
+    else:
+        # with laser field energy shift
+        # diagonal terms
+        psieL_l = psi[0] * eL
+        psieL_u = psi[1] * eL
+        # non-diagonal terms
+        psiE_l = psi[0] * E
+        psiE_u = psi[1] * E
 
-    # excited state 1D Hamiltonian mapping for the upper state
-    phi_du = hamil(psi[1], v[1][1], akx2, np)
-    # adding of the laser field energy shift
-    psieL_u = psi[1] * eL
-    numpy.subtract(phi_du, psieL_u, out=phi_du)
+    # diagonal terms
+    # 1D Hamiltonians mapping for the corresponding states
+    phi_dl = hamil_cpu(psi[0], v[0][1], akx2, np, ntriv)
+    phi_du = hamil_cpu(psi[1], v[1][1], akx2, np, ntriv)
+
+    if ntriv:
+        # diagonal terms
+        # adding of the laser field energy shift
+        numpy.add(phi_dl, psieL_l, out=phi_dl)
+        numpy.subtract(phi_du, psieL_u, out=phi_du)
 
     # adding non-diagonal terms
-    psiE_u = psi[1] * E
     phi_l = numpy.subtract(phi_dl, psiE_u)
-    phi.append(phi_l)
+    phi_u = numpy.subtract(phi_du, psiE_l)
 
-    psiE_d = psi[0] * E
-    phi_u = numpy.subtract(phi_du, psiE_d)
-    phi.append(phi_u)
-
-    return phi
+    return [phi_l, phi_u]
 
 
-def residum(psi, v, akx2, xp, np, emin, emax, E, eL):
+def residum_cpu(psi, v, akx2, xp, np, emin, emax, E, eL, ntriv, E_full=0.0):
     """ Scaled and normalized mapping phi = ( O - xp I ) phi
         INPUT
         psi         list of complex vectors of length np
@@ -145,8 +128,12 @@ def residum(psi, v, akx2, xp, np, emin, emax, E, eL):
         xp          sampling interpolation point
         np          number of grid points (must be a power of 2)
         emax, emin  upper and lower limits of energy spectra
-        E           a complex value of external laser field
+        E           a real value of external laser field
+        E_full      a complex value of external laser field
         eL          a laser field energy shift
+        ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+                                        0 -- a trivial 2-level system
+
         OUTPUT
         phi  list of complex vectors of length np
              the operator is normalized from -2 to 2 resulting in:
@@ -157,7 +144,7 @@ def residum(psi, v, akx2, xp, np, emin, emax, E, eL):
         assert v[i][1].size == np
     assert akx2.size == np
 
-    hpsi = hamil2D(psi, v, akx2, np, E, eL)
+    hpsi = hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=E, eL=eL, ntriv=ntriv, E_full=E_full)
 
     phi = []
     # changing the range from -2 to 2
@@ -188,7 +175,7 @@ def func(z, t):
     return cmath.exp(-1j * z * t)
 
 
-def prop(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL):
+def prop_cpu(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, ntriv, E_full=0.0):
     """ Propagation subroutine using Newton interpolation
         P(O) psi = dv(1) psi + dv2 (O - x1 I) psi + dv3 (O - x2)(O - x1 I) psi + ...
         INPUT
@@ -201,8 +188,11 @@ def prop(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL):
         v           list of potential energy vectors of length np
         akx2        kinetic energy vector of length np
         emax, emin  upper and lower limits of energy spectra
-        E           a complex value of external laser field
+        E           a real value of external laser field
+        E_full      a complex value of external laser field
         eL          a laser field energy shift
+        ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+                                        0 -- a trivial 2-level system
 
         OUTPUT
         psi  list of complex vectors of length np
@@ -224,19 +214,24 @@ def prop(psi, t_sc, nch, np, v, akx2, emin, emax, E, eL):
     for n in range(len(psi)):
         psi[n] *= dv[0]
 
+    #print("psi2 = ", psi)
     # recurrence loop
     for j in range(nch - 1):
         # mapping by scaled operator of phi
-        phi = residum(phi, v, akx2, xp[j], np, emin, emax, E, eL)
+        phi = residum_cpu(psi=phi, v=v, akx2=akx2, xp=xp[j], np=np, emin=emin, emax=emax, E=E, eL=eL, ntriv=ntriv, E_full=E_full)
 
         # accumulation of Newtonian's interpolation
         for n in range(len(psi)):
             phidv = phi[n] * dv[j + 1]
             numpy.add(psi[n], phidv, out=psi[n])
 
+    #print("psi3 = ", psi)
+
     coef = cmath.exp(-1j * 2.0 * t_sc * (emax + emin) / (emax - emin))
     for n in range(len(psi)):
         psi[n] *= coef
+
+    #print("psi4 = ", psi)
 
     return psi
 
@@ -253,7 +248,7 @@ class ExpectationValues():
         self.p2_u = p2_u
 
 
-def exp_vals_calc(psi, x, akx2, dx, np, m):
+def exp_vals_calc(psi: Psi, x, akx2, dx, np, m, ntriv):
     """ Calculation of expectation values <x>, <x^2>, <p>, <p^2>
         INPUT
         psi     list of complex vectors of length np describing wavefunctions
@@ -262,37 +257,53 @@ def exp_vals_calc(psi, x, akx2, dx, np, m):
         dx      coordinate step of the problem
         np      number of grid points (must be a power of 2)
         m       reduced mass of the system
+        ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+                                        0 -- a trivial 2-level system
+
         OUTPUT
         moms  list of complex vectors of length np """
 
-    # for x
-    momx_l = math_base.cprod2(psi[0], x, dx, np)
-    momx_u = math_base.cprod2(psi[1], x, dx, np)
+    if ntriv:
+        # for x
+        momx_l = math_base.cprod2(psi.f[0], x, dx, np)
+        momx_u = math_base.cprod2(psi.f[1], x, dx, np)
 
-    # for x^2
-    x2 = numpy.multiply(x, x)
-    momx2_l = math_base.cprod2(psi[0], x2, dx, np)
-    momx2_u = math_base.cprod2(psi[1], x2, dx, np)
+        # for x^2
+        x2 = numpy.multiply(x, x)
+        momx2_l = math_base.cprod2(psi.f[0], x2, dx, np)
+        momx2_u = math_base.cprod2(psi.f[1], x2, dx, np)
 
-    # for p^2
-    phi_kin_l = diff(psi[0], akx2, np)
-    phi_p2_l = phi_kin_l * (2.0 * m)
-    momp2_l = math_base.cprod(psi[0], phi_p2_l, dx, np)
+        # for p^2
+        phi_kin_l = diff_cpu(psi.f[0], akx2, np)
+        phi_p2_l = phi_kin_l * (2.0 * m)
+        momp2_l = math_base.cprod(psi.f[0], phi_p2_l, dx, np)
 
-    phi_kin_u = diff(psi[1], akx2, np)
-    phi_p2_u = phi_kin_u * (2.0 * m)
-    momp2_u = math_base.cprod(psi[1], phi_p2_u, dx, np)
+        phi_kin_u = diff_cpu(psi.f[1], akx2, np)
+        phi_p2_u = phi_kin_u * (2.0 * m)
+        momp2_u = math_base.cprod(psi.f[1], phi_p2_u, dx, np)
 
-    # for p
-    akx = math_base.initak(np, dx, 1)
-    akx_mul = hart_to_cm / (-1j) / dalt_to_au
-    akx *= akx_mul
+        # for p
+        akx = math_base.initak(np, dx, 1, ntriv)
+        akx_mul = hart_to_cm / (-1j) / dalt_to_au
+        akx *= akx_mul
 
-    phip_l = diff(psi[0], akx, np)
-    momp_l = math_base.cprod(psi[0], phip_l, dx, np)
+        phip_l = diff_cpu(psi.f[0], akx, np)
+        momp_l = math_base.cprod(psi.f[0], phip_l, dx, np)
 
-    phip_u = diff(psi[1], akx, np)
-    momp_u = math_base.cprod(psi[1], phip_u, dx, np)
+        phip_u = diff_cpu(psi.f[1], akx, np)
+        momp_u = math_base.cprod(psi.f[1], phip_u, dx, np)
 
-    return ExpectationValues(momx_l, momx_u, momx2_l, momx2_u, momp_l, momp_u, momp2_l, momp2_u)
+        moms = ExpectationValues(momx_l, momx_u, momx2_l, momx2_u, momp_l, momp_u, momp2_l, momp2_u)
+    else:
+        # for x
+        momx_l = math_base.cprod2(psi.f[0], x, dx, np)
+        momx_u = math_base.cprod2(psi.f[1], x, dx, np)
 
+        # for x^2
+        x2 = numpy.multiply(x, x)
+        momx2_l = math_base.cprod2(psi.f[0], x2, dx, np)
+        momx2_u = math_base.cprod2(psi.f[1], x2, dx, np)
+
+        moms = ExpectationValues(momx_l, momx_u, momx2_l, momx2_u, 0.0, 0.0, 0.0, 0.0)
+
+    return moms

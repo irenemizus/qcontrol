@@ -1,7 +1,12 @@
 import copy
+import typing
 from enum import Enum
+from typing import Dict
+
 
 class ConfigurationBase:
+    _data: Dict[str, typing.Any]
+
     def __init__(self, key_prefix: str):
         self._empty = True
         self._key_prefix = key_prefix
@@ -72,6 +77,7 @@ class TaskRootConfiguration(ConfigurationBase):
             class WaveFuncType(Enum):
                 MORSE = 0
                 HARMONIC = 1
+                CONST = 2
 
                 @staticmethod
                 def from_int(i):
@@ -87,6 +93,7 @@ class TaskRootConfiguration(ConfigurationBase):
             class PotentialType(Enum):
                 MORSE = 0
                 HARMONIC = 1
+                NONE = 2
 
                 @staticmethod
                 def from_int(i):
@@ -97,7 +104,6 @@ class TaskRootConfiguration(ConfigurationBase):
                 def from_str(s):
                     return TaskRootConfiguration.FitterConfiguration.\
                         PropagationConfiguration.PotentialType[s.upper()]
-
 
             def __init__(self):
                 super().__init__(key_prefix="")
@@ -154,7 +160,6 @@ class TaskRootConfiguration(ConfigurationBase):
             OPTIMAL_CONTROL_KROTOV = 6
             OPTIMAL_CONTROL_UNIT_TRANSFORM = 7
 
-
             @staticmethod
             def from_int(i):
                 return TaskRootConfiguration.FitterConfiguration.TaskType(i)
@@ -163,10 +168,27 @@ class TaskRootConfiguration(ConfigurationBase):
             def from_str(s):
                 return TaskRootConfiguration.FitterConfiguration.TaskType[s.upper()]
 
+
+        class InitGuess(Enum):
+            ZERO = 0
+            GAUSS = 1
+            SQRSIN = 2
+            MAXWELL = 3
+
+            @staticmethod
+            def from_int(i):
+                return TaskRootConfiguration.FitterConfiguration.InitGuess(i)
+
+            @staticmethod
+            def from_str(s):
+                return TaskRootConfiguration.FitterConfiguration.InitGuess[s.upper()]
+
+
         def __init__(self):
             super().__init__(key_prefix="")
             # default input values
             self._data["task_type"] = TaskRootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL
+            self._data["init_guess"] = TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO
             self._data["propagation"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration()
             self._data["k_E"] = 1e29    # 1 / (s*s)
             self._data["lamb"] = 4e14 # 1 / s
@@ -175,7 +197,7 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["impulses_number"] = 2
             self._data["delay"] = 600e-15   # s
             self._data["mod_log"] = 500
-            self._data["iter_max"] = 5
+            self._data["iter_max"] = -1
             self._data["h_lambda"] = 0.0066
 
 
@@ -203,10 +225,10 @@ class ReportRootConfiguration(ConfigurationBase):
 
                 super().__init__(key_prefix="table.")
                 # default input values
-                self._data["tab_abs"] = "tab_abs_{level}" + f"{suffix}.csv"
-                self._data["tab_real"] = "tab_real_{level}" + f"{suffix}.csv"
-                self._data["tab_tvals"] = "tab_tvals_{level}" + f"{suffix}.csv"
-                self._data["tab_tvals_fit"] = f"tab_tvals_fit{suffix}.csv"
+                self._data["tab_abs"] = "tab_abs_{level}.csv"
+                self._data["tab_real"] = "tab_real_{level}.csv"
+                self._data["tab_tvals"] = "tab_tvals_{level}.csv"
+                self._data["tab_tvals_fit"] = "tab_tvals_fit.csv"
                 self._data["lmin"] = 0
                 self._data["mod_fileout"] = 100
 
@@ -230,15 +252,18 @@ class ReportRootConfiguration(ConfigurationBase):
                 self._data["gr_moms_low_grd"] = f"fig_moms_low_grd{suffix}.pdf"
                 self._data["gr_moms_grd"] = f"fig_moms_grd{suffix}.pdf"
                 self._data["gr_ener_grd"] = f"fig_ener_grd{suffix}.pdf"
-                self._data["gr_overlp_grd"] = f"fig_overlp_grd{suffix}.pdf"
+                self._data["gr_overlp0_grd"] = f"fig_overlp0_grd{suffix}.pdf"
+                self._data["gr_overlpf_grd"] = f"fig_overlpf_grd{suffix}.pdf"
                 self._data["gr_ener_tot"] = f"fig_ener_tot{suffix}.pdf"
                 self._data["gr_abs_max_grd"] = f"fig_abs_max_grd{suffix}.pdf"
                 self._data["gr_real_max_grd"] = f"fig_real_max_grd{suffix}.pdf"
                 self._data["gr_moms_low_exc"] = f"fig_moms_low_exc{suffix}.pdf"
                 self._data["gr_moms_exc"] = f"fig_moms_exc{suffix}.pdf"
                 self._data["gr_ener_exc"] = f"fig_ener_exc{suffix}.pdf"
-                self._data["gr_overlp_exc"] = f"fig_overlp_exc{suffix}.pdf"
-                self._data["gr_overlp_tot"] = f"fig_overlp_tot{suffix}.pdf"
+                self._data["gr_overlp0_exc"] = f"fig_overlp0_exc{suffix}.pdf"
+                self._data["gr_overlpf_exc"] = f"fig_overlpf_exc{suffix}.pdf"
+                self._data["gr_overlp0_tot"] = f"fig_overlp0_tot{suffix}.pdf"
+                self._data["gr_overlpf_tot"] = f"fig_overlpf_tot{suffix}.pdf"
                 self._data["gr_abs_max_exc"] = f"fig_abs_max_exc{suffix}.pdf"
                 self._data["gr_real_max_exc"] = f"fig_real_max_exc{suffix}.pdf"
                 self._data["gr_lf_en"] = f"fig_lf_en{suffix}.pdf"
@@ -263,6 +288,7 @@ class ReportRootConfiguration(ConfigurationBase):
             # default input values
             self._data["imin"] = 0
             self._data["imod_plotout"] = 1
+            self._data["inumber_plotout"] = 15
             self._data["gr_iter"] = "fig_iter.pdf"
             self._data["gr_iter_E"] = "fig_iter_E.pdf"
 
