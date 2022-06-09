@@ -174,14 +174,27 @@ class TaskManager:
         else:
             raise RuntimeError("Impossible case in the InitGuess class")
 
+        if conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV:
+            self.ntriv = 1
+        elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.ANG_MOMS:
+            self.ntriv = -1
+            if not conf_fitter.nb % 2:
+                raise RuntimeError("Number of basis vectors 'nb' for 'hamil_type' = 'angs_moms' should be odd!")
+        elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.TWO_LEVELS:
+            self.ntriv = 0
+            if not conf_fitter.nb == 2:
+                raise RuntimeError("Number of basis vectors 'nb' for 'hamil_type' = 'two_levels' should be equal to 2!")
+        else:
+            raise RuntimeError("Impossible case in the HamilType class")
+
         self.conf_fitter = conf_fitter
         self.init_dir = PropagationSolver.Direction.FORWARD
-        self.ntriv = 1
 
-    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L):
+
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb):
         raise NotImplementedError()
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L):
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb):
         raise NotImplementedError()
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
@@ -243,16 +256,18 @@ class HarmonicSingleStateTaskManager(TaskManager):
 
         return v
 
-    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
-        psi_init_obj = PsiBasis(1)
-        psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
-        psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
+        psi_init_obj = PsiBasis(nb)
+        for vec in range(nb):
+            psi_init_obj.psis[vec].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
+            psi_init_obj.psis[vec].f[1] = _PsiFunctions.zero(np)
         return psi_init_obj
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
-        psi_goal_obj = PsiBasis(1)
-        psi_goal_obj.psis[0].f[0] = _PsiFunctions.harmonic(x, np, x0, p0, m, De, a, L)
-        psi_goal_obj.psis[0].f[1] = _PsiFunctions.zero(np)
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
+        psi_goal_obj = PsiBasis(nb)
+        for vec in range(nb):
+            psi_goal_obj.psis[vec].f[0] = _PsiFunctions.harmonic(x, np, x0, p0, m, De, a, L)
+            psi_goal_obj.psis[vec].f[1] = _PsiFunctions.zero(np)
         return psi_goal_obj
 
 
@@ -290,10 +305,11 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
 
         return v
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
-        psi_goal_obj = PsiBasis(1)
-        psi_goal_obj.psis[0].f[0] = _PsiFunctions.zero(np)
-        psi_goal_obj.psis[0].f[1] = _PsiFunctions.harmonic(x, np, x0p + x0, p0, m, De_e, a_e, L)
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
+        psi_goal_obj = PsiBasis(nb)
+        for vec in range(nb):
+            psi_goal_obj.psis[vec].f[0] = _PsiFunctions.zero(np)
+            psi_goal_obj.psis[vec].f[1] = _PsiFunctions.harmonic(x, np, x0p + x0, p0, m, De_e, a_e, L)
         return psi_goal_obj
 
 
@@ -348,16 +364,18 @@ class MorseSingleStateTaskManager(TaskManager):
 
         return v
 
-    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
-        psi_init_obj = PsiBasis(1)
-        psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
-        psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
+        psi_init_obj = PsiBasis(nb)
+        for vec in range(nb):
+            psi_init_obj.psis[vec].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
+            psi_init_obj.psis[vec].f[1] = _PsiFunctions.zero(np)
         return psi_init_obj
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
-        psi_goal_obj = PsiBasis(1)
-        psi_goal_obj.psis[0].f[0] = _PsiFunctions.morse(x, np, x0, p0, m, De, a, L)
-        psi_goal_obj.psis[0].f[1] = _PsiFunctions.zero(np)
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
+        psi_goal_obj = PsiBasis(nb)
+        for vec in range(nb):
+            psi_goal_obj.psis[vec].f[0] = _PsiFunctions.morse(x, np, x0, p0, m, De, a, L)
+            psi_goal_obj.psis[vec].f[1] = _PsiFunctions.zero(np)
         return psi_goal_obj
 
 
@@ -397,10 +415,11 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 
         return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du, nu_L)
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
-        psi_goal_obj = PsiBasis(1)
-        psi_goal_obj.psis[0].f[0] = _PsiFunctions.zero(np)
-        psi_goal_obj.psis[0].f[1] = _PsiFunctions.morse(x, np, x0p + x0, p0, m, De_e, a_e, L)
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
+        psi_goal_obj = PsiBasis(nb)
+        for vec in range(nb):
+            psi_goal_obj.psis[vec].f[0] = _PsiFunctions.zero(np)
+            psi_goal_obj.psis[vec].f[1] = _PsiFunctions.morse(x, np, x0p + x0, p0, m, De_e, a_e, L)
         return psi_goal_obj
 
 
@@ -409,29 +428,60 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
                  conf_fitter: TaskRootConfiguration.FitterConfiguration):
         super().__init__(wf_type, conf_fitter)
         self.init_dir = PropagationSolver.Direction.BACKWARD
-        self.ntriv = 0
 
-    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
-        psi_init_obj = PsiBasis(2)
+    @staticmethod
+    def _quant_fourier_transform(nb):
+        omega = cmath.exp(1j * 2.0 * math.pi / nb)
+        F = numpy.zeros((nb, nb)).astype(complex)
+        for v1 in range(nb):
+            for v2 in range(nb):
+                F.itemset((v1, v2), omega**(v1 * v2) / math.sqrt(nb))
 
-        psi_init_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
-        psi_init_obj.psis[0].f[1] = _PsiFunctions.zero(np)
+        return F
 
-        psi_init_obj.psis[1].f[0] = _PsiFunctions.zero(np)
-        psi_init_obj.psis[1].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
+    @staticmethod
+    def _matrix_PsiBasis_mult(F: numpy.matrix, psi: PsiBasis, nb, np):
+        phi: PsiBasis = PsiBasis(nb, nb)
+        for bv in range(nb):
+            for gl in range(nb):
+                phi_gl = numpy.array([complex(0.0, 0.0)] * np)
+                for il in range(nb):
+                    psi_F_el_mult = F.item(gl, il) * psi.psis[bv].f[il]
+                    phi_gl = numpy.add(phi_gl, psi_F_el_mult)
+                phi.psis[bv].f[gl] = phi_gl
+
+        return phi
+
+    def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
+        psi_init_obj = PsiBasis(nb, nb)
+
+        for vect in range(nb):
+            for vect1 in range(nb):
+                if vect1 == vect:
+                    psi_init_obj.psis[vect].f[vect1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
+                else:
+                    psi_init_obj.psis[vect].f[vect1] = _PsiFunctions.zero(np)
 
         return psi_init_obj
 
-    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L) -> PsiBasis:
-        psi_goal_obj = PsiBasis(2)
+    def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
+        F = self._quant_fourier_transform(nb)
+        psi = self.psi_init(x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb)
+        phi = self._matrix_PsiBasis_mult(F, psi, nb, np)
 
-        psi_goal_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
-        psi_goal_obj.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
+        return phi
 
-        psi_goal_obj.psis[1].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
-        psi_goal_obj.psis[1].f[1] = -self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
 
-        return psi_goal_obj
+    #def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
+    #    psi_goal_obj = PsiBasis(nb)
+
+    #    psi_goal_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
+    #    psi_goal_obj.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
+
+    #    psi_goal_obj.psis[1].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
+    #    psi_goal_obj.psis[1].f[1] = -self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
+
+    #    return psi_goal_obj
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
         """ Potential energy vectors
@@ -475,6 +525,10 @@ def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
        conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
 
         task_manager_imp: TaskManager
+        if conf_fitter.propagation.hamil_type != TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV:
+            raise RuntimeError("For 'task_type' = 'single_pot' and 'filtering' the Hamiltonian type 'hamil_type' = 'ntriv' should be specified!")
+        if conf_fitter.nb != 1:
+            raise RuntimeError("Number of basis vectors 'nb' for 'task_type' = 'single_pot' and 'filtering' should be equal to 1!")
         if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
             print("Morse potentials are used")
             task_manager_imp = MorseSingleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
@@ -486,17 +540,29 @@ def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
     else:
         if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             task_manager_imp = MultipleStateUnitTransformTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
+            if conf_fitter.nb <= 1:
+                raise RuntimeError(
+                    "Number of basis vectors 'nb' for 'task_type' = 'optimal_control_unit_transform' should be more than 1!")
             if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.NONE:
                 print("No potentials are used")
             else:
                 raise RuntimeError("Impossible PotentialType for the unitary transformation task")
-        elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
-            print("Morse potentials are used")
-            task_manager_imp = MorseMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
-        elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
-            print("Harmonic potentials are used")
-            task_manager_imp = HarmonicMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
         else:
-            raise RuntimeError("Impossible PotentialType")
+            if conf_fitter.propagation.hamil_type != TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV:
+                raise RuntimeError(
+                    "For 'task_type' = 'trans_wo_control', 'intuitive_control', 'local_control_population', "
+                        "'local_control_projection', and 'optimal_control_krotov' the Hamiltonian type 'hamil_type' = 'ntriv' should be specified!")
+            if conf_fitter.nb != 1:
+                raise RuntimeError(
+                        "Number of basis vectors 'nb' for 'task_type' = 'trans_wo_control', 'intuitive_control', 'local_control_population', "
+                        "'local_control_projection', and 'optimal_control_krotov' should be equal to 1!")
+            if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
+                print("Morse potentials are used")
+                task_manager_imp = MorseMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
+            elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
+                print("Harmonic potentials are used")
+                task_manager_imp = HarmonicMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
+            else:
+                raise RuntimeError("Impossible PotentialType")
 
     return task_manager_imp

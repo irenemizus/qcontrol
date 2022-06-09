@@ -159,11 +159,9 @@ class PropagationSolver:
     def _ener_eval(psi: Psi, v, akx2, dx, np, eL, ntriv):
         cener = []
 
-        phi_l = phys_base.hamil_cpu(psi.f[0], v[0][1], akx2, np, ntriv)
-        cener.append(math_base.cprod(psi.f[0], phi_l, dx, np))
-
-        phi_u = phys_base.hamil_cpu(psi.f[1], v[1][1], akx2, np, ntriv)
-        cener.append(math_base.cprod(psi.f[1], phi_u, dx, np))
+        phi = phys_base.hamil2D_cpu(psi.f, v, akx2, np, 0.0, 0.0, ntriv)
+        cener.append(math_base.cprod(psi.f[0], phi[0], dx, np))
+        cener.append(math_base.cprod(psi.f[1], phi[1], dx, np))
 
         return cener
 
@@ -358,7 +356,7 @@ class PropagationSolver:
         exp_L = 1.0
 
         # Here we're transforming the problem to the one for psi_omega -- if needed
-        if self.ntriv:
+        if self.ntriv != 0:
             self.dyn.freq_mult = self.freq_multiplier(self.dyn, self.stat)
             exp_L = cmath.exp(1j * math.pi * self.nu_L * self.dyn.freq_mult * self.dyn.t)
 
@@ -394,7 +392,7 @@ class PropagationSolver:
         psigc_dv_psie = 0.0
 
         cnorm = []
-        if self.ntriv:
+        if self.ntriv != 0:
             E_full = self.dyn.E * exp_L * exp_L
             self.dyn.psi_omega = Psi(
                 f=phys_base.prop_cpu(psi=self.dyn.psi_omega.f, t_sc=t_sc, nch=self.nch, np=self.np, v=self.stat.v,

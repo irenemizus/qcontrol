@@ -181,6 +181,9 @@ Options:
         "gauss"     - a gaussian-like envelope
         "sqrsin"    - a squared sinus envelope
         "maxwell"   - a maxwell distribution-like envelope
+    nb
+        number of basis vectors of the Hilbert space used in the calculation task
+        By default, is equal to 1
     mod_log
         step of output to stdout (to write to stdout each <val>-th time step).
         By default, is equal to 500
@@ -222,6 +225,9 @@ Options:
         wf_type
             type of the wavefunctions ("morse" or "harmonic")
             by default, the "morse" type is used
+        hamil_type
+            type of the Hamiltonian operator used ("ntriv", "two_levels" or "ang_moms")
+            by default, the "ntriv" type is used
         x0
             coordinate initial condition
             by default, is equal to 0.0
@@ -269,7 +275,7 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
-import phys_base
+
 from tools import print_err
 
 import sys
@@ -378,6 +384,10 @@ def main(argv):
     if conf_task.fitter.impulses_number < 0:
         raise ValueError(
             "The number of laser pulses, 'impulses_number', has to be positive or 0")
+
+    if conf_task.fitter.nb < 0:
+        raise ValueError(
+            "The number of basis vectors of the Hilbert space, 'nb', has to be positive or 0")
 
     if conf_task.fitter.iter_max < -1 and (conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
             conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_GRADIENT):
@@ -524,7 +534,7 @@ def main(argv):
                                      conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
                                      conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
                                      conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
-                                     conf_task.fitter.propagation.L)
+                                     conf_task.fitter.propagation.L, conf_task.fitter.nb)
 
     # evaluating of the final goal (of type PsiBasis)
     psif = task_manager_imp.psi_goal(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
@@ -532,7 +542,7 @@ def main(argv):
                                      conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
                                      conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
                                      conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
-                                     conf_task.fitter.propagation.L)
+                                     conf_task.fitter.propagation.L, conf_task.fitter.nb)
 
     # initial propagation direction
     init_dir = task_manager_imp.init_dir

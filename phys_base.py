@@ -49,7 +49,7 @@ def hamil_cpu(psi, v, akx2, np, ntriv):
     assert akx2.size == np
 
     # kinetic energy mapping
-    if ntriv:
+    if ntriv == 1:
         phi = diff_cpu(psi, akx2, np)
 
         # potential energy mapping and accumulation phi_l = H psi_l
@@ -85,39 +85,46 @@ def hamil2D_cpu(psi, v, akx2, np, E, eL, ntriv, E_full=0.0, orig=False):
         assert v[i][1].size == np
     assert akx2.size == np
 
-    if orig or not ntriv:
-        #without laser field energy shift
-        # diagonal terms
-        psieL_l = 0.0
-        psieL_u = 0.0
-        # non-diagonal terms
-        psiE_l = psi[0] * E_full.conjugate()
-        psiE_u = psi[1] * E_full
+    phi = []
+
+    if ntriv == -1:
+        pass
     else:
-        # with laser field energy shift
+        if orig or ntriv == 0:
+            # without laser field energy shift
+            # diagonal terms
+            psieL_l = 0.0
+            psieL_u = 0.0
+            # non-diagonal terms
+            psiE_l = psi[0] * E_full.conjugate()
+            psiE_u = psi[1] * E_full
+        else:
+            # with laser field energy shift
+            # diagonal terms
+            psieL_l = psi[0] * eL
+            psieL_u = psi[1] * eL
+            # non-diagonal terms
+            psiE_l = psi[0] * E
+            psiE_u = psi[1] * E
+
         # diagonal terms
-        psieL_l = psi[0] * eL
-        psieL_u = psi[1] * eL
-        # non-diagonal terms
-        psiE_l = psi[0] * E
-        psiE_u = psi[1] * E
+        # 1D Hamiltonians mapping for the corresponding states
+        phi_dl = hamil_cpu(psi[0], v[0][1], akx2, np, ntriv)
+        phi_du = hamil_cpu(psi[1], v[1][1], akx2, np, ntriv)
 
-    # diagonal terms
-    # 1D Hamiltonians mapping for the corresponding states
-    phi_dl = hamil_cpu(psi[0], v[0][1], akx2, np, ntriv)
-    phi_du = hamil_cpu(psi[1], v[1][1], akx2, np, ntriv)
+        if ntriv == 1:
+            # diagonal terms
+            # adding of the laser field energy shift
+            numpy.add(phi_dl, psieL_l, out=phi_dl)
+            numpy.subtract(phi_du, psieL_u, out=phi_du)
 
-    if ntriv:
-        # diagonal terms
-        # adding of the laser field energy shift
-        numpy.add(phi_dl, psieL_l, out=phi_dl)
-        numpy.subtract(phi_du, psieL_u, out=phi_du)
+        # adding non-diagonal terms
+        phi_l = numpy.subtract(phi_dl, psiE_u)
+        phi_u = numpy.subtract(phi_du, psiE_l)
 
-    # adding non-diagonal terms
-    phi_l = numpy.subtract(phi_dl, psiE_u)
-    phi_u = numpy.subtract(phi_du, psiE_l)
+        phi = [phi_l, phi_u]
 
-    return [phi_l, phi_u]
+    return phi
 
 
 def residum_cpu(psi, v, akx2, xp, np, emin, emax, E, eL, ntriv, E_full=0.0):
@@ -263,7 +270,7 @@ def exp_vals_calc(psi: Psi, x, akx2, dx, np, m, ntriv):
         OUTPUT
         moms  list of complex vectors of length np """
 
-    if ntriv:
+    if ntriv == 1:
         # for x
         momx_l = math_base.cprod2(psi.f[0], x, dx, np)
         momx_u = math_base.cprod2(psi.f[1], x, dx, np)

@@ -112,6 +112,7 @@ class TaskRootConfiguration(ConfigurationBase):
                 # 1.0 -- for a model harmonic oscillator
                 self._data["wf_type"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE
                 self._data["pot_type"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE
+                self._data["hamil_type"] = TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV
                 self._data["a"] = 1.0   # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
                 self._data["De"] = 20000.0  # 1/cm
                 self._data["x0p"] = -0.17   # a_0
@@ -184,6 +185,20 @@ class TaskRootConfiguration(ConfigurationBase):
                 return TaskRootConfiguration.FitterConfiguration.InitGuess[s.upper()]
 
 
+        class HamilType(Enum):
+            NTRIV = 0
+            TWO_LEVELS = 1
+            ANG_MOMS = 2
+
+            @staticmethod
+            def from_int(i):
+                return TaskRootConfiguration.FitterConfiguration.HamilType(i)
+
+            @staticmethod
+            def from_str(s):
+                return TaskRootConfiguration.FitterConfiguration.HamilType[s.upper()]
+
+
         def __init__(self):
             super().__init__(key_prefix="")
             # default input values
@@ -199,6 +214,7 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["mod_log"] = 500
             self._data["iter_max"] = -1
             self._data["h_lambda"] = 0.0066
+            self._data["nb"] = 1
 
 
 class ReportRootConfiguration(ConfigurationBase):
