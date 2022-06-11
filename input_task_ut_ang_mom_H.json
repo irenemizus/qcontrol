@@ -1,0 +1,29 @@
+{
+  "fitter": {
+    "task_type": "optimal_control_unit_transform",
+    "epsilon": 1e-8,
+    "impulses_number": 1,
+    "nb": 3,
+    "iter_max": -1,
+    "h_lambda": 0.5,
+    "init_guess": "sqrsin",
+    "propagation": {
+      "pot_type": "none",
+      "wf_type": "const",
+      "hamil_type": "ang_moms",
+      "U": 15,
+      "delta": 15,
+      "np": 1,
+      "L": 1.0,
+      "nch": 64,
+      "t0": 0.0,
+      "E0": 40.0,
+      "nt": 500,
+      "T": 33.35635E-13,
+      "sigma": 66.7127E-13,
+      "~nu_L": 0.299793e13,
+      "nu_L": 0.599586e13
+    },
+    "mod_log": 500
+  }
+}

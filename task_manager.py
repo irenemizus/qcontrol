@@ -175,12 +175,18 @@ class TaskManager:
             raise RuntimeError("Impossible case in the InitGuess class")
 
         if conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV:
+            print("Non-trivial type of the Hamiltonian is used")
+            print("Number of 2-level basis vectors 'nb' = 1 is used")
             self.ntriv = 1
         elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.ANG_MOMS:
+            print("Angular momentum type of the Hamiltonian is used")
+            print("Number of %d-level basis vectors 'nb' = %d is used" % (conf_fitter.nb, conf_fitter.nb))
             self.ntriv = -1
             if not conf_fitter.nb % 2:
                 raise RuntimeError("Number of basis vectors 'nb' for 'hamil_type' = 'angs_moms' should be odd!")
         elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.TWO_LEVELS:
+            print("Simple trivial two-levels type of the Hamiltonian is used")
+            print("Number of 2-level basis vectors 'nb' = 2 is used")
             self.ntriv = 0
             if not conf_fitter.nb == 2:
                 raise RuntimeError("Number of basis vectors 'nb' for 'hamil_type' = 'two_levels' should be equal to 2!")
@@ -446,8 +452,8 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             for gl in range(nb):
                 phi_gl = numpy.array([complex(0.0, 0.0)] * np)
                 for il in range(nb):
-                    psi_F_el_mult = F.item(gl, il) * psi.psis[bv].f[il]
-                    phi_gl = numpy.add(phi_gl, psi_F_el_mult)
+                    F_psi_el_mult = F.item(gl, il) * psi.psis[bv].f[il]
+                    phi_gl = numpy.add(phi_gl, F_psi_el_mult)
                 phi.psis[bv].f[gl] = phi_gl
 
         return phi
@@ -471,18 +477,6 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
 
         return phi
 
-
-    #def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
-    #    psi_goal_obj = PsiBasis(nb)
-
-    #    psi_goal_obj.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
-    #    psi_goal_obj.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
-
-    #    psi_goal_obj.psis[1].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
-    #    psi_goal_obj.psis[1].f[1] = -self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
-
-    #    return psi_goal_obj
-
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
         """ Potential energy vectors
             INPUT
@@ -501,21 +495,37 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
 
         v = []
-        #D_l = -nu_L * phys_base.Hz_to_cm / 2.0
 
-        # Lower potential
-        #D_l = 0.0
-        D_l = -Du / 2.0
-        v_l = numpy.array([D_l] * np)
-        v.append((D_l, v_l))
+        if not self.ntriv:
+            # Lower potential
+            D_l = -Du / 2.0
+            v_l = numpy.array([D_l] * np)
+            v.append((D_l, v_l))
 
-        #D_u = nu_L * phys_base.Hz_to_cm / 2.0
-        #D_u = Du / 2.0
+            # Upper potential
+            D_u = Du + D_l
+            v_u = numpy.array([D_u] * np)
+            v.append((D_u, v_u))
 
-        # Upper potential
-        D_u = Du + D_l
-        v_u = numpy.array([D_u] * np)
-        v.append((D_u, v_u))
+        elif self.ntriv == -1:
+            Emax = 100.0
+
+            # Maximum and minimum energies achieved during the calculation
+            vmax = self.conf_fitter.propagation.U * (self.conf_fitter.nb - 1)**2 / 4.0 + Emax * (self.conf_fitter.nb - 1)
+            vmin = -vmax
+
+            v_min = numpy.array([vmin] * np)
+            v_max = numpy.array([vmax] * np)
+
+            v.append((vmin, v_min))
+
+            for n in range(1, self.conf_fitter.nb - 1):
+                vn = self.conf_fitter.propagation.U * n * n
+                v_n = numpy.array([vn] * np)
+                v.append((vn, v_n))
+            v.append((vmax, v_max))
+        else:
+            raise RuntimeError("Unsupported type of potential!")
 
         return v
 

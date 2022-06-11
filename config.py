@@ -113,6 +113,8 @@ class TaskRootConfiguration(ConfigurationBase):
                 self._data["wf_type"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE
                 self._data["pot_type"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE
                 self._data["hamil_type"] = TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV
+                self._data["U"] = 0.0
+                self._data["delta"] = 0.0
                 self._data["a"] = 1.0   # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
                 self._data["De"] = 20000.0  # 1/cm
                 self._data["x0p"] = -0.17   # a_0

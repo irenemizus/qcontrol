@@ -199,10 +199,6 @@ class FittingSolver:
 
             if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                 chiT = copy.deepcopy(self.psi_goal_basis)
-#                chiT_omega = copy.deepcopy(self.psi_goal_basis)
-#                for vect in range(self.basis_length):
-#                    chiT_omega.psis[vect].f[1] *= cmath.exp(1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
-#                    chiT_omega.psis[vect].f[0] *= cmath.exp(-1j * math.pi * self.conf_fitter.propagation.nu_L * self.conf_fitter.propagation.T)
 
                 self.dyn.chi_tlist = [ chiT ]
 
@@ -318,26 +314,18 @@ class FittingSolver:
             if direct == PropagationSolver.Direction.FORWARD:
                 chiT_part = Psi()
                 assert solver.dyn.l - 1 == self.conf_fitter.propagation.nt
-                print("phase(psi_g(T)) = ", cmath.phase(solver.dyn.psi.f[0][0]))
-                print("phase(psif_g) = ", cmath.phase(solver.stat.psif.f[0][0]))
-                print("phase(psi0_g) = ", cmath.phase(solver.stat.psi0.f[0][0]))
-                print("phase(psi_e(T)) = ", cmath.phase(solver.dyn.psi.f[1][0]))
-                print("phase(psif_e) = ", cmath.phase(solver.stat.psif.f[1][0]))
-                print("phase(psi0_e) = ", cmath.phase(solver.stat.psi0.f[1][0]))
+                for n in range(len(init_psi_basis.psis[0].f)):
+                    print("phase(psi_%d(T)) = %f" % (n, cmath.phase(solver.dyn.psi.f[n][0])))
+                    print("phase(psif_%d) = %f" % (n, cmath.phase(solver.stat.psif.f[n][0])))
+                    print("phase(psi0_%d) = %f" % (n, cmath.phase(solver.stat.psi0.f[n][0])))
 
-                print("|psi_g(T)| = ", abs(solver.dyn.psi.f[0][0]))
-                print("|psif_g| = ", abs(solver.stat.psif.f[0][0]))
-                print("|psi0_g| = ", abs(solver.stat.psi0.f[0][0]))
-                print("|psi_e(T)| = ", abs(solver.dyn.psi.f[1][0]))
-                print("|psif_e| = ", abs(solver.stat.psif.f[1][0]))
-                print("|psi0_e| = ", abs(solver.stat.psi0.f[1][0]))
+                    print("|psi_%d(T)| = %f" % (n, abs(solver.dyn.psi.f[n][0])))
+                    print("|psif_%d| = %f" % (n, abs(solver.stat.psif.f[n][0])))
+                    print("|psi0_%d| = %f" % (n, abs(solver.stat.psi0.f[n][0])))
 
-                print("psi_g(T) = ", solver.dyn.psi.f[0][0])
-                print("psi_e(T) = ", solver.dyn.psi.f[1][0])
+                    print("psi_%d(T)" % n + " = ", solver.dyn.psi.f[n][0])
 
-                self.dyn.goal_close[vect] = math_base.cprod(solver.stat.psif.f[1], solver.dyn.psi.f[1],
-                                                      solver.stat.dx, self.conf_fitter.propagation.np) + \
-                                            math_base.cprod(solver.stat.psif.f[0], solver.dyn.psi.f[0],
+                    self.dyn.goal_close[vect] += math_base.cprod(solver.stat.psif.f[n], solver.dyn.psi.f[n],
                                                       solver.stat.dx, self.conf_fitter.propagation.np)
 
                 if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
@@ -434,14 +422,13 @@ class FittingSolver:
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
 
             E_tlist_init = []
-            goal_close_abs_init = abs(math_base.cprod(self.psi_goal_basis.psis[0].f[0], self.psi_init_basis.psis[0].f[0],
-                                                  dx, self.conf_fitter.propagation.np) + \
-                                  math_base.cprod(self.psi_goal_basis.psis[0].f[1], self.psi_init_basis.psis[0].f[1],
-                                                  dx, self.conf_fitter.propagation.np) + \
-                                  math_base.cprod(self.psi_goal_basis.psis[1].f[0], self.psi_init_basis.psis[1].f[0],
-                                                  dx, self.conf_fitter.propagation.np) + \
-                                  math_base.cprod(self.psi_goal_basis.psis[1].f[1], self.psi_init_basis.psis[1].f[1],
-                                                  dx, self.conf_fitter.propagation.np))
+            goal_close_abs_init = 0.0
+            for vect in range(self.basis_length):
+                for n in range(len(self.psi_init_basis.psis[0].f)):
+                    goal_close_abs_init += math_base.cprod(self.psi_goal_basis.psis[vect].f[n], self.psi_init_basis.psis[vect].f[n],
+                                                  dx, self.conf_fitter.propagation.np)
+
+            goal_close_abs_init = abs(goal_close_abs_init)
 
             for t in t_list:
                 #cos = cmath.exp(1j * 2.0 * math.pi * self.conf_fitter.propagation.nu_L * t)
@@ -543,11 +530,11 @@ class FittingSolver:
             if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING and \
                self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT and \
                self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                print("normalization on the excited state = ", abs(instr.cnorm[1]))
+                print("normalization on the state #1 = ", abs(instr.cnorm[1]))
             if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING and \
                self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT and \
                self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                print("energy on the excited state = ", instr.cener[1].real)
+                print("energy on the state #1 = ", instr.cener[1].real)
             if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION or \
                self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
                 print("Time derivation of the expectation value from the goal operator A = ", dAdt)
@@ -620,41 +607,56 @@ class FittingSolver:
             conf_prop = self.conf_fitter.propagation
             if prop.dyn.l == 0:
                 E = self.dyn.E_patched
-                chi_basis_0 = self.dyn.chi_tlist[-1]
+                chi_init = self.dyn.chi_tlist[-1]
+                psi_init = self.psi_init_basis
+                self.a0 = 0.0
+                self.nlvls = len(psi_init.psis[0].f)
+
+                for vect in range(self.basis_length):
+                    for n in range(self.nlvls):
+                        self.a0 += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], stat.dx, conf_prop.np)
+
+                #chi_basis_0 = self.dyn.chi_tlist[-1]
 
                 # psi/chi ~ forward/backward propagation wf, init ~ t = 0.0, {0;1} ~ # of basis vector, {g;e} ~ ground/excited state
-                chi0_init_g = chi_basis_0.psis[0].f[0]
-                chi1_init_e = chi_basis_0.psis[1].f[1]
-                chi0_init_e = chi_basis_0.psis[0].f[1]
-                chi1_init_g = chi_basis_0.psis[1].f[0]
+                #chi0_init_g = chi_basis_0.psis[0].f[0]
+                #chi1_init_e = chi_basis_0.psis[1].f[1]
+                #chi0_init_e = chi_basis_0.psis[0].f[1]
+                #chi1_init_g = chi_basis_0.psis[1].f[0]
 
-                psi0_init_g = self.psi_init_basis.psis[0].f[0]
-                psi1_init_e = self.psi_init_basis.psis[1].f[1]
-                psi0_init_e = self.psi_init_basis.psis[0].f[1]
-                psi1_init_g = self.psi_init_basis.psis[1].f[0]
+                #psi0_init_g = self.psi_init_basis.psis[0].f[0]
+                #psi1_init_e = self.psi_init_basis.psis[1].f[1]
+                #psi0_init_e = self.psi_init_basis.psis[0].f[1]
+                #psi1_init_g = self.psi_init_basis.psis[1].f[0]
 
-                self.a0 = math_base.cprod(psi0_init_g, chi0_init_g, stat.dx, conf_prop.np) + \
-                          math_base.cprod(psi0_init_e, chi0_init_e, stat.dx, conf_prop.np) + \
-                          math_base.cprod(psi1_init_g, chi1_init_g, stat.dx, conf_prop.np) + \
-                          math_base.cprod(psi1_init_e, chi1_init_e, stat.dx, conf_prop.np)
+                #self.a0 = math_base.cprod(psi0_init_g, chi0_init_g, stat.dx, conf_prop.np) + \
+                #          math_base.cprod(psi0_init_e, chi0_init_e, stat.dx, conf_prop.np) + \
+                #          math_base.cprod(psi1_init_g, chi1_init_g, stat.dx, conf_prop.np) + \
+                #          math_base.cprod(psi1_init_e, chi1_init_e, stat.dx, conf_prop.np)
             else:
                 chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
+                psi_basis = self.dyn.psi_cur
+                sum = 0.0
+
+                for vect in range(self.basis_length):
+                    for n in range(self.nlvls):
+                        sum += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
 
                 # psi/chi ~ forward/backward propagation wf, {0;1} ~ # of basis vector, {g;e} ~ ground/excited state
-                psi0_g = self.dyn.psi_cur.psis[0].f[0]
-                psi1_e = self.dyn.psi_cur.psis[1].f[1]
-                psi0_e = self.dyn.psi_cur.psis[0].f[1]
-                psi1_g = self.dyn.psi_cur.psis[1].f[0]
+                #psi0_g = self.dyn.psi_cur.psis[0].f[0]
+                #psi1_e = self.dyn.psi_cur.psis[1].f[1]
+                #psi0_e = self.dyn.psi_cur.psis[0].f[1]
+                #psi1_g = self.dyn.psi_cur.psis[1].f[0]
 
-                chi0_g = chi_basis.psis[0].f[0]
-                chi1_e = chi_basis.psis[1].f[1]
-                chi0_e = chi_basis.psis[0].f[1]
-                chi1_g = chi_basis.psis[1].f[0]
+                #chi0_g = chi_basis.psis[0].f[0]
+                #chi1_e = chi_basis.psis[1].f[1]
+                #chi0_e = chi_basis.psis[0].f[1]
+                #chi1_g = chi_basis.psis[1].f[0]
 
-                sum = math_base.cprod(chi0_g, psi0_g, stat.dx, conf_prop.np) + \
-                      math_base.cprod(chi0_e, psi0_e, stat.dx, conf_prop.np) + \
-                      math_base.cprod(chi1_g, psi1_g, stat.dx, conf_prop.np) + \
-                      math_base.cprod(chi1_e, psi1_e, stat.dx, conf_prop.np)
+                #sum = math_base.cprod(chi0_g, psi0_g, stat.dx, conf_prop.np) + \
+                #      math_base.cprod(chi0_e, psi0_e, stat.dx, conf_prop.np) + \
+                #      math_base.cprod(chi1_g, psi1_g, stat.dx, conf_prop.np) + \
+                #      math_base.cprod(chi1_e, psi1_e, stat.dx, conf_prop.np)
 
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 #E_init = s * conf_prop.E0 * cmath.exp(1j * 2.0 * math.pi * conf_prop.nu_L * (dyn.t - (abs(stat.dt) / 2.0)))

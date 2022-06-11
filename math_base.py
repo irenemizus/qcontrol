@@ -72,7 +72,7 @@ def initak(n, dx, iorder, ntriv):
 
     ak = numpy.zeros(n, numpy.complex128)
 
-    if ntriv != 0:
+    if ntriv > 0:
         dk = 2.0 * math.pi / (n - 1) / dx
 
         for i in range(int(n / 2)):

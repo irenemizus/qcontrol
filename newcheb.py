@@ -228,6 +228,9 @@ Options:
         hamil_type
             type of the Hamiltonian operator used ("ntriv", "two_levels" or "ang_moms")
             by default, the "ntriv" type is used
+        U, delta
+            parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'ang_moms' only)
+            by default, both are equal to 0.0
         x0
             coordinate initial condition
             by default, is equal to 0.0
