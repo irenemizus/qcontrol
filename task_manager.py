@@ -2,6 +2,7 @@ import cmath
 import math
 import numpy
 
+import phys_base
 from config import TaskRootConfiguration
 from propagation import PropagationSolver
 from psi_basis import PsiBasis
@@ -414,7 +415,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
             De_e        dissociation energy of the excited state
             a_e         scaling factor of the excited state
             Du          energy shift between the minima of the potentials
-            nu_l    basic frequency of the laser field in Hz (dummy variable)
+            nu_l        basic frequency of the laser field in Hz (dummy variable)
 
             OUTPUT
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
@@ -508,11 +509,12 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v.append((D_u, v_u))
 
         elif self.ntriv == -1:
-            Emax = 100.0
+            Emax = self.conf_fitter.propagation.E0 * 1.5
 
             # Maximum and minimum energies achieved during the calculation
-            vmax = self.conf_fitter.propagation.U * (self.conf_fitter.nb - 1)**2 / 4.0 + Emax * (self.conf_fitter.nb - 1)
-            vmin = -vmax
+            vmax = self.conf_fitter.propagation.U * (nu_L * phys_base.Hz_to_cm * (self.conf_fitter.nb - 1))**2 / 4.0 + \
+                   Emax * (self.conf_fitter.nb - 1) * nu_L * phys_base.Hz_to_cm
+            vmin = -Emax * (self.conf_fitter.nb - 1) * nu_L * phys_base.Hz_to_cm
 
             v_min = numpy.array([vmin] * np)
             v_max = numpy.array([vmax] * np)
@@ -520,7 +522,7 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v.append((vmin, v_min))
 
             for n in range(1, self.conf_fitter.nb - 1):
-                vn = self.conf_fitter.propagation.U * n * n
+                vn = self.conf_fitter.propagation.U * (n * nu_L * phys_base.Hz_to_cm)**2
                 v_n = numpy.array([vn] * np)
                 v.append((vn, v_n))
             v.append((vmax, v_max))

@@ -160,10 +160,10 @@ class PropagationSolver:
         return cnorm
 
     @staticmethod
-    def _ener_eval(psi: Psi, v, akx2, dx, np, eL, U, delta, ntriv):
+    def _ener_eval(psi: Psi, v, akx2, dx, np, E, eL, U, delta, ntriv, E_full, orig):
         cener = []
 
-        phi = phys_base.hamil2D_cpu(psi, v, akx2, np, 0.0, 0.0, U, delta, ntriv)
+        phi = phys_base.hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=0.0, eL=eL, U=U, delta=delta, ntriv=ntriv, E_full=E_full, orig=orig)
         for n in range(len(psi.f)):
             cener.append(math_base.cprod(psi.f[n], phi.f[n], dx, np))
 
@@ -311,13 +311,13 @@ class PropagationSolver:
 
         # calculating of initial ground/excited energies
         eL = self.nu_L * phys_base.Hz_to_cm / 2.0
-        cener0 = self._ener_eval(psi0, v, akx2, dx, self.np, eL, self.U, self.delta, self.ntriv)
+        cener0 = self._ener_eval(psi=psi0, v=v, akx2=akx2, dx=dx, np=self.np, E=0.0, eL=eL, U=self.U, delta=self.delta, ntriv=self.ntriv, E_full=0.0, orig=True)
 
         # final normalization check
         cnormf = self._norm_eval(psif, dx, self.np)
 
         # calculating of final excited/filtered energy
-        cenerf = self._ener_eval(psif, v, akx2, dx, self.np, eL, self.U, self.delta, self.ntriv)
+        cenerf = self._ener_eval(psi=psif, v=v, akx2=akx2, dx=dx, np=self.np, E=0.0, eL=eL, U=self.U, delta=self.delta, ntriv=self.ntriv, E_full=0.0, orig=True)
 
         # time propagation
         dt = dir.value * t_step
@@ -450,12 +450,8 @@ class PropagationSolver:
         #print("|psi4| = ", abs(self.dyn.psi.f[0]) + abs(self.dyn.psi.f[1]))
 
         # calculating of a current energy
-        phi = phys_base.hamil2D_cpu(psi=self.dyn.psi, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
-                                    eL=eL, U=self.U, delta=self.delta, ntriv=self.ntriv, E_full=E_full, orig=True)
-
-        cener = []
-        for n in range(len(self.stat.psi0.f)):
-            cener.append(math_base.cprod(self.dyn.psi.f[n], phi.f[n], self.stat.dx, self.np))
+        cener = self._ener_eval(psi=self.dyn.psi, v=self.stat.v, akx2=self.stat.akx2, dx=self.stat.dx, np=self.np, E=self.dyn.E, eL=eL, U=self.U, delta=self.delta,
+                                 ntriv=self.ntriv, E_full=E_full, orig=True)
 
         overlp0 = self._pop_eval(self.stat.psi0, self.dyn.psi, self.stat.dx, self.np)
         overlpf = self._pop_eval(self.stat.psif, self.dyn.psi, self.stat.dx, self.np)
