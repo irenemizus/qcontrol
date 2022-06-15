@@ -9,7 +9,7 @@ from psi_basis import PsiBasis, Psi
 
 
 class FittingSolver:
-    class FitterDynamicState():
+    class FitterDynamicState:
         chi_tlist: list[PsiBasis]
         psi_tlist: list[PsiBasis]
         E_tlist: list[complex]
@@ -109,7 +109,7 @@ class FittingSolver:
         self.solvers = []
         self.propagation_reporters = [None] * self.basis_length
         for vect in range(self.basis_length):
-            propagation_reporter = self.reporter.create_propagation_reporter(os.path.join(prop_id, "basis_" + str(vect)))
+            propagation_reporter = self.reporter.create_propagation_reporter(os.path.join(prop_id, "basis_" + str(vect)), self.levels_number)
             propagation_reporter.open()
             self.propagation_reporters[vect] = propagation_reporter
 
@@ -162,6 +162,7 @@ class FittingSolver:
         self.psi_goal_basis = psi_goal_basis
 
         self.basis_length = len(psi_init_basis)
+        self.levels_number = len(psi_init_basis.psis[0].f)
         self.a0 = complex(0.0, 0.0)
 
         self.dyn = None
@@ -314,7 +315,7 @@ class FittingSolver:
             if direct == PropagationSolver.Direction.FORWARD:
                 chiT_part = Psi()
                 assert solver.dyn.l - 1 == self.conf_fitter.propagation.nt
-                for n in range(len(init_psi_basis.psis[0].f)):
+                for n in range(self.levels_number):
                     print("phase(psi_%d(T)) = %f" % (n, cmath.phase(solver.dyn.psi.f[n][0])))
                     print("phase(psif_%d) = %f" % (n, cmath.phase(solver.stat.psif.f[n][0])))
                     print("phase(psi0_%d) = %f" % (n, cmath.phase(solver.stat.psi0.f[n][0])))
@@ -610,10 +611,9 @@ class FittingSolver:
                 chi_init = self.dyn.chi_tlist[-1]
                 psi_init = self.psi_init_basis
                 self.a0 = 0.0
-                self.nlvls = len(psi_init.psis[0].f)
 
                 for vect in range(self.basis_length):
-                    for n in range(self.nlvls):
+                    for n in range(self.levels_number):
                         self.a0 += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], stat.dx, conf_prop.np)
 
                 #chi_basis_0 = self.dyn.chi_tlist[-1]
@@ -639,7 +639,7 @@ class FittingSolver:
                 sum = 0.0
 
                 for vect in range(self.basis_length):
-                    for n in range(self.nlvls):
+                    for n in range(self.levels_number):
                         sum += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
 
                 # psi/chi ~ forward/backward propagation wf, {0;1} ~ # of basis vector, {g;e} ~ ground/excited state

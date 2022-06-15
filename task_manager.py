@@ -183,8 +183,6 @@ class TaskManager:
             print("Angular momentum type of the Hamiltonian is used")
             print("Number of %d-level basis vectors 'nb' = %d is used" % (conf_fitter.nb, conf_fitter.nb))
             self.ntriv = -1
-            if not conf_fitter.nb % 2:
-                raise RuntimeError("Number of basis vectors 'nb' for 'hamil_type' = 'angs_moms' should be odd!")
         elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.TWO_LEVELS:
             print("Simple trivial two-levels type of the Hamiltonian is used")
             print("Number of 2-level basis vectors 'nb' = 2 is used")

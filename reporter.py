@@ -21,8 +21,9 @@ import config
 
 
 class PropagationReporter:
-    def __init__(self, out_path: str):
+    def __init__(self, out_path: str, nlvls: int):
         self._out_path = out_path
+        self._nlvls = nlvls
 
     def open(self):
         raise NotImplementedError()
@@ -30,22 +31,19 @@ class PropagationReporter:
     def close(self):
         raise NotImplementedError()
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp0, overlpf, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+                              psi_max, E, freq_mult):
         raise NotImplementedError()
 
 
 class TablePropagationReporter(PropagationReporter):
-    def __init__(self, out_path: str,
+    def __init__(self, out_path: str, nlvls: int,
                  conf: config.ReportRootConfiguration.ReportFitterConfiguration.ReportTablePropagationConfiguration):
-        super().__init__(out_path=out_path)
+        super().__init__(out_path=out_path, nlvls=nlvls)
         self.conf = conf
-        self.f_abs = None
-        self.f_real = None
-        self.f_prop = None
-        self.f_abs_up = None
-        self.f_real_up = None
-        self.f_prop_up = None
+        self.f_abs = [None] * nlvls
+        self.f_real = [None] * nlvls
+        self.f_prop = [None] * nlvls
         self.f_fit = None
 
     @staticmethod
@@ -56,29 +54,22 @@ class TablePropagationReporter(PropagationReporter):
         if not os.path.exists(self._out_path):
             os.mkdir(self._out_path)
 
-        self.f_abs = open(os.path.join(self._out_path, self.name_template(self.conf.tab_abs, 0)), 'w')
-        self.f_real = open(os.path.join(self._out_path, self.name_template(self.conf.tab_real, 0)), 'w')
-        self.f_prop = open(os.path.join(self._out_path, self.name_template(self.conf.tab_tvals, 0)), 'w')
-        self.f_abs_up = open(os.path.join(self._out_path, self.name_template(self.conf.tab_abs, 1)), 'w')
-        self.f_real_up = open(os.path.join(self._out_path, self.name_template(self.conf.tab_real, 1)), 'w')
-        self.f_prop_up = open(os.path.join(self._out_path, self.name_template(self.conf.tab_tvals, 1)), 'w')
+        for n in range(self._nlvls):
+            self.f_abs[n] = open(os.path.join(self._out_path, self.name_template(self.conf.tab_abs, n)), 'w')
+            self.f_real[n] = open(os.path.join(self._out_path, self.name_template(self.conf.tab_real, n)), 'w')
+            self.f_prop[n] = open(os.path.join(self._out_path, self.name_template(self.conf.tab_tvals, n)), 'w')
         self.f_fit = open(os.path.join(self._out_path, self.conf.tab_tvals_fit), 'w')
         return self
 
 
     def close(self):
-        self.f_abs.close()
-        self.f_abs = None
-        self.f_real.close()
-        self.f_real = None
-        self.f_prop.close()
-        self.f_prop = None
-        self.f_abs_up.close()
-        self.f_abs_up = None
-        self.f_real_up.close()
-        self.f_real_up = None
-        self.f_prop_up.close()
-        self.f_prop_up = None
+        for n in range(self._nlvls):
+            self.f_abs[n].close()
+            self.f_abs[n] = None
+            self.f_real[n].close()
+            self.f_real[n] = None
+            self.f_prop[n].close()
+            self.f_prop[n] = None
         self.f_fit.close()
         self.f_fit = None
 
@@ -94,35 +85,29 @@ class TablePropagationReporter(PropagationReporter):
 
 
     @staticmethod
-    def __plot_t_file_prop(t, momx, momx2, momp, momp2, ener, overlp0, overlpf, abs_psi_max, real_psi_max, file_prop):
+    def __plot_t_file_prop(t, momx, momx2, momp, momp2, ener, overlp0, overlpf, psi_max, file_prop):
         """ Plots expectation values of the current x, x*x, p and p*p, and other values,
         which are modified by propagation, as a function of time """
         file_prop.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(
-            t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener, abs(overlp0), abs(overlpf), abs_psi_max,
-            real_psi_max))
+            t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener.real, abs(overlp0), abs(overlpf), abs(psi_max),
+            psi_max.real))
         file_prop.flush()
 
 
     @staticmethod
     def __plot_t_file_fitter(t, E, freq_mult, ener_tot, overlp_tot, file_fit):
         """ Plots the values, which are modified by fitter, as a function of time """
-        file_fit.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, E, freq_mult, ener_tot, overlp_tot[0], overlp_tot[1]))
+        file_fit.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, abs(E), freq_mult, ener_tot.real, abs(overlp_tot[0]), abs(overlp_tot[1])))
         file_fit.flush()
 
-
     def plot(self, psi: Psi, t, x, np):
-        self.__plot_file(psi.f[0], t, x, np, self.f_abs, self.f_real)
+        for n in range(self._nlvls):
+            self.__plot_file(psi.f[n], t, x, np, self.f_abs[n], self.f_real[n])
 
-    def plot_prop(self, t, moms, ener, overlp0, overlpf, abs_psi_max, real_psi_max):
-        self.__plot_t_file_prop(t, moms.x_l, moms.x2_l, moms.p_l, moms.p2_l, ener, overlp0, overlpf,
-                             abs_psi_max, real_psi_max, self.f_prop)
-
-    def plot_up(self, psi: Psi, t, x, np):
-        self.__plot_file(psi.f[1], t, x, np, self.f_abs_up, self.f_real_up)
-
-    def plot_prop_up(self, t, moms, ener, overlp0, overlpf, abs_psi_max, real_psi_max):
-        self.__plot_t_file_prop(t, moms.x_u, moms.x2_u, moms.p_u, moms.p2_u, ener, overlp0, overlpf,
-                             abs_psi_max, real_psi_max, self.f_prop_up)
+    def plot_prop(self, t, moms, ener, overlp0, overlpf, psi_max):
+        for n in range(self._nlvls):
+            self.__plot_t_file_prop(t, moms.x[n], moms.x2[n], moms.p[n], moms.p2[n], ener[n], overlp0[n], overlpf[n],
+                             psi_max[n], self.f_prop[n])
 
     def plot_fitter(self, t, E, freq_mult, ener_tot, overlp_tot):
         self.__plot_t_file_fitter(t, E, freq_mult, ener_tot, overlp_tot, self.f_fit)
@@ -139,20 +124,18 @@ class TablePropagationReporter(PropagationReporter):
             f.write("{0}\n".format(phi_u[i]))
 
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp0, overlpf, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+                              psi_max, E, freq_mult):
         if l % self.conf.mod_fileout == 0 and l >= self.conf.lmin:
             self.plot(psi, t, x, np)
-            self.plot_up(psi, t, x, np)
-            self.plot_prop(t, moms, ener, overlp0[0], overlpf[0], abs_psi_max, real_psi_max)
-            self.plot_prop_up(t, moms, ener_u, overlp0[1], overlpf[1], abs_psi_max_u, real_psi_max_u)
+            self.plot_prop(t, moms, ener, overlp0, overlpf, psi_max)
             self.plot_fitter(t, E, freq_mult, ener_tot, overlp_tot)
 
 
 class PlotPropagationReporter(PropagationReporter):
-    def __init__(self, out_path: str,
+    def __init__(self, out_path: str, nlvls: int,
                  conf: config.ReportRootConfiguration.ReportFitterConfiguration.ReportPlotPropagationConfiguration):
-        super().__init__(out_path=out_path)
+        super().__init__(out_path=out_path, nlvls=nlvls)
         self.conf = conf
 
     def open(self):
@@ -161,44 +144,33 @@ class PlotPropagationReporter(PropagationReporter):
 
         # Time
         self.t_list = []
-        self.t_u_list = []
+        self.t_moms_list = [[]] * self._nlvls
         self.t_fit_list = []
 
         # Coordinate
         self.x_list = []
 
         # X = Time
-        self.x_l_list = []
-        self.x2_l_list = []
-        self.p_l_list = []
-        self.p2_l_list = []
-        self.x_u_list = []
-        self.x2_u_list = []
-        self.p_u_list = []
-        self.p2_u_list = []
+        self.x_list = [[]] * self._nlvls
+        self.x2_list = [[]] * self._nlvls
+        self.p_list = [[]] * self._nlvls
+        self.p2_list = [[]] * self._nlvls
+
         self.ener_list = []
-        self.ener_u_list = []
         self.overlp0_list = []
-        self.overlp0_u_list = []
         self.overlpf_list = []
-        self.overlpf_u_list = []
+        self.abs_psi_max_list = []
+        self.real_psi_max_list = []
+
         self.ener_tot_list = []
         self.overlp0_tot_list = []
         self.overlpf_tot_list = []
-        self.abs_psi_max_list = []
-        self.real_psi_max_list = []
-        self.overlp_tot = []
-        self.abs_psi_max_u_list = []
-        self.real_psi_max_u_list = []
-
         self.E_list = []
         self.freq_mult_list = []
 
         # X = Coordinate
-        self.psi_abs = {}  # key: t, value: {'x': [], 'y': []}
-        self.psi_real = {}  # key: t, value: {'x': [], 'y': []}
-        self.psi_abs_u = {}
-        self.psi_real_u = {}
+        self.psi_abs = [{}] * self._nlvls  # key: t, value: {'x': [], 'y': []}
+        self.psi_real = [{}] * self._nlvls  # key: t, value: {'x': [], 'y': []}
 
         self.i = 0
 
@@ -206,6 +178,7 @@ class PlotPropagationReporter(PropagationReporter):
 
     def close(self):
         pass
+
 
     @staticmethod
     def __plot_update_graph(psi, numb_plotout, title_plot, title_y, plot_name):
@@ -310,161 +283,121 @@ class PlotPropagationReporter(PropagationReporter):
         fig.write_image(plot_name)
 
 
-    def plot(self, psi:Psi, t, x, np):
+    @staticmethod
+    def __plot_tvals_mult_update_graph(t_list, vals_list, nlvls, title_plot, title_y, plot_name):
+        fig_vals = go.Figure()
+
+        vals_t_list = [[0.0] * len(t_list)] * nlvls
+        for nt in range(len(t_list)):
+            for n in range(nlvls):
+                vals_t_list[n][nt] = vals_list[nt][n]
+
+        for n in range(nlvls):
+            sc = go.Scatter(x=t_list, y=vals_t_list[n], name="level #" + str(n), mode="lines")
+            fig_vals.add_trace(sc)
+
+        fig_vals.update_layout(
+            title={
+                'text': title_plot,
+                'y': 0.9,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
+            xaxis_title={
+                'text': 'time'
+            },
+            yaxis_title={
+                'text': title_y
+            }
+        )
+
+        fig_vals.write_image(plot_name)
+
+
+    def plot(self, psi:Psi, t, x, np, n):
         psi0_abs = []
         psi0_real = []
         for i in range(np):
-            psi0_abs.append(abs(psi.f[0][i]))
-            psi0_real.append(psi.f[0][i].real)
+            psi0_abs.append(abs(psi.f[n][i]))
+            psi0_real.append(psi.f[n][i].real)
 
-        self.psi_abs[t] = {'x': x, 'y': psi0_abs}
-        self.psi_real[t] = {'x': x, 'y': psi0_real}
-
-        if self.i % self.conf.mod_update == 0:
-            # Updating the graph for psi_abs
-            self.__plot_update_graph(self.psi_abs, self.conf.number_plotout,
-                                     "Absolute value of the wave function on the ground state",
-                                     "abs(Ψ)", os.path.join(self._out_path, self.conf.gr_abs_grd))
-
-            # Updating the graph for psi_real
-            self.__plot_update_graph(self.psi_real, self.conf.number_plotout,
-                                     "Real value of the wave function on the ground state",
-                                     "Re(Ψ)", os.path.join(self._out_path, self.conf.gr_real_grd))
-
-
-    def plot_up(self, psi: Psi, t, x, np):
-        psi1_abs = []
-        psi1_real = []
-        for i in range(np):
-            psi1_abs.append(abs(psi.f[1][i]))
-            psi1_real.append(psi.f[1][i].real)
-
-        self.psi_abs_u[t] = {'x': x, 'y': psi1_abs}
-        self.psi_real_u[t] = {'x': x, 'y': psi1_real}
+        self.psi_abs[n][t] = {'x': x, 'y': psi0_abs}
+        self.psi_real[n][t] = {'x': x, 'y': psi0_real}
 
         if self.i % self.conf.mod_update == 0:
             # Updating the graph for psi_abs
-            self.__plot_update_graph(self.psi_abs_u, self.conf.number_plotout,
-                                     "Absolute value of the wave function on the excited state",
-                                     "abs(Ψ)", os.path.join(self._out_path, self.conf.gr_abs_exc))
+            self.__plot_update_graph(self.psi_abs[n], self.conf.number_plotout,
+                                     "Absolute value of the wave function on the state #%d" % n,
+                                     "abs(Ψ)", os.path.join(self._out_path, self.conf.gr_abs.replace("{level}", str(n))))
 
             # Updating the graph for psi_real
-            self.__plot_update_graph(self.psi_real_u, self.conf.number_plotout,
-                                     "Real value of the wave function on the excited state",
-                                     "Re(Ψ)", os.path.join(self._out_path, self.conf.gr_real_exc))
+            self.__plot_update_graph(self.psi_real[n], self.conf.number_plotout,
+                                     "Real value of the wave function on the state #%d" % n,
+                                     "Re(Ψ)", os.path.join(self._out_path, self.conf.gr_real.replace("{level}", str(n))))
 
-
-    def plot_prop(self, t, moms, ener, overlp0, overlpf, abs_psi_max, real_psi_max):
-        self.t_list.append(t)
-        self.x_l_list.append(moms.x_l.real)
-        self.x2_l_list.append(moms.x2_l.real)
-        self.p_l_list.append(moms.p_l.real)
-        self.p2_l_list.append(moms.p2_l.real)
-        self.ener_list.append(ener)
-        self.overlp0_list.append(abs(overlp0))
-        self.overlpf_list.append(abs(overlpf))
-        self.abs_psi_max_list.append(abs_psi_max)
-        self.real_psi_max_list.append(real_psi_max)
+    def plot_moms_prop(self, t, moms, n):
+        self.t_moms_list[n].append(t)
+        self.x_list[n].append(moms.x[n].real)
+        self.x2_list[n].append(moms.x2[n].real)
+        self.p_list[n].append(moms.p[n].real)
+        self.p2_list[n].append(moms.p2[n].real)
 
         namem = ["<x>", "<x^2>", "<p>", "<p^2>"]
-        moms_list = [self.x_l_list, self.x2_l_list, self.p_l_list]
+        moms_list = [self.x_list[n], self.x2_list[n], self.p_list[n]]
 
         if self.i % self.conf.mod_update == 0:
             # Updating the graph for moms without <p^2>
-            self.__plot_moms_update_graph(self.t_list, moms_list, namem,
-                                          "Expectation values for the ground state", "",
-                                          os.path.join(self._out_path, self.conf.gr_moms_low_grd))
+            self.__plot_moms_update_graph(self.t_moms_list[n], moms_list, namem,
+                                          "Expectation values for the state #%d" % n, "",
+                                          os.path.join(self._out_path, self.conf.gr_moms_low.replace("{level}", str(n))))
 
-            moms_list.append(self.p2_l_list)
+            moms_list.append(self.p2_list[n])
             # Updating the graph for moms
-            self.__plot_moms_update_graph(self.t_list, moms_list, namem,
-                                          "Expectation values for the ground state", "",
-                                          os.path.join(self._out_path, self.conf.gr_moms_grd))
+            self.__plot_moms_update_graph(self.t_moms_list[n], moms_list, namem,
+                                          "Expectation values for the state #%d" % n, "",
+                                          os.path.join(self._out_path, self.conf.gr_moms.replace("{level}", str(n))))
 
+    def plot_prop(self, t, ener, overlp0, overlpf, psi_max):
+        self.t_list.append(t)
+        self.ener_list.append([el.real for el in ener])
+        self.overlp0_list.append([abs(el) for el in overlp0])
+        self.overlpf_list.append([abs(el) for el in overlpf])
+        self.abs_psi_max_list.append([abs(el) for el in psi_max])
+        self.real_psi_max_list.append([el.real for el in psi_max])
+
+        if self.i % self.conf.mod_update == 0:
             # Updating the graph for ener
-            self.__plot_tvals_update_graph(self.t_list, self.ener_list,
-                                           "Energy on the ground state", "Energy",
-                                           os.path.join(self._out_path, self.conf.gr_ener_grd))
+            self.__plot_tvals_mult_update_graph(self.t_list, self.ener_list, self._nlvls,
+                                                "State energies", "Energy",
+                                                os.path.join(self._out_path, self.conf.gr_ener))
 
             # Updating the graph for lower state population
-            self.__plot_tvals_update_graph(self.t_list, self.overlp0_list,
-                                           "Ground state population", "abs((psi0, psi))",
-                                           os.path.join(self._out_path, self.conf.gr_overlp0_grd))
+            self.__plot_tvals_mult_update_graph(self.t_list, self.overlp0_list, self._nlvls,
+                                                "Overlaps with initial state", "abs((psi0, psi))",
+                                                os.path.join(self._out_path, self.conf.gr_overlp0))
 
-            self.__plot_tvals_update_graph(self.t_list, self.overlpf_list,
-                                           "Ground state population", "abs((psif, psi))",
-                                           os.path.join(self._out_path, self.conf.gr_overlpf_grd))
+            self.__plot_tvals_mult_update_graph(self.t_list, self.overlpf_list, self._nlvls,
+                                                "Overlaps with goal state", "abs((psif, psi))",
+                                                os.path.join(self._out_path, self.conf.gr_overlpf))
 
             # Updating the graph for maximum absolute value of ground state wavefunction
-            self.__plot_tvals_update_graph(self.t_list, self.abs_psi_max_list,
-                                           "Time dependence of max|Ψ| for the ground state wavefunction", "max|Ψ|",
-                                           os.path.join(self._out_path, self.conf.gr_abs_max_grd))
+            self.__plot_tvals_mult_update_graph(self.t_list, self.abs_psi_max_list, self._nlvls,
+                                                "Time dependencies of max|Ψ|", "max|Ψ|",
+                                                os.path.join(self._out_path, self.conf.gr_abs_max))
 
             # Updating the graph for maximum real value of ground state wavefunction
-            self.__plot_tvals_update_graph(self.t_list, self.real_psi_max_list,
-                                           "Time dependence of maximum value of real(Ψ) for the ground state wavefunction",
-                                           "real(Ψ)", os.path.join(self._out_path, self.conf.gr_real_max_grd))
-
-
-    def plot_prop_up(self, t, moms, ener, overlp0, overlpf, abs_psi_max, real_psi_max):
-        self.t_u_list.append(t)
-        self.x_u_list.append(moms.x_u.real)
-        self.x2_u_list.append(moms.x2_u.real)
-        self.p_u_list.append(moms.p_u.real)
-        self.p2_u_list.append(moms.p2_u.real)
-        self.ener_u_list.append(ener)
-        self.overlp0_u_list.append(abs(overlp0))
-        self.overlpf_u_list.append(abs(overlpf))
-        self.abs_psi_max_u_list.append(abs_psi_max)
-        self.real_psi_max_u_list.append(real_psi_max)
-
-        namem = ["<x>", "<x^2>", "<p>", "<p^2>"]
-        moms_list = [self.x_u_list, self.x2_u_list, self.p_u_list]
-
-        if self.i % self.conf.mod_update == 0:
-            # Updating the graph for moms
-            self.__plot_moms_update_graph(self.t_u_list, moms_list, namem,
-                                          "Expectation values for the excited state", "",
-                                          os.path.join(self._out_path, self.conf.gr_moms_low_exc))
-
-            moms_list.append(self.p2_u_list)
-            # Updating the graph for moms without <p^2>
-            self.__plot_moms_update_graph(self.t_u_list, moms_list, namem,
-                                          "Expectation values for the excited state", "",
-                                          os.path.join(self._out_path, self.conf.gr_moms_exc))
-
-            # Updating the graph for ener
-            self.__plot_tvals_update_graph(self.t_u_list, self.ener_u_list,
-                                           "Energy on the excited state", "Energy",
-                                           os.path.join(self._out_path, self.conf.gr_ener_exc))
-
-            # Updating the graph for excited state population
-            self.__plot_tvals_update_graph(self.t_u_list, self.overlp0_u_list,
-                                           "Excited state population", "abs((psi0, psi))",
-                                           os.path.join(self._out_path, self.conf.gr_overlp0_exc))
-
-            self.__plot_tvals_update_graph(self.t_u_list, self.overlpf_u_list,
-                                           "Excited state population", "abs((psif, psi))",
-                                           os.path.join(self._out_path, self.conf.gr_overlpf_exc))
-
-            # Updating the graph for maximum absolute value of excited state wavefunction
-            self.__plot_tvals_update_graph(self.t_u_list, self.abs_psi_max_u_list,
-                                           "Time dependence of max|Ψ| for the excited state wavefunction", "max|Ψ|",
-                                           os.path.join(self._out_path, self.conf.gr_abs_max_exc))
-
-            # Updating the graph for maximum real value of excited state wavefunction
-            self.__plot_tvals_update_graph(self.t_u_list, self.real_psi_max_u_list,
-                                           "Time dependence of maximum value of real(Ψ) for the excited state wavefunction",
-                                           "real(Ψ)", os.path.join(self._out_path, self.conf.gr_real_max_exc))
-
+            self.__plot_tvals_mult_update_graph(self.t_list, self.real_psi_max_list, self._nlvls,
+                                           "Time dependencies of maximum value of real(Ψ)",
+                                           "max(real(Ψ))", os.path.join(self._out_path, self.conf.gr_real_max))
 
     def plot_fitter(self, t, E, freq_mult, ener_tot, overlp_tot):
         self.t_fit_list.append(t)
-        self.E_list.append(E)
+        self.E_list.append(abs(E))
         self.freq_mult_list.append(freq_mult)
-        self.ener_tot_list.append(ener_tot)
-        self.overlp0_tot_list.append(overlp_tot[0])
-        self.overlpf_tot_list.append(overlp_tot[1])
+        self.ener_tot_list.append(ener_tot.real)
+        self.overlp0_tot_list.append(abs(overlp_tot[0]))
+        self.overlpf_tot_list.append(abs(overlp_tot[1]))
 
         if self.i % self.conf.mod_update == 0:
             # Updating the graph for laser field energy
@@ -492,14 +425,15 @@ class PlotPropagationReporter(PropagationReporter):
                                            os.path.join(self._out_path, self.conf.gr_overlpf_tot))
 
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp0, overlpf, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+                              psi_max, E, freq_mult):
         try:
             if l % self.conf.mod_plotout == 0 and l >= self.conf.lmin:
-                self.plot(psi, t, x, np)
-                self.plot_up(psi, t, x, np)
-                self.plot_prop(t, moms, ener, overlp0[0], overlpf[0], abs_psi_max, real_psi_max)
-                self.plot_prop_up(t, moms, ener_u, overlp0[1], overlpf[1], abs_psi_max_u, real_psi_max_u)
+                for n in range(self._nlvls):
+                    self.plot(psi, t, x, np, n)
+                    self.plot_moms_prop(t, moms, n)
+
+                self.plot_prop(t, ener, overlp0, overlpf, psi_max)
                 self.plot_fitter(t, E, freq_mult, ener_tot, overlp_tot)
                 self.i += 1
         except ValueError as err:
@@ -510,13 +444,13 @@ class PlotPropagationReporter(PropagationReporter):
 class MultiplePropagationReporter(PropagationReporter):
     reps: List[PropagationReporter]
 
-    def __init__(self, out_path: str, conf_rep_table, conf_rep_plot):
-        super(MultiplePropagationReporter, self).__init__(out_path=out_path)
+    def __init__(self, out_path: str, nlvls: int, conf_rep_table, conf_rep_plot):
+        super(MultiplePropagationReporter, self).__init__(out_path=out_path, nlvls=nlvls)
         self.reps = []
         if not conf_rep_plot.is_empty():
-            self.reps.append(PlotPropagationReporter(conf=conf_rep_plot, out_path=os.path.join(self._out_path, "plots")))
+            self.reps.append(PlotPropagationReporter(conf=conf_rep_plot, out_path=os.path.join(self._out_path, "plots"), nlvls=self._nlvls))
         if not conf_rep_table.is_empty():
-            self.reps.append(TablePropagationReporter(conf=conf_rep_table, out_path=os.path.join(self._out_path, "tables")))
+            self.reps.append(TablePropagationReporter(conf=conf_rep_table, out_path=os.path.join(self._out_path, "tables"), nlvls=self._nlvls))
 
     def open(self):
         for rep in self.reps:
@@ -526,11 +460,11 @@ class MultiplePropagationReporter(PropagationReporter):
     def close(self):
         pass
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp0, overlpf, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot, psi_max,
+                              E, freq_mult):
         for rep in self.reps:
-            rep.print_time_point_prop(l, psi, t, x, np, moms, ener, ener_u, overlp0, overlpf, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult)
+            rep.print_time_point_prop(l, psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot, psi_max,
+                                      E, freq_mult)
 
 
 # FitterReporter
@@ -548,7 +482,7 @@ class FitterReporter:
     def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, nt):
         raise NotImplementedError()
 
-    def create_propagation_reporter(self, prop_id: str):
+    def create_propagation_reporter(self, prop_id: str, nlvls: int):
         raise NotImplementedError()
 
 
@@ -559,9 +493,9 @@ class TableFitterReporter(FitterReporter):
         self.f_ifit = None
         self.f_ifit_E = None
 
-    def create_propagation_reporter(self, prop_id: str):
+    def create_propagation_reporter(self, prop_id: str, nlvls: int):
         prop_conf_output = copy.deepcopy(self.conf)
-        return TablePropagationReporter(out_path=os.path.join(prop_conf_output.out_path, prop_id),
+        return TablePropagationReporter(out_path=os.path.join(prop_conf_output.out_path, prop_id), nlvls=nlvls,
                                         conf=prop_conf_output.propagation)
 
     def open(self):
@@ -611,9 +545,9 @@ class PlotFitterReporter(FitterReporter):
         super().__init__()
         self.conf = conf
 
-    def create_propagation_reporter(self, prop_id: str):
+    def create_propagation_reporter(self, prop_id: str, nlvls: int):
         prop_conf_output = copy.deepcopy(self.conf)
-        return PlotPropagationReporter(out_path=os.path.join(prop_conf_output.out_path, prop_id),
+        return PlotPropagationReporter(out_path=os.path.join(prop_conf_output.out_path, prop_id), nlvls=nlvls,
                                        conf=prop_conf_output.propagation)
 
     def open(self):
@@ -742,7 +676,7 @@ class MultipleFitterReporter(FitterReporter):
         self.conf_rep_table = conf_rep_table
         self.conf_rep_plot = conf_rep_plot
 
-    def create_propagation_reporter(self, prop_id: str):
+    def create_propagation_reporter(self, prop_id: str, nlvls: int):
         prop_conf_rep_table = copy.deepcopy(self.conf_rep_table)
         prop_conf_rep_plot = copy.deepcopy(self.conf_rep_plot)
 
@@ -752,7 +686,7 @@ class MultipleFitterReporter(FitterReporter):
         if not os.path.exists(prop_out_path):
             os.makedirs(prop_out_path)
 
-        return MultiplePropagationReporter(out_path=prop_out_path,
+        return MultiplePropagationReporter(out_path=prop_out_path, nlvls=nlvls,
                                            conf_rep_table=prop_conf_rep_table.propagation,
                                            conf_rep_plot=prop_conf_rep_plot.propagation)
 

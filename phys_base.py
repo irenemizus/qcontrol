@@ -268,16 +268,12 @@ def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, delta, ntri
     return psi
 
 
-class ExpectationValues():
-    def __init__(self, x_l, x_u, x2_l, x2_u, p_l, p_u, p2_l, p2_u):
-        self.x_l = x_l
-        self.x_u = x_u
-        self.x2_l = x2_l
-        self.x2_u = x2_u
-        self.p_l = p_l
-        self.p_u = p_u
-        self.p2_l = p2_l
-        self.p2_u = p2_u
+class ExpectationValues:
+    def __init__(self, x, x2, p, p2):
+        self.x = x
+        self.x2 = x2
+        self.p = p
+        self.p2 = p2
 
 
 def exp_vals_calc(psi: Psi, x, akx2, dx, np, m, ntriv):
@@ -295,47 +291,45 @@ def exp_vals_calc(psi: Psi, x, akx2, dx, np, m, ntriv):
         OUTPUT
         moms  list of complex vectors of length np """
 
+    nlevs = len(psi.f)
+    momx = [0.0] * nlevs
+    momx2 = [0.0] * nlevs
+    momp = [0.0] * nlevs
+    momp2 = [0.0] * nlevs
+
     if ntriv == 1:
         # for x
-        momx_l = math_base.cprod2(psi.f[0], x, dx, np)
-        momx_u = math_base.cprod2(psi.f[1], x, dx, np)
+        for n in range(nlevs):
+            momx[n] = math_base.cprod2(psi.f[n], x, dx, np)
 
         # for x^2
         x2 = numpy.multiply(x, x)
-        momx2_l = math_base.cprod2(psi.f[0], x2, dx, np)
-        momx2_u = math_base.cprod2(psi.f[1], x2, dx, np)
+        for n in range(nlevs):
+            momx2[n] = math_base.cprod2(psi.f[n], x2, dx, np)
 
         # for p^2
-        phi_kin_l = diff_cpu(psi.f[0], akx2, np)
-        phi_p2_l = phi_kin_l * (2.0 * m)
-        momp2_l = math_base.cprod(psi.f[0], phi_p2_l, dx, np)
-
-        phi_kin_u = diff_cpu(psi.f[1], akx2, np)
-        phi_p2_u = phi_kin_u * (2.0 * m)
-        momp2_u = math_base.cprod(psi.f[1], phi_p2_u, dx, np)
+        for n in range(nlevs):
+            phi_kin = diff_cpu(psi.f[n], akx2, np)
+            phi_p2 = phi_kin * (2.0 * m)
+            momp2[n] = math_base.cprod(psi.f[n], phi_p2, dx, np)
 
         # for p
         akx = math_base.initak(np, dx, 1, ntriv)
         akx_mul = hart_to_cm / (-1j) / dalt_to_au
         akx *= akx_mul
 
-        phip_l = diff_cpu(psi.f[0], akx, np)
-        momp_l = math_base.cprod(psi.f[0], phip_l, dx, np)
+        for n in range(nlevs):
+            phip = diff_cpu(psi.f[n], akx, np)
+            momp[n] = math_base.cprod(psi.f[n], phip, dx, np)
 
-        phip_u = diff_cpu(psi.f[1], akx, np)
-        momp_u = math_base.cprod(psi.f[1], phip_u, dx, np)
-
-        moms = ExpectationValues(momx_l, momx_u, momx2_l, momx2_u, momp_l, momp_u, momp2_l, momp2_u)
     else:
         # for x
-        momx_l = math_base.cprod2(psi.f[0], x, dx, np)
-        momx_u = math_base.cprod2(psi.f[1], x, dx, np)
+        for n in range(nlevs):
+            momx[n] = math_base.cprod2(psi.f[n], x, dx, np)
 
         # for x^2
         x2 = numpy.multiply(x, x)
-        momx2_l = math_base.cprod2(psi.f[0], x2, dx, np)
-        momx2_u = math_base.cprod2(psi.f[1], x2, dx, np)
+        for n in range(nlevs):
+            momx2[n] = math_base.cprod2(psi.f[n], x2, dx, np)
 
-        moms = ExpectationValues(momx_l, momx_u, momx2_l, momx2_u, 0.0, 0.0, 0.0, 0.0)
-
-    return moms
+    return ExpectationValues(momx, momx2, momp, momp2)

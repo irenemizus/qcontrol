@@ -263,27 +263,21 @@ class ReportRootConfiguration(ConfigurationBase):
                 self._data["mod_plotout"] = 100
                 self._data["mod_update"] = 20
                 self._data["number_plotout"] = 15
-                self._data["gr_abs_grd"] = f"fig_abs_grd{suffix}.pdf"
-                self._data["gr_real_grd"] = f"fig_real_grd{suffix}.pdf"
-                self._data["gr_abs_exc"] = f"fig_abs_exc{suffix}.pdf"
-                self._data["gr_real_exc"] = f"fig_real_exc{suffix}.pdf"
-                self._data["gr_moms_low_grd"] = f"fig_moms_low_grd{suffix}.pdf"
-                self._data["gr_moms_grd"] = f"fig_moms_grd{suffix}.pdf"
-                self._data["gr_ener_grd"] = f"fig_ener_grd{suffix}.pdf"
-                self._data["gr_overlp0_grd"] = f"fig_overlp0_grd{suffix}.pdf"
-                self._data["gr_overlpf_grd"] = f"fig_overlpf_grd{suffix}.pdf"
+
+                self._data["gr_abs"] = "fig_abs{level}.pdf"
+                self._data["gr_real"] = "fig_real{level}.pdf"
+                self._data["gr_moms_low"] = "fig_moms_low{level}.pdf"
+                self._data["gr_moms"] = "fig_moms{level}.pdf"
+
+                self._data["gr_ener"] = f"fig_ener{suffix}.pdf"
+                self._data["gr_overlp0"] = f"fig_overlp0{suffix}.pdf"
+                self._data["gr_overlpf"] = f"fig_overlpf{suffix}.pdf"
+                self._data["gr_abs_max"] = f"fig_abs_max{suffix}.pdf"
+                self._data["gr_real_max"] = f"fig_real_max{suffix}.pdf"
+
                 self._data["gr_ener_tot"] = f"fig_ener_tot{suffix}.pdf"
-                self._data["gr_abs_max_grd"] = f"fig_abs_max_grd{suffix}.pdf"
-                self._data["gr_real_max_grd"] = f"fig_real_max_grd{suffix}.pdf"
-                self._data["gr_moms_low_exc"] = f"fig_moms_low_exc{suffix}.pdf"
-                self._data["gr_moms_exc"] = f"fig_moms_exc{suffix}.pdf"
-                self._data["gr_ener_exc"] = f"fig_ener_exc{suffix}.pdf"
-                self._data["gr_overlp0_exc"] = f"fig_overlp0_exc{suffix}.pdf"
-                self._data["gr_overlpf_exc"] = f"fig_overlpf_exc{suffix}.pdf"
                 self._data["gr_overlp0_tot"] = f"fig_overlp0_tot{suffix}.pdf"
                 self._data["gr_overlpf_tot"] = f"fig_overlpf_tot{suffix}.pdf"
-                self._data["gr_abs_max_exc"] = f"fig_abs_max_exc{suffix}.pdf"
-                self._data["gr_real_max_exc"] = f"fig_real_max_exc{suffix}.pdf"
                 self._data["gr_lf_en"] = f"fig_lf_en{suffix}.pdf"
                 self._data["gr_lf_fr"] = f"fig_lf_fr{suffix}.pdf"
 

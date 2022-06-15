@@ -212,23 +212,22 @@ class PropagationSolver:
         cener0_tot = 0.0
         overlp0 = 0.0
         overlpf = 0.0
-        max_ind_psi = []
+        psi_max = []
         for n in range(len(self.stat.psi0.f)):
+            psi0n = self.stat.psi0.f[n]
             cener0_tot += self.stat.cener0[n]
             overlp0 += self.stat.overlp00[n]
             overlpf += self.stat.overlpf0[n]
-            max_ind_psi.append(numpy.argmax(self.stat.psi0.f[n]))
-        overlp0_abs = [abs(overlp0), abs(overlpf)]
+            max_ind_psi = numpy.argmax(psi0n)
+            psi_max.append(psi0n[max_ind_psi])
+        overlp0_tot = [overlp0, overlpf]
 
         fm_start = 1.0
 
         # plotting initial values
         self.reporter.print_time_point_prop(self.dyn.l, self.stat.psi0, self.dyn.t, self.stat.x, self.np, self.stat.moms0,
-                                       self.stat.cener0[0].real, self.stat.cener0[1].real,
-                                       self.stat.overlp00, self.stat.overlpf0, overlp0_abs, cener0_tot.real,
-                                       abs(self.stat.psi0.f[0][max_ind_psi[0]]), self.stat.psi0.f[0][max_ind_psi[0]].real,
-                                       abs(self.stat.psi0.f[1][max_ind_psi[1]]), self.stat.psi0.f[1][max_ind_psi[1]].real,
-                                       abs(self.dyn.E), fm_start)
+                                       self.stat.cener0, self.stat.overlp00, self.stat.overlpf0, overlp0_tot, cener0_tot,
+                                       psi_max, self.dyn.E, fm_start)
 
         print("Initial emax = ", emax0)
         print("Initial emin = ", emin0)
@@ -255,24 +254,23 @@ class PropagationSolver:
         cener_tot = 0.0
         overlp0 = 0.0
         overlpf = 0.0
-        max_ind_psi = []
+        psi_max = []
         for n in range(len(self.stat.psi0.f)):
+            psin = self.dyn.psi.f[n]
             cener_tot += self.instr.cener[n]
             overlp0 += self.instr.overlp0[n]
             overlpf += self.instr.overlpf[n]
-            max_ind_psi.append(numpy.argmax(abs(self.dyn.psi.f[n])))
-        overlp_abs = [abs(overlp0), abs(overlpf)]
+            max_ind_psi = numpy.argmax(psin)
+            psi_max.append(psin[max_ind_psi])
+        overlp_tot = [overlp0, overlpf]
 
         time_span = self.instr.time_after - self.instr.time_before
         milliseconds_per_step = time_span.microseconds / 1000
         self.milliseconds_full += milliseconds_per_step
 
-        self.reporter.print_time_point_prop(self.dyn.l, self.dyn.psi, self.dyn.t, self.stat.x, self.np,
-                                            self.instr.moms, self.instr.cener[0].real, self.instr.cener[1].real,
-                                            self.instr.overlp0, self.instr.overlpf, overlp_abs, cener_tot.real,
-                                            abs(self.dyn.psi.f[0][max_ind_psi[0]]), self.dyn.psi.f[0][max_ind_psi[0]].real,
-                                            abs(self.dyn.psi.f[1][max_ind_psi[1]]), self.dyn.psi.f[1][max_ind_psi[1]].real,
-                                            abs(self.dyn.E), self.dyn.freq_mult)
+        self.reporter.print_time_point_prop(self.dyn.l, self.dyn.psi, self.dyn.t, self.stat.x, self.np, self.instr.moms,
+                                            self.instr.cener, self.instr.overlp0, self.instr.overlpf, overlp_tot,
+                                            cener_tot, psi_max, self.dyn.E, self.dyn.freq_mult)
 
         if self.dyn.l % self.mod_log == 0:
             if self.np < np_min:
