@@ -1,5 +1,6 @@
 import cmath
 import math
+
 import numpy
 
 import phys_base
@@ -17,12 +18,12 @@ class _LaserFields:
 
     @staticmethod
     def laser_field_gauss(E0, t, t0, sigma):
-        """ Calculates energy of external laser field impulse
+        """ Calculates envelope of external laser field pulse energy
             INPUT
             E0      amplitude value of the laser field energy envelope
             t0      initial time, when the laser field is switched on
             sigma   scaling parameter of the laser field envelope
-            nu_L basic frequency of the laser field
+            nu_L    basic frequency of the laser field
             t       current time value
             OUTPUT
             E       complex value of current external laser field  """
@@ -33,12 +34,12 @@ class _LaserFields:
 
     @staticmethod
     def laser_field_sqrsin(E0, t, t0, sigma):
-        """ Calculates energy of external laser field impulse
+        """ Calculates envelope of external laser field pulse energy
             INPUT
             E0      amplitude value of the laser field energy envelope
             t0      initial time, when the laser field is switched on
             sigma   scaling parameter of the laser field envelope
-            nu_L basic frequency of the laser field
+            nu_L    basic frequency of the laser field
             t       current time value
             OUTPUT
             E       complex value of current external laser field  """
@@ -49,21 +50,69 @@ class _LaserFields:
 
     @staticmethod
     def laser_field_maxwell(E0, t, t0, sigma):
-        """ Calculates energy of external laser field impulse
+        """ Calculates envelope of external laser field pulse energy
             INPUT
             E0      amplitude value of the laser field energy envelope
             t0      initial time, when the laser field is switched on
             sigma   scaling parameter of the laser field envelope
-            nu_L basic frequency of the laser field
+            nu_L    basic frequency of the laser field
             t       current time value
             OUTPUT
             E       complex value of current external laser field  """
 
-        #E = E0 * t / sigma
-        #E = E0 * (1.0 - t / sigma)
         E = E0 * t * t * math.exp(-(t - t0) * (t - t0) / 2.0 / sigma / sigma) / sigma / sigma
 
         return E
+
+class _LaserFieldsHighFrequencyPart:
+    @staticmethod
+    def cexp(nu_L, t, pcos):
+        """ Calculates a high-frequency part of external laser field pulse energy
+            INPUT
+            nu_L    basic frequency of the laser field
+            t       current time value
+            pcos    maximum frequency multiplier of the cos set (if applicable)
+            OUTPUT
+            E_omega complex value of a high-frequency part for current external laser field  """
+
+        E_omega = cmath.exp(1j * 2.0 * math.pi * nu_L * t)
+
+        return E_omega
+
+    @staticmethod
+    def cos(nu_L, t, pcos):
+        """ Calculates a high-frequency part of external laser field pulse energy
+            INPUT
+            nu_L    basic frequency of the laser field
+            t       current time value
+            pcos    maximum frequency multiplier of the cos set (if applicable)
+            OUTPUT
+            E_omega complex value of a high-frequency part for current external laser field  """
+
+        E_omega = math.cos(2.0 * math.pi * nu_L * t)
+
+        return E_omega
+
+    @staticmethod
+    def cos_set(nu_L, t, pcos):
+        """ Calculates a high-frequency part of external laser field pulse energy
+            INPUT
+            nu_L    basic frequency of the laser field
+            t       current time value
+            pcos    maximum frequency multiplier of the cos set (if applicable)
+            OUTPUT
+            E_omega complex value of a high-frequency part for current external laser field  """
+
+        #E_omega = 0.0
+        #for p in range(-pcos, pcos + 1):
+        #    E_omega += math.cos(2.0**(p + 1) * math.pi * nu_L * t)
+
+        E_omega = math.cos(2.0 * math.pi * nu_L * t)
+        for p in range(2, pcos + 1):
+            E_omega += math.cos(2.0 * math.pi * nu_L * t * p)
+            E_omega += math.cos(2.0 * math.pi * nu_L * t / p)
+
+        return E_omega
 
 
 """
@@ -175,10 +224,26 @@ class TaskManager:
         else:
             raise RuntimeError("Impossible case in the InitGuess class")
 
+        if conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP:
+            if not conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING and \
+               not conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
+                print("Exponential high-frequency part of initial guess for the laser field is used")
+            self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cexp
+        elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.COS:
+            print("Cos-like high-frequency part of initial guess for the laser field is used")
+            self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cos
+        elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.COS_SET:
+            print("A sequence of cos-type terms as the high-frequency part of initial guess for the laser field is used")
+            self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cos_set
+        else:
+            raise RuntimeError("Impossible case in the InitGuessHf class")
+
         if conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV:
             print("Non-trivial type of the Hamiltonian is used")
             print("Number of 2-level basis vectors 'nb' = 1 is used")
             self.ntriv = 1
+            if not conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP:
+                raise RuntimeError("For a non-trivial Hamiltonian an exponential high-frequency part of initial guess for the laser field has to be used!")
         elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.ANG_MOMS:
             print("Angular momentum type of the Hamiltonian is used")
             print("Number of %d-level basis vectors 'nb' = %d is used" % (conf_fitter.nb, conf_fitter.nb))
@@ -188,7 +253,7 @@ class TaskManager:
             print("Number of 2-level basis vectors 'nb' = 2 is used")
             self.ntriv = 0
             if not conf_fitter.nb == 2:
-                raise RuntimeError("Number of basis vectors 'nb' for 'hamil_type' = 'two_levels' should be equal to 2!")
+                raise RuntimeError("Number of basis vectors 'nb' for 'hamil_type' = 'two_levels' has to be equal to 2!")
         else:
             raise RuntimeError("Impossible case in the HamilType class")
 
@@ -207,6 +272,9 @@ class TaskManager:
 
     def laser_field(self, E0, t, t0, sigma):
         return self.lf_init_guess(E0, t, t0, sigma)
+
+    def laser_field_hf(self, nu_L, t, pcos):
+        return self.lf_init_guess_hf(nu_L, t, pcos)
 
 
 class HarmonicSingleStateTaskManager(TaskManager):
@@ -507,21 +575,24 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v.append((D_u, v_u))
 
         elif self.ntriv == -1:
-            Emax = self.conf_fitter.propagation.E0 * 1.5
+            Emax = self.conf_fitter.propagation.E0 * self.conf_fitter.Em
+            l = (self.conf_fitter.nb - 1) / 2.0
+            delta = nu_L * phys_base.Hz_to_cm
 
             # Maximum and minimum energies achieved during the calculation
-            vmax = self.conf_fitter.propagation.U * (nu_L * phys_base.Hz_to_cm * (self.conf_fitter.nb - 1))**2 / 4.0 + \
-                   Emax * (self.conf_fitter.nb - 1) * nu_L * phys_base.Hz_to_cm
-            vmin = -Emax * (self.conf_fitter.nb - 1) * nu_L * phys_base.Hz_to_cm
+            vmax = self.conf_fitter.propagation.U * l**2 + \
+                   2.0 * (Emax + delta / 2.0) * l
+            vmin = self.conf_fitter.propagation.U * l**2 - \
+                   2.0 * (Emax + delta / 2.0) * l
 
-            v_min = numpy.array([vmin] * np)
-            v_max = numpy.array([vmax] * np)
+            v_min = numpy.array([-delta * l] * np)
+            v_max = numpy.array([delta * l] * np)
 
             v.append((vmin, v_min))
 
             for n in range(1, self.conf_fitter.nb - 1):
-                vn = self.conf_fitter.propagation.U * (n * nu_L * phys_base.Hz_to_cm)**2
-                v_n = numpy.array([vn] * np)
+                vn = self.conf_fitter.propagation.U * (l - n)**2 - 2.0 * (Emax - delta / 2.0) * (l - n)
+                v_n = numpy.array([-delta * (l - n)] * np)
                 v.append((vn, v_n))
             v.append((vmax, v_max))
         else:
@@ -554,7 +625,7 @@ def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
                 raise RuntimeError(
                     "Number of basis vectors 'nb' for 'task_type' = 'optimal_control_unit_transform' should be more than 1!")
             if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.NONE:
-                print("No potentials are used")
+                print("No potentials is used")
             else:
                 raise RuntimeError("Impossible PotentialType for the unitary transformation task")
         else:

@@ -70,7 +70,7 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
         akx2        complex kinetic energy vector of length np, = k^2/2m
         np          number of grid points
         E           a real value of external laser field
-        eL          a laser field energy shift
+        eL          a laser field energy shift = h * nu_L / 2.0
         E_full      a complex value of external laser field
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
@@ -91,18 +91,18 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
 
     if ntriv == -1:
         nb = len(psi.f)
-        l = (nb - 1) // 2
+        l = (nb - 1) / 2.0
         H = numpy.zeros((nb, nb))
         nb1 = nb - 1
-        H.itemset((nb1, nb1), (2.0 * eL * (l - nb1))**2 * U + 4.0 * eL * (l - nb1) * E)
-        H.itemset((0, 0), (2.0 * eL * l) ** 2 * U + 4.0 * eL * l * E)
-        H.itemset((0, 1), -2.0 * delta * eL * math.sqrt(2 * l))
-        H.itemset((nb - 1, nb - 2), -2.0 * delta * eL * math.sqrt(2 * l + (nb - 2) * (2 * l - nb + 1)))
+        H.itemset((nb1, nb1), (l - nb1)**2 * U + 2.0 * (l - nb1) * E)
+        H.itemset((0, 0), l**2 * U + 2.0 * l * E)
+        H.itemset((0, 1), -delta * math.sqrt(2 * l))
+        H.itemset((nb - 1, nb - 2), -delta * math.sqrt(2 * l + (nb - 2) * (2 * l - nb + 1)))
 
         for vi in range(1, nb - 1):
-            Q = (2.0 * eL * (l - vi))**2 * U + 4.0 * eL * (l - vi) * E
-            P = -2.0 * delta * eL * math.sqrt(l * (l + 1) - (l - (vi + 1)) * (l - vi))
-            R = -2.0 * delta * eL * math.sqrt(l * (l + 1) - (l - (vi - 1)) * (l - vi))
+            Q = (l - vi)**2 * U + 2.0 * (l - vi) * E
+            P = -delta * math.sqrt(l * (l + 1) - (l - (vi + 1)) * (l - vi))
+            R = -delta * math.sqrt(l * (l + 1) - (l - (vi - 1)) * (l - vi))
             H.itemset((vi, vi), Q)
             H.itemset((vi, vi + 1), P)
             H.itemset((vi, vi - 1), R)
@@ -113,6 +113,9 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
                 H_psi_el_mult = H.item(gl, il) * psi.f[il]
                 phi_gl = numpy.add(phi_gl, H_psi_el_mult)
             phi.f[gl] = phi_gl
+
+        for n in range(nb):
+            numpy.add(phi.f[n], hamil_cpu(psi.f[n], v[n][1], akx2, np, ntriv), out=phi.f[n])
     else:
         if orig or ntriv == 0:
             # without laser field energy shift

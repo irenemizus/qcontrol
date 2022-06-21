@@ -90,11 +90,11 @@ Options:
                 step of plotting graphs with x-axis = time (to plot to file each <val>-th time step).
                 By default, is equal to 100
             plot.mod_update
-                step for updating the plots
+                step for updating the plots.
                 By default, is equal to 20
             plot.number_plotout
                 maximum number of graphs for different time points to plot on one canvas
-                for the absolute and real values of wavefunctions. Must be larger than 1
+                for the absolute and real values of wavefunctions. Must be larger than 1.
                 By default, is equal to 15
             plot.gr_*
                 output file name, to which the corresponding result should be plotted.
@@ -173,7 +173,7 @@ Options:
     h_lambda
         parameter, which is applicable for the task_type = "optimal_control_..." only.
         For all other cases is a dummy variable.
-        By default, is equal to 0.0066.
+        By default, is equal to 0.0066
     init_guess
         type of initial guessed laser field envelope used in propagation tasks.
         Available options:
@@ -181,9 +181,25 @@ Options:
         "gauss"     - a gaussian-like envelope
         "sqrsin"    - a squared sinus envelope
         "maxwell"   - a maxwell distribution-like envelope
+    init_guess_hf
+        type of the high-frequency part of the initial guessed laser field used in propagation tasks.
+        Available options:
+        "exp"       - exponential type exp(i omega_L t) (by default)
+        "cos"       - cos-type cos(omega_L t)
+        "cos_set"   - a sequence of cos-type terms [cos(omega_L t) + sum(cos(omega_L t * k) + cos(omega_L t / k))]
     nb
-        number of basis vectors of the Hilbert space used in the calculation task
+        number of basis vectors of the Hilbert space used in the calculation task.
         By default, is equal to 1
+    pcos
+        maximum frequency multiplier for a sum [cos(omega_L t) + sum(cos(omega_L t * k) + cos(omega_L t / k))] with k = 2 ... pcos,
+        which is used as a high-frequency part for the laser field initial guess while controlling
+        withing the "task_type" = "optimal_control_unit_transform" with "hamil_type" = "ang_moms".
+        For all other cases is a dummy variable. Has to be an integer greater that 1.
+        By default, is equal to 3
+    Em
+        a multiplier used for evaluation of the laser field energy maximum value (E_max = E0 * Em),
+        which can be reached during the controlling procedure.
+        By default, is equal to 1.5
     mod_log
         step of output to stdout (to write to stdout each <val>-th time step).
         By default, is equal to 500
@@ -191,82 +207,82 @@ Options:
     propagation
         a dictionary that contains the parameters, which are used in a simple propagation task with laser field:
         m
-            reduced mass value of the considered system
-            by default, is equal to 0.5 Dalton
+            reduced mass value of the considered system.
+            By default, is equal to 0.5 Dalton
         pot_type
-            type of the potentials ("morse" or "harmonic")
-            by default, the "morse" type is used
+            type of the potentials ("morse" or "harmonic").
+            By default, the "morse" type is used
         a
-            ground state scaling coefficient
-            by default, is equal to 1.0 1/a_0 -- for "morse" potential,
+            ground state scaling coefficient.
+            By default, is equal to 1.0 1/a_0 -- for "morse" potential,
                                         a_0 -- for "harmonic" potential
         De
-            ground state dissociation energy value
-            by default, is equal to 20000.0 1/cm for "morse" potential,
+            ground state dissociation energy value.
+            By default, is equal to 20000.0 1/cm for "morse" potential,
                         is a dummy variable for "harmonic" potential
         x0p
-            shift of the upper potential relative to the ground one
-            by default, is equal to -0.17 a_0 for double potentials,
+            shift of the upper potential relative to the ground one.
+            By default, is equal to -0.17 a_0 for double potentials,
                         is identically equated to zero for filtering / single morse / single harmonic tasks
         a_e
-            excited state scaling coefficient
-            by default, is equal to 1.0 1/a_0 -- for "morse" potential,
+            excited state scaling coefficient.
+            By default, is equal to 1.0 1/a_0 -- for "morse" potential,
                         is equal to 1.0 a_0 -- for "harmonic" potential,
                         is identically equated to zero for filtering / single morse / single harmonic tasks
         De_e
-            excited state dissociation energy value
-            by default, is equal to 10000.0 1/cm for "morse" potential,
+            excited state dissociation energy value.
+            By default, is equal to 10000.0 1/cm for "morse" potential,
                         is a dummy variable for "harmonic" potential,
                         is identically equated to zero for filtering / single morse / single harmonic tasks
         Du
-            energy shift between the minima of the upper potential and the ground one
-            by default, is equal to 20000.0 1/cm for double potentials,
+            energy shift between the minima of the upper potential and the ground one.
+            By default, is equal to 20000.0 1/cm for double potentials,
                         is identically equated to zero for filtering / single morse / single harmonic tasks
         wf_type
-            type of the wavefunctions ("morse" or "harmonic")
-            by default, the "morse" type is used
+            type of the wavefunctions ("morse" or "harmonic").
+            By default, the "morse" type is used
         hamil_type
-            type of the Hamiltonian operator used ("ntriv", "two_levels" or "ang_moms")
-            by default, the "ntriv" type is used
+            type of the Hamiltonian operator used ("ntriv", "two_levels" or "ang_moms").
+            By default, the "ntriv" type is used
         U, delta
-            parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'ang_moms' only)
-            by default, both are equal to 0.0
+            parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'ang_moms' only).
+            By default, both are equal to 0.0
         x0
-            coordinate initial condition
-            by default, is equal to 0.0
+            coordinate initial condition.
+            By default, is equal to 0.0
         p0
-            momentum initial condition
-            by default, is equal to 0.0
+            momentum initial condition.
+            By default, is equal to 0.0
         L
-            spatial range of the problem in a_0
-            by default, is equal to 5.0 a_0
+            spatial range of the problem in a_0.
+            By default, is equal to 5.0 a_0
         T
-            time range of the problem in sec
-            by default, is equal to 600e15 s
+            time range of the problem in sec.
+            By default, is equal to 600e15 s
         np
-            number of collocation points; must be a power of 2
-            by default, is equal to 1024
+            number of collocation points; must be a power of 2.
+            By default, is equal to 1024
         nch
-            number of Chebyshev interpolation points; must be a power of 2
-            by default, is equal to 64
+            number of Chebyshev interpolation points; must be a power of 2.
+            By default, is equal to 64
         nt
-            number of time grid points
-            by default, is equal to 420000
+            number of time grid points.
+            By default, is equal to 420000
         E0
-            amplitude value of the laser field energy envelope in 1 / cm
-            by default, is equal to 71.54 1 / cm,
+            amplitude value of the laser field energy envelope in 1 / cm.
+            By default, is equal to 71.54 1 / cm,
                         is identically equated to zero for filtering / single morse / single harmonic tasks
         t0
-            initial time, when the laser field reaches its maximum value, in sec
-            is a dummy variable for filtering / single morse / single harmonic tasks
-            by default, is equal to 300e-15 s
+            initial time, when the laser field reaches its maximum value, in sec.
+            Is a dummy variable for filtering / single morse / single harmonic tasks.
+            By default, is equal to 300e-15 s
         sigma
-            scaling parameter of the laser field envelope in sec
-            is a dummy variable for filtering / single morse / single harmonic tasks
-            by default, is equal to 50e-15 s
+            scaling parameter of the laser field envelope in sec.
+            Is a dummy variable for filtering / single morse / single harmonic tasks.
+            By default, is equal to 50e-15 s
         nu_L
-            basic frequency of the laser field in Hz
-            by default, is equal to 0.29297e15 Hz,
+            basic frequency of the laser field in Hz.
+            By default, is equal to 0.29297e15 Hz,
                         is identically equated to zero for filtering / single morse / single harmonic tasks
 
 Examples:
@@ -392,6 +408,15 @@ def main(argv):
         raise ValueError(
             "The number of basis vectors of the Hilbert space, 'nb', has to be positive or 0")
 
+    if conf_task.fitter.pcos < 2 or not isinstance(conf_task.fitter.pcos, int):
+        raise ValueError(
+            "The maximum frequency multiplier of the cos set, 'pcos', has to be an integer > 1")
+
+    if conf_task.fitter.Em < 0:
+        raise ValueError(
+            "The multiplier 'Em' used for evaluation of the laser field energy maximum value, "
+            "which can be reached during the controlling procedure, has to be positive")
+
     if conf_task.fitter.iter_max < -1 and (conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
             conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_GRADIENT):
         raise ValueError(
@@ -496,7 +521,7 @@ def main(argv):
                     "For the 'task_type' = 'optimal_control_krotov' the 'impulses_number' value has to be equal to 1")
 
         elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-            print("An optimal control task with Hadamard H1 unitary transformation begins...")
+            print("An optimal control task with unitary quantum Fourier transformation begins...")
 
             if conf_task.fitter.init_guess == "zero":
                 raise ValueError(
@@ -564,7 +589,7 @@ def main(argv):
     fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
     fit_reporter_imp.open()
 
-    fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+    fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, task_manager_imp.laser_field_hf, fit_reporter_imp,
                                           _warning_collocation_points,
                                           _warning_time_steps
                                           )
