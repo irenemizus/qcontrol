@@ -8,6 +8,7 @@
     "h_lambda": 0.5,
     "init_guess": "sqrsin",
     "init_guess_hf": "cos",
+    "pcos": 1,
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
@@ -18,11 +19,10 @@
       "Du": 100,
       "t0": 0.0,
       "E0": 40.0,
-      "nt": 500,
+      "nt": 1000,
       "T": 33.35635E-13,
       "sigma": 66.7127E-13,
-      "~nu_L": 0.299793e13,
-      "nu_L": 0.599586e13
+      "nu_L": 0.299793e13
     },
     "mod_log": 500
   }

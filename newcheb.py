@@ -140,11 +140,11 @@ Options:
     k_E
         aspect ratio for the inertial "force" in equation for the laser field energy in sec^(-2).
         Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
-        By default, is equal to 1e29
+        By default, is equal to 1e29 1/s**2
     lamb
         aspect ratio for the decay term in equation for the laser field energy in 1 / sec.
         Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
-        By default, is equal to 4e14
+        By default, is equal to 4e14 1/s
     pow
         power value in the decay term in equation for the laser field energy.
         Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
@@ -164,7 +164,7 @@ Options:
     delay
         time delay between the laser pulses in sec.
         Is a dummy variable for impulses_number less than 2.
-        By default, is equal to 600e-15
+        By default, is equal to 600e-15 s
     iter_max
         maximum iteration number for the "optimal_control_..." task_type in case if a divergence with the
         given criteria hasn't been reached. Is a dummy variable for all other task types.
@@ -191,11 +191,13 @@ Options:
         number of basis vectors of the Hilbert space used in the calculation task.
         By default, is equal to 1
     pcos
-        maximum frequency multiplier for a sum [cos(omega_L t) + sum(cos(omega_L t * k) + cos(omega_L t / k))] with k = 2 ... pcos,
-        which is used as a high-frequency part for the laser field initial guess while controlling
-        withing the "task_type" = "optimal_control_unit_transform" with "hamil_type" = "ang_moms".
-        For all other cases is a dummy variable. Has to be an integer greater that 1.
-        By default, is equal to 3
+        maximum frequency multiplier for a sum [cos(omega_L t) + sum(cos(omega_L t * k) + cos(omega_L t / k))]
+        with k = 2 ... pcos in the case "init_guess_hf" = "cos_set", or just a frequency multiplier itself for
+        the "init_guess_hf" = "cos" case, which is used in a high-frequency part for the laser field initial guess.
+        For the "init_guess_hf" = "exp" case is a dummy variable.
+        In the case "init_guess_hf" = "cos_set" the maximum frequency multiplier equal to floor(pcos) will be used;
+        it has to be greater than 1 then.
+        By default, is equal to 1
     Em
         a multiplier used for evaluation of the laser field energy maximum value (E_max = E0 * Em),
         which can be reached during the controlling procedure.
@@ -245,7 +247,8 @@ Options:
             type of the Hamiltonian operator used ("ntriv", "two_levels" or "ang_moms").
             By default, the "ntriv" type is used
         U, delta
-            parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'ang_moms' only).
+            parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'ang_moms' only),
+            U in units of cm / s**2, delta in Hz.
             By default, both are equal to 0.0
         x0
             coordinate initial condition.
@@ -407,10 +410,6 @@ def main(argv):
     if conf_task.fitter.nb < 0:
         raise ValueError(
             "The number of basis vectors of the Hilbert space, 'nb', has to be positive or 0")
-
-    if conf_task.fitter.pcos < 2 or not isinstance(conf_task.fitter.pcos, int):
-        raise ValueError(
-            "The maximum frequency multiplier of the cos set, 'pcos', has to be an integer > 1")
 
     if conf_task.fitter.Em < 0:
         raise ValueError(

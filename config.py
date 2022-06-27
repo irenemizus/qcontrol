@@ -113,14 +113,14 @@ class TaskRootConfiguration(ConfigurationBase):
                 self._data["wf_type"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE
                 self._data["pot_type"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE
                 self._data["hamil_type"] = TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV
-                self._data["U"] = 0.0
-                self._data["delta"] = 0.0
+                self._data["U"] = 0.0 # cm / s**2
+                self._data["delta"] = 0.0 # Hz
                 self._data["a"] = 1.0   # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
                 self._data["De"] = 20000.0  # 1/cm
                 self._data["x0p"] = -0.17   # a_0
-                self._data["a_e"] = 1.0
-                self._data["De_e"] = 10000.0
-                self._data["Du"] = 20000.0
+                self._data["a_e"] = 1.0 # 1/a_0
+                self._data["De_e"] = 10000.0 # 1/cm
+                self._data["Du"] = 20000.0 # 1/cm
                 self._data["x0"] = 0.0  # TODO: to fix x0 != 0
                 self._data["p0"] = 0.0  # TODO: to fix p0 != 0
                 self._data["L"] = 5.0   # a_0
@@ -232,7 +232,7 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["iter_max"] = -1
             self._data["h_lambda"] = 0.0066
             self._data["nb"] = 1
-            self._data["pcos"] = 3
+            self._data["pcos"] = 1.0
             self._data["Em"] = 1.5
 
 

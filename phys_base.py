@@ -90,6 +90,10 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
     phi: Psi = Psi(lvls=len(psi.f))
 
     if ntriv == -1:
+        h_cm = Red_Planck_h / cm_to_erg     # s * cm^-1
+        U = U * h_cm * h_cm                 # U ~ cm / s^2
+        delta = delta * h_cm                # delta ~ Hz
+        E = E * h_cm / Hz_to_cm
         nb = len(psi.f)
         l = (nb - 1) / 2.0
         H = numpy.zeros((nb, nb))

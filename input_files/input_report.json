@@ -2,12 +2,12 @@
   "fitter": {
     "out_path": "output",
 
-    "table.imin": 0,
+    "table.imin": -1,
     "table.imod_fileout": 1,
     "table.tab_iter": "tab_iter.csv",
     "table.tab_iter_E": "tab_iter_E.csv",
 
-    "plot.imin": 1,
+    "plot.imin": -1,
     "plot.imod_plotout": 1,
     "plot.inumber_plotout": 15,
     "plot.gr_iter": "fig_iter_goal.pdf",

@@ -393,7 +393,7 @@ class PlotPropagationReporter(PropagationReporter):
 
     def plot_fitter(self, t, E, freq_mult, ener_tot, overlp_tot):
         self.t_fit_list.append(t)
-        self.E_list.append(abs(E))
+        self.E_list.append(E)
         self.freq_mult_list.append(freq_mult)
         self.ener_tot_list.append(ener_tot.real)
         self.overlp0_tot_list.append(abs(overlp_tot[0]))
@@ -640,12 +640,11 @@ class PlotFitterReporter(FitterReporter):
                                        os.path.join(self.conf.out_path, self.conf.gr_iter))
 
     def plot_E(self, E, iter, t, nt):
-        E_abs = []
-        for i in range(nt + 1):
-            #E_abs.append(abs(E[i]))
-            E_abs.append(E[i].real)
+        #E_abs = []
+        #for i in range(nt + 1):
+        #    E_abs.append(E[i])
 
-        self.E_abs[iter] = {'t': t, 'y': E_abs}
+        self.E_abs[iter] = {'t': t, 'y': E}
 
         # Updating the graph for E_abs
         self.__plot_iter_time_update_graph(self.E_abs, self.conf.inumber_plotout,

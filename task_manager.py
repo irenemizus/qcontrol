@@ -89,7 +89,7 @@ class _LaserFieldsHighFrequencyPart:
             OUTPUT
             E_omega complex value of a high-frequency part for current external laser field  """
 
-        E_omega = math.cos(2.0 * math.pi * nu_L * t)
+        E_omega = math.cos(2.0 * math.pi * pcos * nu_L * t)
 
         return E_omega
 
@@ -108,7 +108,7 @@ class _LaserFieldsHighFrequencyPart:
         #    E_omega += math.cos(2.0**(p + 1) * math.pi * nu_L * t)
 
         E_omega = math.cos(2.0 * math.pi * nu_L * t)
-        for p in range(2, pcos + 1):
+        for p in range(2, math.floor(pcos) + 1):
             E_omega += math.cos(2.0 * math.pi * nu_L * t * p)
             E_omega += math.cos(2.0 * math.pi * nu_L * t / p)
 
@@ -230,10 +230,16 @@ class TaskManager:
                 print("Exponential high-frequency part of initial guess for the laser field is used")
             self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cexp
         elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.COS:
-            print("Cos-like high-frequency part of initial guess for the laser field is used")
+            print("Cos-like high-frequency part of initial guess for the laser field with frequency multiplier "
+                  "'pcos' = %f is used" % conf_fitter.pcos)
             self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cos
         elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.COS_SET:
-            print("A sequence of cos-type terms as the high-frequency part of initial guess for the laser field is used")
+            print("A sequence of cos-type terms with 'pcos' = %f as the high-frequency part of initial guess "
+                  "for the laser field is used. The maximum frequency multiplier equal to floor(pcos) will be used"
+                  % conf_fitter.pcos)
+            if not conf_fitter.pcos > 1.0:
+                raise ValueError("The maximum frequency multiplier in the high frequency part of the laser field, "
+                                 "'pcos', has to be > 1")
             self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cos_set
         else:
             raise RuntimeError("Impossible case in the InitGuessHf class")
@@ -575,15 +581,15 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v.append((D_u, v_u))
 
         elif self.ntriv == -1:
-            Emax = self.conf_fitter.propagation.E0 * self.conf_fitter.Em
+            h_cm = phys_base.Red_Planck_h / phys_base.cm_to_erg  # s * cm^-1
+            U = self.conf_fitter.propagation.U * h_cm * h_cm  # U ~ cm / s^2
+            Emax = self.conf_fitter.propagation.E0 * self.conf_fitter.Em * h_cm / phys_base.Hz_to_cm
             l = (self.conf_fitter.nb - 1) / 2.0
             delta = nu_L * phys_base.Hz_to_cm
 
             # Maximum and minimum energies achieved during the calculation
-            vmax = self.conf_fitter.propagation.U * l**2 + \
-                   2.0 * (Emax + delta / 2.0) * l
-            vmin = self.conf_fitter.propagation.U * l**2 - \
-                   2.0 * (Emax + delta / 2.0) * l
+            vmax = U * l**2 + 2.0 * (Emax + delta / 2.0) * l
+            vmin = U * l**2 - 2.0 * (Emax + delta / 2.0) * l
 
             v_min = numpy.array([-delta * l] * np)
             v_max = numpy.array([delta * l] * np)
@@ -591,10 +597,12 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v.append((vmin, v_min))
 
             for n in range(1, self.conf_fitter.nb - 1):
-                vn = self.conf_fitter.propagation.U * (l - n)**2 - 2.0 * (Emax - delta / 2.0) * (l - n)
+                vn = U * (l - n)**2 - 2.0 * (Emax - delta / 2.0) * (l - n)
                 v_n = numpy.array([-delta * (l - n)] * np)
                 v.append((vn, v_n))
             v.append((vmax, v_max))
+#            for n in range(self.conf_fitter.nb):
+#                print(v[n][1][0])
         else:
             raise RuntimeError("Unsupported type of potential!")
 

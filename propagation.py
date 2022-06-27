@@ -283,9 +283,14 @@ class PropagationSolver:
         milliseconds_per_step = time_span.microseconds / 1000
         self.milliseconds_full += milliseconds_per_step
 
+        if self.ntriv == 1:
+            E = abs(self.dyn.E)
+        else:
+            E = self.dyn.E.real
+
         self.reporter.print_time_point_prop(self.dyn.l, self.dyn.psi, self.dyn.t, self.stat.x, self.np, self.instr.moms,
                                             self.instr.cener, self.instr.overlp0, self.instr.overlpf, overlp_tot,
-                                            cener_tot, psi_max_abs, psi_max_real, self.dyn.E, self.dyn.freq_mult)
+                                            cener_tot, psi_max_abs, psi_max_real, E, self.dyn.freq_mult)
 
         if self.dyn.l % self.mod_log == 0:
             if self.np < np_min:
@@ -401,6 +406,9 @@ class PropagationSolver:
 
         self.dyn.E = self.laser_field_envelope(self, self.stat, self.dyn)
 
+        #print("l = %d" % self.dyn.l)
+        #print("E = %f" % self.dyn.E)
+
         psigc_psie = 0.0
         psigc_dv_psie = 0.0
 
@@ -433,6 +441,8 @@ class PropagationSolver:
 
             self.dyn.psi = phys_base.prop_cpu(psi=self.dyn.psi, t_sc=t_sc, nch=self.nch, np=self.np, v=self.stat.v,
                                      akx2=self.stat.akx2, emin=emin, emax=emax, E=self.dyn.E, eL=eL, U=self.U, delta=self.delta, ntriv=self.ntriv, E_full=E_full)
+
+            #print(self.dyn.psi.f)
 
             cnorm_sum = 0.0
             for n in range(len(self.stat.psi0.f)):
