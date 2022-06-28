@@ -97,18 +97,14 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
         nb = len(psi.f)
         l = (nb - 1) / 2.0
         H = numpy.zeros((nb, nb))
-        nb1 = nb - 1
-        H.itemset((nb1, nb1), (l - nb1)**2 * U + 2.0 * (l - nb1) * E)
-        H.itemset((0, 0), l**2 * U + 2.0 * l * E)
-        H.itemset((0, 1), -delta * math.sqrt(2 * l))
-        H.itemset((nb - 1, nb - 2), -delta * math.sqrt(2 * l + (nb - 2) * (2 * l - nb + 1)))
 
-        for vi in range(1, nb - 1):
+        H.itemset((0, 0), l**2 * U + 2.0 * l * E)
+        for vi in range(1, nb):
             Q = (l - vi)**2 * U + 2.0 * (l - vi) * E
-            P = -delta * math.sqrt(l * (l + 1) - (l - (vi + 1)) * (l - vi))
-            R = -delta * math.sqrt(l * (l + 1) - (l - (vi - 1)) * (l - vi))
+            P = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi + 2))
+            R = -delta * math.sqrt(l * (l + 1) - (l - vi - 1) * (l - vi))
             H.itemset((vi, vi), Q)
-            H.itemset((vi, vi + 1), P)
+            H.itemset((vi - 1, vi), P)
             H.itemset((vi, vi - 1), R)
 
         for gl in range(nb):
