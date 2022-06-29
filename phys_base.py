@@ -114,8 +114,8 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
                 phi_gl = numpy.add(phi_gl, H_psi_el_mult)
             phi.f[gl] = phi_gl
 
-        for n in range(nb):
-            numpy.add(phi.f[n], hamil_cpu(psi.f[n], v[n][1], akx2, np, ntriv), out=phi.f[n])
+        #for n in range(nb):
+        #    numpy.add(phi.f[n], hamil_cpu(psi.f[n], v[n][1], akx2, np, ntriv), out=phi.f[n])
     else:
         if orig or ntriv == 0:
             # without laser field energy shift

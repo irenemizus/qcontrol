@@ -588,8 +588,8 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             delta = nu_L * phys_base.Hz_to_cm
 
             # Maximum and minimum energies achieved during the calculation
-            vmax = U * l**2 + 2.0 * (Emax + delta / 2.0) * l
-            vmin = U * l**2 - 2.0 * (Emax + delta / 2.0) * l
+            vmax = U * l**2 + 2.0 * Emax * l
+            vmin = U * l**2 - 2.0 * Emax * l
 
             v_min = numpy.array([-delta * l] * np)
             v_max = numpy.array([delta * l] * np)
@@ -597,7 +597,7 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v.append((vmin, v_min))
 
             for n in range(1, self.conf_fitter.nb - 1):
-                vn = U * (l - n)**2 - 2.0 * (Emax - delta / 2.0) * (l - n)
+                vn = U * (l - n)**2 - 2.0 * Emax * (l - n)
                 v_n = numpy.array([-delta * (l - n)] * np)
                 v.append((vn, v_n))
             v.append((vmax, v_max))
