@@ -26,6 +26,7 @@ class FittingSolver:
             self.E_patched = 0.0
             self.freq_mult_patched = 1.0
             self.dAdt_happy = 0.0
+            self.Fsm = complex(0.0, 0.0)
 
             self.chi_tlist = []
             self.psi_tlist = []
@@ -310,6 +311,7 @@ class FittingSolver:
 #                f.write("]\n\n")
 
         self.dyn.goal_close = [complex(0.0, 0.0)] * self.basis_length
+        self.dyn.Fsm = complex(0.0, 0.0)
         for vect in range(self.basis_length):
             solver = self.solvers[vect]
 
@@ -357,6 +359,13 @@ class FittingSolver:
             self.dyn.chi_tlist = [ chiT_omega ]
 
         goal_close_abs = abs(goal_close_abs)
+
+        for vect in range(self.basis_length):
+            for vect1 in range(self.basis_length):
+                self.dyn.Fsm -= self.dyn.goal_close[vect] * self.dyn.goal_close[vect1].conjugate()
+
+        print("Fsm = ", -self.dyn.Fsm)
+
         self.__finalize_propagation()
         return chiT, goal_close_abs
 
@@ -371,7 +380,7 @@ class FittingSolver:
             else:
                 E_list.append(E.real)
 
-        self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, E_list, t_list,
+        self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, E_list, t_list, self.dyn.Fsm,
                                               self.conf_fitter.propagation.nt)
 
         return 0.0
@@ -422,7 +431,7 @@ class FittingSolver:
                     else:
                         E_list.append(E.real)
 
-                self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, E_list, t_list,
+                self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, E_list, t_list, self.dyn.Fsm,
                                                       self.conf_fitter.propagation.nt)
 
             direct = PropagationSolver.Direction(-direct.value)
@@ -449,7 +458,7 @@ class FittingSolver:
                                      self.conf_fitter.propagation.sigma) * hf_part
                 E_tlist_init.append(E.real)
 
-            self.reporter.print_iter_point_fitter(-1, goal_close_abs_init, E_tlist_init, t_list,
+            self.reporter.print_iter_point_fitter(-1, goal_close_abs_init, E_tlist_init, t_list, self.dyn.Fsm,
                                                   self.conf_fitter.propagation.nt)
 
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
