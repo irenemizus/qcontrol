@@ -244,11 +244,11 @@ Options:
             type of the wavefunctions ("morse" or "harmonic").
             By default, the "morse" type is used
         hamil_type
-            type of the Hamiltonian operator used ("ntriv", "two_levels" or "ang_moms").
+            type of the Hamiltonian operator used ("ntriv", "two_levels" or "BH_model").
             By default, the "ntriv" type is used
         U, delta
-            parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'ang_moms' only),
-            U in units of cm / s**2, delta in Hz.
+            parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'BH_model' only),
+            U and delta are in units of 1 / cm.
             By default, both are equal to 0.0
         x0
             coordinate initial condition.

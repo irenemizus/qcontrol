@@ -250,8 +250,8 @@ class TaskManager:
             self.ntriv = 1
             if not conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP:
                 raise RuntimeError("For a non-trivial Hamiltonian an exponential high-frequency part of initial guess for the laser field has to be used!")
-        elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.ANG_MOMS:
-            print("Angular momentum type of the Hamiltonian is used")
+        elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.BH_MODEL:
+            print("Bose-Hubbard Hamiltonian is used")
             print("Number of %d-level basis vectors 'nb' = %d is used" % (conf_fitter.nb, conf_fitter.nb))
             self.ntriv = -1
         elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.TWO_LEVELS:

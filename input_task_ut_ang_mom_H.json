@@ -13,7 +13,7 @@
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
-      "hamil_type": "ang_moms",
+      "hamil_type": "BH_model",
       "U": 0.5,
       "delta": 15,
       "Du": 1,
