@@ -643,7 +643,7 @@ class FittingSolver:
                 else:
                     h_lambda = self.conf_fitter.h_lambda
 
-                delta_E = - s * (self.a0 * sum).imag / self.conf_fitter.h_lambda
+                delta_E = - s * (self.a0 * sum).imag / h_lambda
 
 #                print(f"===== Got {delta_E}")
 #                if abs(self.TMP_delta_E) > abs(delta_E):

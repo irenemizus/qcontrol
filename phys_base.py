@@ -42,6 +42,7 @@ def hamil_cpu(psi, v, akx2, np, ntriv):
         np      number of grid points
         ntriv   constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                     0 -- a trivial 2-level system
+                                   -1 -- a trivian n-level system with angular momentum Hamiltonian
         OUTPUT
         phi = H psi list of complex vectors of length np """
 
@@ -74,6 +75,7 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
         E_full      a complex value of external laser field
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
+                                       -1 -- a trivian n-level system with angular momentum Hamiltonian
         orig        a boolean parameter that depends
                     if an original form of the Hamiltonian should be used (orig = True) or
                     the shifted real version (orig = False -- by default)
@@ -96,20 +98,21 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
         #E = E / Hz_to_cm * h_cm
 
         nb = len(psi.f)
-        #l = (nb - 1) / 2.0
+        l = (nb - 1) / 2.0
         H = numpy.zeros((nb, nb))
 
-        #H.itemset((0, 0), 2.0 * l**2 * U + 2.0 * l * E) # U ~ 1 / cm
-        H.itemset((0, 0), U / 2.0 + E) # U ~ 1 / cm
+        U = 2.0 * eL / l
+        #delta = U / 2.0
+        H.itemset((0, 0), l**2 * U + 2.0 * l * E)
+        #H.itemset((0, 0), U / 2.0 + E) # U ~ 1 / cm
         for vi in range(1, nb):
-        #    Q = 2.0 * (l - vi)**2 * U + 2.0 * (l - vi) * E # U ~ 1 / cm
-        #    P = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-        #    R = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+            Q = (l - vi)**2 * U + 2.0 * (l - vi) * E # U ~ 1 / cm
+            P = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+            R = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
         #    H.itemset((vi, vi), U / 2.0 + E * (-1)**vi)
-            H.itemset((vi, vi), U / 2.0)
-            H.itemset((vi - 1, vi), -delta) # delta ~ 1 / cm
-            H.itemset((vi, vi - 1), -delta) # delta ~ 1 / cm
-        H.itemset((nb - 1, nb - 1), U / 2.0 - E)  # U ~ 1 / cm
+            H.itemset((vi, vi), Q)
+            H.itemset((vi - 1, vi), P) # delta ~ 1 / cm
+            H.itemset((vi, vi - 1), R) # delta ~ 1 / cm
 
         for gl in range(nb):
             phi_gl = numpy.array([complex(0.0, 0.0)] * np)
@@ -169,6 +172,7 @@ def residum_cpu(psi: Psi, v, akx2, xp, np, emin, emax, E, eL, U, delta, ntriv, E
         eL          a laser field energy shift
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
+                                       -1 -- a trivian n-level system with angular momentum Hamiltonian
         U, delta    parameters of angular momentum-type Hamiltonian
 
         OUTPUT
@@ -231,6 +235,7 @@ def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, delta, ntri
         eL          a laser field energy shift
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
+                                       -1 -- a trivian n-level system with angular momentum Hamiltonian
         U, delta    parameters of angular momentum-type Hamiltonian
 
         OUTPUT
@@ -294,6 +299,7 @@ def exp_vals_calc(psi: Psi, x, akx2, dx, np, m, ntriv):
         m       reduced mass of the system
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
+                                       -1 -- a trivian n-level system with angular momentum Hamiltonian
 
         OUTPUT
         moms  list of complex vectors of length np """

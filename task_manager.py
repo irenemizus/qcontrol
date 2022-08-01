@@ -582,23 +582,26 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
 
         elif self.ntriv == -1:
             #h_cm = phys_base.Red_Planck_h / phys_base.cm_to_erg  # s * cm^-1
-            U = self.conf_fitter.propagation.U # U ~ 1 / cm   # * h_cm * h_cm  # U ~ cm / s^2
+            #U = self.conf_fitter.propagation.U # U ~ 1 / cm   # * h_cm * h_cm  # U ~ cm / s^2
             Emax = self.conf_fitter.propagation.E0 * self.conf_fitter.Em # / phys_base.Hz_to_cm * h_cm
             l = (self.conf_fitter.nb - 1) / 2.0
-            delta = nu_L * phys_base.Hz_to_cm
+            delta_E = nu_L * phys_base.Hz_to_cm
+
+            U = delta_E / l
 
             # Maximum and minimum energies achieved during the calculation
-            vmax = 2.0 * U * l**2 + 2.0 * Emax * l
-            vmin = 2.0 * U * l**2 - 2.0 * Emax * l
+            vmax = U * l**2 + 2.0 * Emax * l
+            vmin = U * l**2 - 2.0 * Emax * l
 
-            v_min = numpy.array([-delta * l] * np)
-            v_max = numpy.array([delta * l] * np)
+            # The lowest and the highest level energies
+            v_min = numpy.array([-delta_E * l] * np)
+            v_max = numpy.array([delta_E * l] * np)
 
             v.append((vmin, v_min))
 
             for n in range(1, self.conf_fitter.nb - 1):
-                vn = 2.0 * U * (l - n)**2 - 2.0 * Emax * (l - n)
-                v_n = numpy.array([-delta * (l - n)] * np)
+                vn = U * (l - n)**2 - 2.0 * Emax * (l - n)
+                v_n = numpy.array([-delta_E * (l - n)] * np)
                 v.append((vn, v_n))
             v.append((vmax, v_max))
 #            for n in range(self.conf_fitter.nb):
