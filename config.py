@@ -214,7 +214,6 @@ class TaskRootConfiguration(ConfigurationBase):
             def from_str(s):
                 return TaskRootConfiguration.FitterConfiguration.InitGuessHf[s.upper()]
 
-
         def __init__(self):
             super().__init__(key_prefix="")
             # default input values
@@ -242,10 +241,25 @@ class ReportRootConfiguration(ConfigurationBase):
         self._data["fitter"] = ReportRootConfiguration.ReportFitterConfiguration(key_prefix=key_prefix)
 
     class ReportFitterConfiguration(ConfigurationBase):
+        class OutputType(Enum):
+            ALL = 0
+            TABLES = 1
+            PLOTS = 2
+            NONE = 3
+
+            @staticmethod
+            def from_int(i):
+                return ReportRootConfiguration.ReportFitterConfiguration.OutputType(i)
+
+            @staticmethod
+            def from_str(s):
+                return ReportRootConfiguration.ReportFitterConfiguration.OutputType[s.upper()]
+
         def __init__(self, key_prefix: str):
             super().__init__(key_prefix)
             self._data["propagation"] = ReportRootConfiguration.ReportFitterConfiguration.ReportPropagationConfiguration(key_prefix=key_prefix)
             self._data["out_path"] = "output"
+            self._data["plotting_flag"] = ReportRootConfiguration.ReportFitterConfiguration.OutputType.ALL
 
         class ReportPropagationConfiguration(ConfigurationBase):
             def __init__(self, key_prefix: str):

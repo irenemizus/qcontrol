@@ -23,6 +23,12 @@ Options:
         out_path
             a path name for the output files.
             By default, is equal to "output"
+        plotting_flag
+            a flag that indicates the type of output
+            "all"       --  to print both plots and tables (option by default)
+            "tables"    --  to print only tables
+            "plots"     --  to print only plots
+            "none"      --  no printing to files at all
 
         parameters, which has to be specified if writing of the resulting tables for "global" values as a function
         of iteration number is needed.

@@ -444,12 +444,16 @@ class PlotPropagationReporter(PropagationReporter):
 class MultiplePropagationReporter(PropagationReporter):
     reps: List[PropagationReporter]
 
-    def __init__(self, out_path: str, nlvls: int, conf_rep_table, conf_rep_plot):
+    def __init__(self, out_path: str, plotting_flag, nlvls: int, conf_rep_table, conf_rep_plot):
         super(MultiplePropagationReporter, self).__init__(out_path=out_path, nlvls=nlvls)
         self.reps = []
-        if not conf_rep_plot.is_empty():
+        if not conf_rep_plot.is_empty() and \
+                (plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.ALL or
+                 plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.PLOTS):
             self.reps.append(PlotPropagationReporter(conf=conf_rep_plot, out_path=os.path.join(self._out_path, "plots"), nlvls=self._nlvls))
-        if not conf_rep_table.is_empty():
+        if not conf_rep_table.is_empty() and \
+                (plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.ALL or
+                 plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.TABLES):
             self.reps.append(TablePropagationReporter(conf=conf_rep_table, out_path=os.path.join(self._out_path, "tables"), nlvls=self._nlvls))
 
     def open(self):
@@ -645,10 +649,6 @@ class PlotFitterReporter(FitterReporter):
                                       os.path.join(self.conf.out_path, self.conf.gr_iter_F))
 
     def plot_E(self, E, iter, t, nt):
-        #E_abs = []
-        #for i in range(nt + 1):
-        #    E_abs.append(E[i])
-
         self.E_abs[iter] = {'t': t, 'y': E}
 
         # Updating the graph for E_abs
@@ -673,9 +673,13 @@ class MultipleFitterReporter(FitterReporter):
         super(MultipleFitterReporter, self).__init__()
 
         self.reps = []
-        if not conf_rep_plot.is_empty():
+        if not conf_rep_plot.is_empty() and \
+                (conf_rep_table.plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.ALL or
+                 conf_rep_table.plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.PLOTS):
             self.reps.append(PlotFitterReporter(conf_rep_plot))
-        if not conf_rep_table.is_empty():
+        if not conf_rep_table.is_empty() and \
+                (conf_rep_table.plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.ALL or
+                 conf_rep_table.plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.TABLES):
             self.reps.append(TableFitterReporter(conf_rep_table))
         self.conf_rep_table = conf_rep_table
         self.conf_rep_plot = conf_rep_plot
@@ -685,12 +689,14 @@ class MultipleFitterReporter(FitterReporter):
         prop_conf_rep_plot = copy.deepcopy(self.conf_rep_plot)
 
         assert(prop_conf_rep_plot.out_path == prop_conf_rep_table.out_path)
+        assert (prop_conf_rep_plot.plotting_flag == prop_conf_rep_table.plotting_flag)
         out_path = prop_conf_rep_table.out_path
+        plotting_flag = prop_conf_rep_table.plotting_flag
         prop_out_path = os.path.join(out_path, prop_id)
         if not os.path.exists(prop_out_path):
             os.makedirs(prop_out_path)
 
-        return MultiplePropagationReporter(out_path=prop_out_path, nlvls=nlvls,
+        return MultiplePropagationReporter(out_path=prop_out_path, plotting_flag=plotting_flag, nlvls=nlvls,
                                            conf_rep_table=prop_conf_rep_table.propagation,
                                            conf_rep_plot=prop_conf_rep_plot.propagation)
 

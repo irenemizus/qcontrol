@@ -1,6 +1,7 @@
 {
   "fitter": {
     "out_path": "output_ut",
+    "plotting_flag": "all",
 
     "table.imin": -1,
     "table.imod_fileout": 1,
@@ -23,7 +24,7 @@
       "table.tab_tvals_fit": "tab_tvals_fit.csv",
 
       "plot.lmin": 0,
-      "plot.mod_plotout": 100,
+      "plot.mod_plotout": 10,
       "plot.mod_update": 20,
       "plot.number_plotout": 15
     }
