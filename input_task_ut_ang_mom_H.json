@@ -8,7 +8,8 @@
     "h_lambda": 0.005,
     "init_guess": "sqrsin",
     "init_guess_hf": "cos_set",
-    "pcos": 4,
+    "lf_aug_type": "z",
+    "pcos": 3,
     "Em": 5,
     "propagation": {
       "pot_type": "none",
@@ -24,7 +25,8 @@
       "t0": 0.0,
       "E0": 40.0,
       "nt": 3500,
-      "T": 33.35635E-14,
+      "T": 3.314351E-13,
+      "~T": 35.35635E-14,
       "~sigma": 4.765E-14,
       "sigma": 66.7127E-14,
       "nu_L": 0.299793E14

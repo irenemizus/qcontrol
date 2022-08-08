@@ -251,9 +251,15 @@ class TaskManager:
             if not conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP:
                 raise RuntimeError("For a non-trivial Hamiltonian an exponential high-frequency part of initial guess for the laser field has to be used!")
         elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.BH_MODEL:
-            print("Bose-Hubbard Hamiltonian is used")
             print("Number of %d-level basis vectors 'nb' = %d is used" % (conf_fitter.nb, conf_fitter.nb))
-            self.ntriv = -1
+            if conf_fitter.lf_aug_type == TaskRootConfiguration.FitterConfiguration.LfAugType.Z:
+                print("Bose-Hubbard Hamiltonian with external laser field augmented inside a Jz term is used")
+                self.ntriv = -1
+            elif conf_fitter.lf_aug_type == TaskRootConfiguration.FitterConfiguration.LfAugType.X:
+                print("Bose-Hubbard Hamiltonian with external laser field augmented inside a Jx term is used")
+                self.ntriv = -2
+            else:
+                raise RuntimeError("Impossible case in the LfAugType class")
         elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.TWO_LEVELS:
             print("Simple trivial two-levels type of the Hamiltonian is used")
             print("Number of 2-level basis vectors 'nb' = 2 is used")
@@ -580,18 +586,24 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v_u = numpy.array([D_u] * np)
             v.append((D_u, v_u))
 
-        elif self.ntriv == -1:
+        elif self.ntriv < 0:
             #h_cm = phys_base.Red_Planck_h / phys_base.cm_to_erg  # s * cm^-1
-            U = self.conf_fitter.propagation.U # U ~ 1 / cm   # * h_cm * h_cm  # U ~ cm / s^2
-            Emax = self.conf_fitter.propagation.E0 * self.conf_fitter.Em # / phys_base.Hz_to_cm * h_cm
-            l = (self.conf_fitter.nb - 1) / 2.0
             #delta_E = nu_L * phys_base.Hz_to_cm
-
             #U = delta_E / l
 
+            U = self.conf_fitter.propagation.U # U ~ 1 / cm
+            Emax = self.conf_fitter.propagation.E0 * self.conf_fitter.Em
+            l = (self.conf_fitter.nb - 1) / 2.0
+
             # Maximum and minimum energies achieved during the calculation
-            vmax = 2.0 * U * l**2 + 2.0 * Emax * l
-            vmin = -2.0 * Emax * l
+            if self.ntriv == -1:
+                vmax = 2.0 * U * l**2 + 2.0 * Emax * l
+                vmin = -2.0 * Emax * l
+            elif self.ntriv == -2:
+                vmax = 2.0 * U * l ** 2
+                vmin = 0.0
+            else:
+                pass
 
             # The lowest and the highest level energies
             #v_min = numpy.array([0.0] * np)

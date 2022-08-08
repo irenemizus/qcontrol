@@ -193,6 +193,12 @@ Options:
         "exp"       - exponential type exp(i omega_L t) (by default)
         "cos"       - cos-type cos(omega_L t)
         "cos_set"   - a sequence of cos-type terms [cos(omega_L t) + sum(cos(omega_L t * k) + cos(omega_L t / k))]
+    lf_aug_type
+        a way of adding the controlling laser field to "BH_model"-type Hamiltonian.
+        For all other variants of "hamil_type" variables is a dummy variable.
+        Available options:
+        "z" - H = H0 + 2E(t)Jz (by default)
+        "x" - H = H0 + 2E(t)Jx
     nb
         number of basis vectors of the Hilbert space used in the calculation task.
         By default, is equal to 1
@@ -307,6 +313,7 @@ __license__ = "Python"
 from tools import print_err
 
 import sys
+import os.path
 import getopt
 import json
 import math
@@ -331,6 +338,35 @@ def _warning_collocation_points(np, np_min):
 def _warning_time_steps(nt, nt_min):
     print_err("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
           "You've got a divergence!".format(nt, nt_min))
+
+def print_input(conf_rep_plot, conf_task, file_name):
+    with open(os.path.join(conf_rep_plot.fitter.out_path, file_name), "w") as finp:
+        finp.write("task_type:\t\t"   f"{conf_task.fitter.task_type}\n")
+        finp.write("epsilon:\t\t"   f"{conf_task.fitter.epsilon:.1E}\n")
+        finp.write("impulses_number:\t"   f"{conf_task.fitter.impulses_number}\n")
+        finp.write("nb:\t\t\t"   f"{conf_task.fitter.nb}\n")
+        finp.write("iter_max:\t\t"   f"{conf_task.fitter.iter_max}\n")
+        finp.write("h_lambda:\t\t"   f"{conf_task.fitter.h_lambda}\n")
+        finp.write("init_guess:\t\t"   f"{conf_task.fitter.init_guess}\n")
+        finp.write("init_guess_hf:\t\t"   f"{conf_task.fitter.init_guess_hf}\n")
+        finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos}\n")
+        finp.write("Em:\t\t\t"   f"{conf_task.fitter.Em}\n")
+        finp.write("pot_type:\t\t"   f"{conf_task.fitter.propagation.pot_type}\n")
+        finp.write("wf_type:\t\t"   f"{conf_task.fitter.propagation.wf_type}\n")
+        finp.write("hamil_type:\t\t"   f"{conf_task.fitter.propagation.hamil_type}\n")
+        finp.write("U:\t\t\t"   f"{conf_task.fitter.propagation.U}\n")
+        finp.write("delta:\t\t\t"   f"{conf_task.fitter.propagation.delta}\n")
+        finp.write("Du:\t\t\t"   f"{conf_task.fitter.propagation.Du}\n")
+        finp.write("np:\t\t\t"   f"{conf_task.fitter.propagation.np}\n")
+        finp.write("L:\t\t\t"   f"{conf_task.fitter.propagation.L}\n")
+        finp.write("nch:\t\t\t"   f"{conf_task.fitter.propagation.nch}\n")
+        finp.write("t0:\t\t\t"   f"{conf_task.fitter.propagation.t0}\n")
+        finp.write("E0:\t\t\t"   f"{conf_task.fitter.propagation.E0}\n")
+        finp.write("nt:\t\t\t"   f"{conf_task.fitter.propagation.nt}\n")
+        finp.write("T:\t\t\t"   f"{conf_task.fitter.propagation.T:.6E}\n")
+        finp.write("sigma:\t\t\t"   f"{conf_task.fitter.propagation.sigma:.6E}\n")
+        finp.write("nu_L:\t\t\t"   f"{conf_task.fitter.propagation.nu_L:.6E}\n")
+
 
 def main(argv):
     """ The main() function """
@@ -557,10 +593,6 @@ def main(argv):
     grid = grid_setup.GridConstructor(conf_task.fitter.propagation)
     dx, x = grid.grid_setup()
 
-    # setup of the time grid
-    forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf_task.fitter.propagation)
-    t_step, t_list = forw_time_grid.grid_setup()
-
     # evaluating of initial wavefunction (of type PsiBasis)
     psi0 = task_manager_imp.psi_init(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
                                      conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
@@ -581,14 +613,24 @@ def main(argv):
     init_dir = task_manager_imp.init_dir
     # checking of triviality of the system
     ntriv = task_manager_imp.ntriv
+    step = -1
 
-    #with open("table_glob.txt", "w") as fout:
-    #    nu_L_ac = conf_task.fitter.propagation.nu_L #conf_task.fitter.propagation.Du / phys_base.Hz_to_cm
-    #    nu_L_start = nu_L_ac / 1.00036 # * 1.9
-    #    nu_L_step = pow(1.00036, 1.0 / 100)
-    #    nu_L_cur = nu_L_start
-    #    for step in range(200):
-            #conf_task.fitter.propagation.nu_L = nu_L_cur
+    if not os.path.exists(conf_rep_plot.fitter.out_path):
+        os.mkdir(conf_rep_plot.fitter.out_path)
+
+    # with open(os.path.join(conf_rep_plot.fitter.out_path, "table_glob.txt"), "w") as fout:
+    #     T_ac = conf_task.fitter.propagation.T #conf_task.fitter.propagation.Du / phys_base.Hz_to_cm
+    #     T_start = T_ac / 1.01 # * 1.9
+    #     T0_step = pow(1.01, 1.0 / 300)
+    #     T_cur = T_start
+    #     for step in range(600):
+    #         conf_task.fitter.propagation.T = round(T_cur, 19)
+
+    print_input(conf_rep_plot, conf_task, "table_inp_" + str(step) + ".txt")
+
+    # setup of the time grid
+    forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf_task.fitter.propagation)
+    t_step, t_list = forw_time_grid.grid_setup()
 
     # main calculation part
     fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
@@ -601,15 +643,15 @@ def main(argv):
     fitting_solver.time_propagation(dx, x, t_step, t_list)
     fit_reporter_imp.close()
 
-#            nu_L_cur *= nu_L_step
-
-#            gc_cur = 0.0
-#            with open("output/tab_iter.csv", "r") as f:
-#                lines = f.readlines()
-#                gc_cur = float(lines[-1].strip().split(" ")[-1])
-
-#            fout.write(f"{nu_L_cur:.6E}    {gc_cur}\n")
-#            fout.flush()
+            # gc_cur = 0.0
+            # with open(os.path.join(conf_rep_plot.fitter.out_path, "tab_iter.csv"), "r") as f:
+            #     lines = f.readlines()
+            #     gc_cur = float(lines[-1].strip().split(" ")[-1])
+            #
+            # fout.write(f"{step}    {T_cur:.6E}    {gc_cur}\n")
+            # fout.flush()
+            #
+            # T_cur *= T0_step
 
 
 if __name__ == "__main__":

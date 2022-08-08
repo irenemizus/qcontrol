@@ -201,6 +201,19 @@ class TaskRootConfiguration(ConfigurationBase):
                 return TaskRootConfiguration.FitterConfiguration.HamilType[s.upper()]
 
 
+        class LfAugType(Enum):
+            Z = 0
+            X = 1
+
+            @staticmethod
+            def from_int(i):
+                return TaskRootConfiguration.FitterConfiguration.LfAugType(i)
+
+            @staticmethod
+            def from_str(s):
+                return TaskRootConfiguration.FitterConfiguration.LfAugType[s.upper()]
+
+
         class InitGuessHf(Enum):
             EXP = 0
             COS = 1
@@ -220,6 +233,7 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["task_type"] = TaskRootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL
             self._data["init_guess"] = TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO
             self._data["init_guess_hf"] = TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP
+            self._data["lf_aug_type"] = TaskRootConfiguration.FitterConfiguration.LfAugType.Z
             self._data["propagation"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration()
             self._data["k_E"] = 1e29    # 1 / (s*s)
             self._data["lamb"] = 4e14 # 1 / s

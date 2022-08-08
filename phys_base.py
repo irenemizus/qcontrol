@@ -91,20 +91,31 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
 
     phi: Psi = Psi(lvls=len(psi.f))
 
-    if ntriv == -1:
+    if ntriv < 0:
         nb = len(psi.f)
         l = (nb - 1) / 2.0
         H = numpy.zeros((nb, nb))
 
-        H.itemset((0, 0), 2.0 * l**2 * U + 2.0 * l * E)
-        for vi in range(1, nb):
-            Q = 2.0 * (l - vi)**2 * U + 2.0 * (l - vi) * E # U ~ 1 / cm
-            P = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-            R = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-
-            H.itemset((vi, vi), Q)
-            H.itemset((vi - 1, vi), P)
-            H.itemset((vi, vi - 1), R)
+        if ntriv == -1:
+            H.itemset((0, 0), 2.0 * l**2 * U + 2.0 * l * E)
+            for vi in range(1, nb):
+                Q = 2.0 * (l - vi)**2 * U + 2.0 * (l - vi) * E # U ~ 1 / cm
+                P = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+                R = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+                H.itemset((vi, vi), Q)
+                H.itemset((vi - 1, vi), P)
+                H.itemset((vi, vi - 1), R)
+        elif ntriv == -2:
+            H.itemset((0, 0), 2.0 * l**2 * U)
+            for vi in range(1, nb):
+                Q = 2.0 * (l - vi)**2 * U # U ~ 1 / cm
+                P = -(delta - E) * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+                R = -(delta - E) * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+                H.itemset((vi, vi), Q)
+                H.itemset((vi - 1, vi), P)
+                H.itemset((vi, vi - 1), R)
+        else:
+            pass
 
         for gl in range(nb):
             phi_gl = numpy.array([complex(0.0, 0.0)] * np)
