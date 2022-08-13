@@ -309,7 +309,7 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
-
+import random
 from tools import print_err
 
 import sys
@@ -339,7 +339,7 @@ def _warning_time_steps(nt, nt_min):
     print_err("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
           "You've got a divergence!".format(nt, nt_min))
 
-def print_input(conf_rep_plot, conf_task, file_name):
+def print_input(conf_rep_plot, conf_task, w_list, file_name):
     with open(os.path.join(conf_rep_plot.fitter.out_path, file_name), "w") as finp:
         finp.write("task_type:\t\t"   f"{conf_task.fitter.task_type}\n")
         finp.write("epsilon:\t\t"   f"{conf_task.fitter.epsilon:.1E}\n")
@@ -349,6 +349,7 @@ def print_input(conf_rep_plot, conf_task, file_name):
         finp.write("h_lambda:\t\t"   f"{conf_task.fitter.h_lambda}\n")
         finp.write("init_guess:\t\t"   f"{conf_task.fitter.init_guess}\n")
         finp.write("init_guess_hf:\t\t"   f"{conf_task.fitter.init_guess_hf}\n")
+        finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
         finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos}\n")
         finp.write("Em:\t\t\t"   f"{conf_task.fitter.Em}\n")
         finp.write("pot_type:\t\t"   f"{conf_task.fitter.propagation.pot_type}\n")
@@ -366,6 +367,7 @@ def print_input(conf_rep_plot, conf_task, file_name):
         finp.write("T:\t\t\t"   f"{conf_task.fitter.propagation.T:.6E}\n")
         finp.write("sigma:\t\t\t"   f"{conf_task.fitter.propagation.sigma:.6E}\n")
         finp.write("nu_L:\t\t\t"   f"{conf_task.fitter.propagation.nu_L:.6E}\n")
+        finp.write("w_list:\t\t"   f"{w_list}\n")
 
 
 def main(argv):
@@ -586,8 +588,9 @@ def main(argv):
         else:
             raise RuntimeError("Impossible case in the TaskType class")
 
-
-    task_manager_imp = task_manager.create(conf_task.fitter)
+    nw = int(2 * conf_task.fitter.pcos - 1)
+    w_list = [float(x) / 100.0 for x in random.sample(range(1, 101), nw)]
+    task_manager_imp = task_manager.create(conf_task.fitter, w_list)
 
     # setup of the grid
     grid = grid_setup.GridConstructor(conf_task.fitter.propagation)
@@ -626,7 +629,7 @@ def main(argv):
     #     for step in range(600):
     #         conf_task.fitter.propagation.T = round(T_cur, 19)
 
-    print_input(conf_rep_plot, conf_task, "table_inp_" + str(step) + ".txt")
+    print_input(conf_rep_plot, conf_task, w_list, "table_inp_" + str(step) + ".txt")
 
     # setup of the time grid
     forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf_task.fitter.propagation)

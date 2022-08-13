@@ -115,7 +115,7 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
                 H.itemset((vi - 1, vi), P)
                 H.itemset((vi, vi - 1), R)
         else:
-            pass
+            raise RuntimeError("Impossible case in the LfAugType class")
 
         for gl in range(nb):
             phi_gl = numpy.array([complex(0.0, 0.0)] * np)
