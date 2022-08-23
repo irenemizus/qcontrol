@@ -40,9 +40,12 @@ class ConfigurationBase:
                     self._data[key] = type(self._data[key]).from_int(int(user_data[actual_key]))
                 elif isinstance(user_data[actual_key], float):
                     self._data[key] = type(self._data[key]).from_float(float(user_data[actual_key]))
+                elif isinstance(self._data[key], list):
+                    assert isinstance(user_data[actual_key], list), f"The value for {actual_key} has to be of type 'list'"
+                    self._data[key] = user_data[actual_key]
                 elif isinstance(self._data[key], ConfigurationBase):
                     # Careful! Recursion here
-                    assert(self._data[key]._key_prefix == self._key_prefix)
+                    assert self._data[key]._key_prefix == self._key_prefix
                     self._data[key].load(user_data[actual_key])
             else:
                 print(
@@ -233,6 +236,7 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["task_type"] = TaskRootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL
             self._data["init_guess"] = TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO
             self._data["init_guess_hf"] = TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP
+            self._data["w_list"] = []
             self._data["lf_aug_type"] = TaskRootConfiguration.FitterConfiguration.LfAugType.Z
             self._data["propagation"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration()
             self._data["k_E"] = 1e29    # 1 / (s*s)

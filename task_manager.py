@@ -109,9 +109,6 @@ class _LaserFieldsHighFrequencyPart:
         #for p in range(-pcos, pcos + 1):
         #    E_omega += math.cos(2.0**(p + 1) * math.pi * nu_L * t)
 
-        #w_list = [0.82, 0.6, 0.92, 0.67, 0.71, 0.66, 0.63]
-        w_list = [1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00]
-
         E_omega = w_list[0] * math.cos(2.0 * math.pi * nu_L * t)
         i = -1
         for p in range(2, math.floor(pcos) + 1):
@@ -203,7 +200,7 @@ Morse or Harmonic problem. It lays on this class.
 
 class TaskManager:
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration, w_list):
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
         if wf_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE:
             print("Morse wavefunctions are used")
             self.psi_init_impl = _PsiFunctions.morse
@@ -278,7 +275,6 @@ class TaskManager:
 
         self.conf_fitter = conf_fitter
         self.init_dir = PropagationSolver.Direction.FORWARD
-        self.w_list = w_list
 
 
     def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb):
@@ -293,14 +289,14 @@ class TaskManager:
     def laser_field(self, E0, t, t0, sigma):
         return self.lf_init_guess(E0, t, t0, sigma)
 
-    def laser_field_hf(self, nu_L, t, pcos):
-        return self.lf_init_guess_hf(nu_L, t, pcos, self.w_list)
+    def laser_field_hf(self, nu_L, t, pcos, w_list):
+        return self.lf_init_guess_hf(nu_L, t, pcos, w_list)
 
 
 class HarmonicSingleStateTaskManager(TaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration, w_list):
-        super().__init__(wf_type, conf_fitter, w_list)
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
+        super().__init__(wf_type, conf_fitter)
 
     @staticmethod
     def _pot_level1(x, m, a):
@@ -366,8 +362,8 @@ class HarmonicSingleStateTaskManager(TaskManager):
 
 class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration, w_list):
-        super().__init__(wf_type, conf_fitter, w_list)
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
+        super().__init__(wf_type, conf_fitter)
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
         """ Potential energy vector
@@ -408,8 +404,8 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
 
 class MorseSingleStateTaskManager(TaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration, w_list):
-        super().__init__(wf_type, conf_fitter, w_list)
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
+        super().__init__(wf_type, conf_fitter)
 
     @staticmethod
     def _pot_level1(x, m, De, a):
@@ -474,8 +470,8 @@ class MorseSingleStateTaskManager(TaskManager):
 
 class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration, w_list):
-        super().__init__(wf_type, conf_fitter, w_list)
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
+        super().__init__(wf_type, conf_fitter)
 
     @staticmethod
     def _pot(x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
@@ -518,8 +514,8 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 
 class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
     def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration, w_list):
-        super().__init__(wf_type, conf_fitter, w_list)
+                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
+        super().__init__(wf_type, conf_fitter)
         self.init_dir = PropagationSolver.Direction.BACKWARD
 
     @staticmethod
@@ -632,7 +628,7 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
         return v
 
 
-def create(conf_fitter: TaskRootConfiguration.FitterConfiguration, w_list):
+def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
     if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING or \
        conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
 
@@ -643,15 +639,15 @@ def create(conf_fitter: TaskRootConfiguration.FitterConfiguration, w_list):
             raise RuntimeError("Number of basis vectors 'nb' for 'task_type' = 'single_pot' and 'filtering' should be equal to 1!")
         if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
             print("Morse potentials are used")
-            task_manager_imp = MorseSingleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter, w_list)
+            task_manager_imp = MorseSingleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
         elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
             print("Harmonic potentials are used")
-            task_manager_imp = HarmonicSingleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter, w_list)
+            task_manager_imp = HarmonicSingleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
         else:
             raise RuntimeError("Impossible PotentialType")
     else:
         if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-            task_manager_imp = MultipleStateUnitTransformTaskManager(conf_fitter.propagation.wf_type, conf_fitter, w_list)
+            task_manager_imp = MultipleStateUnitTransformTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
             if conf_fitter.nb <= 1:
                 raise RuntimeError(
                     "Number of basis vectors 'nb' for 'task_type' = 'optimal_control_unit_transform' should be more than 1!")
@@ -670,10 +666,10 @@ def create(conf_fitter: TaskRootConfiguration.FitterConfiguration, w_list):
                         "'local_control_projection', and 'optimal_control_krotov' should be equal to 1!")
             if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
                 print("Morse potentials are used")
-                task_manager_imp = MorseMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter, w_list)
+                task_manager_imp = MorseMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
             elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
                 print("Harmonic potentials are used")
-                task_manager_imp = HarmonicMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter, w_list)
+                task_manager_imp = HarmonicMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
             else:
                 raise RuntimeError("Impossible PotentialType")
 

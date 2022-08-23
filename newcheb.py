@@ -193,6 +193,11 @@ Options:
         "exp"       - exponential type exp(i omega_L t) (by default)
         "cos"       - cos-type cos(omega_L t)
         "cos_set"   - a sequence of cos-type terms [cos(omega_L t) + sum(cos(omega_L t * k) + cos(omega_L t / k))]
+    w_list
+        a list of 2 * pcos - 1 amplitudes for separate harmonics of the laser field high-frequency part of type "cos_set".
+        Is a dummy variable for all other types of "init_guess_hf".
+        If not specified or is empty, the amplitude values are generated randomly.
+        By default, is equal to []
     lf_aug_type
         a way of adding the controlling laser field to "BH_model"-type Hamiltonian.
         For all other variants of "hamil_type" variables is a dummy variable.
@@ -342,32 +347,37 @@ def _warning_time_steps(nt, nt_min):
 def print_input(conf_rep_plot, conf_task, w_list, file_name):
     with open(os.path.join(conf_rep_plot.fitter.out_path, file_name), "w") as finp:
         finp.write("task_type:\t\t"   f"{conf_task.fitter.task_type}\n")
-        finp.write("epsilon:\t\t"   f"{conf_task.fitter.epsilon:.1E}\n")
-        finp.write("impulses_number:\t"   f"{conf_task.fitter.impulses_number}\n")
-        finp.write("nb:\t\t\t"   f"{conf_task.fitter.nb}\n")
         finp.write("iter_max:\t\t"   f"{conf_task.fitter.iter_max}\n")
+        finp.write("epsilon:\t\t"   f"{conf_task.fitter.epsilon:.1E}\n")
+
+        finp.write("nb:\t\t\t"   f"{conf_task.fitter.nb}\n")
+        finp.write("wf_type:\t\t"   f"{conf_task.fitter.propagation.wf_type}\n")
+
+        finp.write("impulses_number:\t"   f"{conf_task.fitter.impulses_number}\n")
+        finp.write("Em:\t\t\t"   f"{conf_task.fitter.Em}\n")
+        finp.write("E0:\t\t\t"   f"{conf_task.fitter.propagation.E0}\n")
+        finp.write("t0:\t\t\t"   f"{conf_task.fitter.propagation.t0}\n")
+        finp.write("sigma:\t\t\t"   f"{conf_task.fitter.propagation.sigma:.6E}\n")
+        finp.write("nu_L:\t\t\t"   f"{conf_task.fitter.propagation.nu_L:.6E}\n")
         finp.write("h_lambda:\t\t"   f"{conf_task.fitter.h_lambda}\n")
         finp.write("init_guess:\t\t"   f"{conf_task.fitter.init_guess}\n")
         finp.write("init_guess_hf:\t\t"   f"{conf_task.fitter.init_guess_hf}\n")
-        finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
         finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos}\n")
-        finp.write("Em:\t\t\t"   f"{conf_task.fitter.Em}\n")
-        finp.write("pot_type:\t\t"   f"{conf_task.fitter.propagation.pot_type}\n")
-        finp.write("wf_type:\t\t"   f"{conf_task.fitter.propagation.wf_type}\n")
+        finp.write("w_list:\t\t"   f"{conf_task.fitter.w_list}\n")
+        finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
+
         finp.write("hamil_type:\t\t"   f"{conf_task.fitter.propagation.hamil_type}\n")
         finp.write("U:\t\t\t"   f"{conf_task.fitter.propagation.U}\n")
         finp.write("delta:\t\t\t"   f"{conf_task.fitter.propagation.delta}\n")
+
+        finp.write("pot_type:\t\t"   f"{conf_task.fitter.propagation.pot_type}\n")
         finp.write("Du:\t\t\t"   f"{conf_task.fitter.propagation.Du}\n")
+
         finp.write("np:\t\t\t"   f"{conf_task.fitter.propagation.np}\n")
         finp.write("L:\t\t\t"   f"{conf_task.fitter.propagation.L}\n")
         finp.write("nch:\t\t\t"   f"{conf_task.fitter.propagation.nch}\n")
-        finp.write("t0:\t\t\t"   f"{conf_task.fitter.propagation.t0}\n")
-        finp.write("E0:\t\t\t"   f"{conf_task.fitter.propagation.E0}\n")
         finp.write("nt:\t\t\t"   f"{conf_task.fitter.propagation.nt}\n")
         finp.write("T:\t\t\t"   f"{conf_task.fitter.propagation.T:.6E}\n")
-        finp.write("sigma:\t\t\t"   f"{conf_task.fitter.propagation.sigma:.6E}\n")
-        finp.write("nu_L:\t\t\t"   f"{conf_task.fitter.propagation.nu_L:.6E}\n")
-        finp.write("w_list:\t\t"   f"{w_list}\n")
 
 
 def main(argv):
@@ -589,8 +599,12 @@ def main(argv):
             raise RuntimeError("Impossible case in the TaskType class")
 
     nw = int(2 * conf_task.fitter.pcos - 1)
-    w_list = [float(x) / 100.0 for x in random.sample(range(1, 101), nw)]
-    task_manager_imp = task_manager.create(conf_task.fitter, w_list)
+    if not conf_task.fitter.w_list:
+        conf_task.fitter.w_list = [float(x) / 100.0 for x in random.sample(range(1, 101), nw)]
+    else:
+        assert len(conf_task.fitter.w_list) == nw
+
+    task_manager_imp = task_manager.create(conf_task.fitter)
 
     # setup of the grid
     grid = grid_setup.GridConstructor(conf_task.fitter.propagation)
@@ -623,13 +637,13 @@ def main(argv):
 
     # with open(os.path.join(conf_rep_plot.fitter.out_path, "table_glob.txt"), "w") as fout:
     #     T_ac = conf_task.fitter.propagation.T #conf_task.fitter.propagation.Du / phys_base.Hz_to_cm
-    #     T_start = T_ac / 1.01 # * 1.9
-    #     T0_step = pow(1.01, 1.0 / 300)
+    #     T_start = T_ac / 1.1
+    #     T0_step = pow(1.1, 1.0 / 1000) #2 * T_ac / 800 #pow(1.01, 1.0 / 200)
     #     T_cur = T_start
-    #     for step in range(600):
+    #     for step in range(2000):
     #         conf_task.fitter.propagation.T = round(T_cur, 19)
 
-    print_input(conf_rep_plot, conf_task, w_list, "table_inp_" + str(step) + ".txt")
+    print_input(conf_rep_plot, conf_task, conf_task.fitter.w_list, "table_inp_" + str(step) + ".txt")
 
     # setup of the time grid
     forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf_task.fitter.propagation)
