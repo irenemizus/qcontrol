@@ -14,37 +14,30 @@ class fitter_Tests(unittest.TestCase):
 
         user_conf = {
             "task_type": "single_pot",
-            "k_E": 1e29,
-            "lamb": 4e14,
-            "pow": 0.8,
-            "epsilon": 1e-15,
             "impulses_number": 0,
-            "delay": 600e-15,
             "init_guess": "zero",
+            "nb": 1,
             "propagation": {
-                "m": 0.5,
-                "pot_type": "harmonic",
-                "a": 1.0,
-                "De": 20000,
-                "x0p": 0.0,
-                "a_e": 0.0,
-                "De_e": 0.0,
-                "Du": 0.0,
-                "wf_type": "harmonic",
-                "x0": 1.0,
-                "p0": 0.0,
-                "L": 10.0,
-                "T": 280e-16,
-                "np": 512,
-                "nch": 64,
-                "nt": 20000,
-                "E0": 0.0,
-                "t0": 300e-15,
-                "sigma": 50e-15,
-                "nu_L": 0.0
+              "m": 0.5,
+              "pot_type": "harmonic",
+              "a": 1.0,
+              "x0p": 0.0,
+              "a_e": 0.0,
+              "De_e": 0.0,
+              "Du": 0.0,
+              "wf_type": "harmonic",
+              "x0": 1.0,
+              "p0": 0.0,
+              "L": 10.0,
+              "T": 280e-15,
+              "np": 512,
+              "nch": 64,
+              "nt": 200000,
+              "E0": 0.0,
+              "nu_L": 0.0
             },
             "mod_log": 500
-        }
+          }
 
         conf.load(user_conf)
         print(conf)
@@ -86,7 +79,11 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              fit_reporter_imp,
                                               None, None)
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
