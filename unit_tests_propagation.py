@@ -33,7 +33,7 @@ class test_facilities_Tests(unittest.TestCase):
         self.assertTrue(psi_comparer.compare(test_data.prop_trans_woc.psi_tab, test_data.prop_trans_woc.psi_tab))
         self.assertTrue(psi_comparer.compare(test_data.prop_trans_woc.psi_up_tab, test_data.prop_trans_woc.psi_up_tab))
 
-        self.assertTrue(tvals_comparer.compare(test_data.prop_trans_woc.tvals_tab, test_data.prop_trans_woc.tvals_tab))
+        self.assertTrue(tvals_comparer.compare(test_data.prop_trans_woc.prop_tab, test_data.prop_trans_woc.prop_tab))
         self.assertTrue(tvals_up_comparer.compare(test_data.prop_trans_woc.tvals_up_tab, test_data.prop_trans_woc.tvals_up_tab))
 
 
@@ -180,7 +180,7 @@ class propagation_Tests(unittest.TestCase):
         self.assertTrue(psi_comparer.compare(reporter_impl.psi_tab, test_data.prop_trans_woc_forw.psi_tab))
         self.assertTrue(psi_comparer.compare(reporter_impl.psi_up_tab, test_data.prop_trans_woc_forw.psi_up_tab))
 
-        self.assertTrue(tvals_comparer.compare(reporter_impl.tvals_tab, test_data.prop_trans_woc_forw.tvals_tab))
+        self.assertTrue(tvals_comparer.compare(reporter_impl.prop_tab, test_data.prop_trans_woc_forw.prop_tab))
         self.assertTrue(tvals_up_comparer.compare(reporter_impl.tvals_up_tab, test_data.prop_trans_woc_forw.tvals_up_tab))
 
 
@@ -251,5 +251,5 @@ class propagation_Tests(unittest.TestCase):
         self.assertTrue(psi_comparer.compare(reporter_impl.psi_tab, test_data.prop_trans_woc_back.psi_tab))
         self.assertTrue(psi_comparer.compare(reporter_impl.psi_up_tab, test_data.prop_trans_woc_back.psi_up_tab))
 
-        self.assertTrue(tvals_comparer.compare(reporter_impl.tvals_tab, test_data.prop_trans_woc_back.tvals_tab))
+        self.assertTrue(tvals_comparer.compare(reporter_impl.prop_tab, test_data.prop_trans_woc_back.prop_tab))
         self.assertTrue(tvals_up_comparer.compare(reporter_impl.tvals_up_tab, test_data.prop_trans_woc_back.tvals_up_tab))

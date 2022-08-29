@@ -1,5 +1,6 @@
-#from __future__ import print_function
 import sys
+
+import numpy
 import numpy as np
 from reporter import *
 
@@ -11,7 +12,7 @@ class TableComparer:
 
     @staticmethod
     def is_array(el):
-        return  isinstance(el, np.ndarray) or isinstance(el, list) or isinstance(el, tuple)
+        return isinstance(el, np.ndarray) or isinstance(el, list) or isinstance(el, tuple)
 
     @staticmethod
     def is_complex(el):
@@ -114,16 +115,15 @@ class TableComparer:
 
 
 class TestPropagationReporter(PropagationReporter):
-    def __init__(self, mod_fileout, lmin):
-        super().__init__("")
+    def __init__(self, mod_fileout, lmin, nlevs):
+        super().__init__("", nlevs)
         self.mod_fileout = mod_fileout
         self.lmin = lmin
+        self.nlevs = nlevs
 
-        self.psi_tab = []
-        self.tvals_tab = []
-        self.psi_up_tab = []
-        self.tvals_up_tab = []
-        self.tvals_tab_fit = []
+        self.psi_tab = [None] * nlevs
+        self.prop_tab = [None] * nlevs
+        self.fit_tab = []
 
     def open(self):
         return self
@@ -132,42 +132,30 @@ class TestPropagationReporter(PropagationReporter):
         pass
 
     def plot(self, psi: Psi, t, x, np):
-        self.psi_tab.append((
-            psi.f[0], t, x
+        for n in range(self.nlevs):
+            self.psi_tab[n] = (
+                psi.f[n], t, x
+            )
+
+    def plot_prop(self, t, moms, ener, overlp0, overlpf, psi_max_abs, psi_max_real):
+        for n in range(self.nlevs):
+            self.prop_tab[n] = (
+                t,
+                moms.x[n].real, moms.x2[n].real, moms.p[n].real, moms.p2[n].real,
+                ener[n], overlp0[n], overlpf[n], psi_max_abs[n], psi_max_real[n]
+        )
+
+    def plot_fitter(self, t, E, freq_mult, ener_tot, overlp_tot):
+        self.fit_tab.append((
+            t, E, freq_mult, ener_tot, overlp_tot[0], overlp_tot[1]
         ))
 
-    def plot_tvals(self, t, moms, ener, overlp0, overlpf, ener_tot, abs_psi_max, real_psi_max):
-        self.tvals_tab.append((
-            t,
-            moms.x_l.real, moms.x2_l.real, moms.p_l.real, moms.p2_l.real,
-            ener, overlp0, overlpf, ener_tot, abs_psi_max, real_psi_max
-        ))
-
-    def plot_up(self, psi: Psi, t, x, np):
-        self.psi_up_tab.append((
-            psi.f[1], t, x
-        ))
-
-    def plot_tvals_up(self, t, moms, ener, overlp0, overlpf, overlp_tot, abs_psi_max, real_psi_max):
-        self.tvals_up_tab.append((
-            t,
-            moms.x_u.real, moms.x2_u.real, moms.p_u.real, moms.p2_u.real,
-            ener, overlp0, overlpf, overlp_tot, abs_psi_max, real_psi_max
-        ))
-
-    def plot_tvals_fit(self, t, E, freq_mult):
-        self.tvals_tab_fit.append((
-            t, E, freq_mult
-        ))
-
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, ener_u, overlp0, overlpf, overlp_tot, ener_tot,
-                         abs_psi_max, real_psi_max, abs_psi_max_u, real_psi_max_u, E, freq_mult):
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+                              psi_max_abs, psi_max_real, E, freq_mult):
         if l % self.mod_fileout == 0 and l >= self.lmin:
             self.plot(psi, t, x, np)
-            self.plot_up(psi, t, x, np)
-            self.plot_tvals(t, moms, ener, overlp0[0], overlpf[0], ener_tot, abs_psi_max, real_psi_max)
-            self.plot_tvals_up(t, moms, ener_u, overlp0[1], overlpf[1], overlp_tot, abs_psi_max_u, real_psi_max_u)
-            self.plot_tvals_fit(t, E, freq_mult)
+            self.plot_prop(t, moms, ener, overlp0, overlpf, psi_max_abs, psi_max_real)
+            self.plot_fitter(t, E, freq_mult, ener_tot, overlp_tot)
 
 
     def print_all(self, filename, filename_fit):
@@ -176,31 +164,25 @@ class TestPropagationReporter(PropagationReporter):
 
         with open(filename, "w") as f:
             f.write("from numpy import array\n\n")
-            f.write("psi_tab = [\n")
-            for l in self.psi_tab:
-                f.write("    " + str(l) + ",\n")
-            f.write("]\n")
+            for n in range(self.nlevs):
+                f.write(f"psi_tabs_{n} = [\n")
+                psin = numpy.array(self.psi_tab[n]).astype(complex)
+                for l in psin:
+                    f.write("    " + str(l) + ",\n")
+                f.write("]\n")
 
-            f.write("tvals_tab = [\n")
-            for l in self.tvals_tab:
-                f.write("    " + str(l) + ",\n")
-            f.write("]\n\n")
-
-            f.write("psi_up_tab = [\n")
-            for l in self.psi_up_tab:
-                f.write("    " + str(l) + ",\n")
-            f.write("]\n\n")
-
-            f.write("tvals_up_tab = [\n")
-            for l in self.tvals_up_tab:
-                f.write("    " + str(l) + ",\n")
-            f.write("]\n\n")
+            for n in range(self.nlevs):
+                f.write(f"prop_tabs_{n} = [\n")
+                propn = numpy.array(self.prop_tab[n]).astype(complex)
+                for l in propn:
+                    f.write("    " + str(l) + ",\n")
+                f.write("]\n")
 
         if filename_fit:
             with open(filename_fit, "w") as f_fit:
                 f_fit.write("from numpy import array\n\n")
                 f_fit.write("tvals_tab = [\n")
-                for l in self.tvals_tab_fit:
+                for l in self.fit_tab:
                     f_fit.write("    " + str(l) + ",\n")
                 f_fit.write("]\n\n")
 
@@ -225,9 +207,9 @@ class TestFitterReporter(FitterReporter):
     def close(self):
         pass
 
-    def plot_iter(self, iter, goal_close):
+    def plot_iter(self, iter, goal_close, Fsm):
         self.iter_tab.append((
-            iter, goal_close
+            iter, goal_close, Fsm
         ))
 
     def plot_i_E(self, E_tlist, iter, t_list, nt):
@@ -235,9 +217,9 @@ class TestFitterReporter(FitterReporter):
             iter, t_list, E_tlist
         ))
 
-    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, nt):
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, nt):
         if iter % self.imod_fileout == 0 and iter >= self.imin:
-            self.plot_iter(iter, goal_close)
+            self.plot_iter(iter, goal_close, Fsm)
             self.plot_i_E(E_tlist, iter, t_list, nt)
 
     def print_all(self, filename):
@@ -257,7 +239,7 @@ class TestFitterReporter(FitterReporter):
             f.write("]\n\n")
 
 
-    def create_propagation_reporter(self, prop_id: str):
-        new_prop_rep = TestPropagationReporter(self.mod_fileout, self.lmin)
+    def create_propagation_reporter(self, prop_id: str, nlevs):
+        new_prop_rep = TestPropagationReporter(self.mod_fileout, self.lmin, nlevs)
         self.prop_reporters[prop_id] = new_prop_rep
         return new_prop_rep

@@ -62,19 +62,23 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
+                                         conf.propagation.a, conf.propagation.a_e,
+                                         conf.propagation.L, conf.nb)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
                                          conf.propagation.p0, conf.propagation.x0p,
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e, conf.propagation.L)
+                                         conf.propagation.a, conf.propagation.a_e,
+                                         conf.propagation.L, conf.nb)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
         # checking of triviality of the system
         ntriv = task_manager_imp.ntriv
+        # number of levels
+        nlevs = len(psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
@@ -91,8 +95,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("test_data/fit_iter_single_harm_.py")
-        #prop_reporter.print_all("test_data/prop_single_harm_.py", "test_data/fitter_single_harm_.py")
+        fit_reporter_imp.print_all("test_data/fit_iter_single_harm_.py")
+        prop_reporter.print_all("test_data/prop_single_harm_.py", "test_data/fitter_single_harm_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
@@ -109,10 +113,10 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_single_harm.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_single_harm.psi_up_tab))
 
-        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_single_harm.tvals_tab))
+        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab, test_data.prop_single_harm.tvals_tab))
         self.assertTrue(tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_single_harm.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_single_harm.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_single_harm.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_single_harm.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_single_harm.iter_tab_E))
 
@@ -195,9 +199,11 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot, task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
@@ -221,10 +227,10 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_single_morse.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_single_morse.psi_up_tab))
 
-        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_single_morse.tvals_tab))
+        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab, test_data.prop_single_morse.prop_tab))
         self.assertTrue(tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_single_morse.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_single_morse.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_single_morse.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_single_morse.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_single_morse.iter_tab_E))
 
@@ -307,7 +313,9 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot, task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
         #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
@@ -333,11 +341,11 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_filter.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_filter.psi_up_tab))
 
-        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_filter.tvals_tab))
+        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab, test_data.prop_filter.prop_tab))
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_filter.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_filter.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_filter.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_filter.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_filter.iter_tab_E))
 
@@ -420,9 +428,11 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot, task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
@@ -446,11 +456,11 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_trans_woc.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_trans_woc.psi_up_tab))
 
-        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_trans_woc.tvals_tab))
+        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab, test_data.prop_trans_woc.prop_tab))
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_trans_woc.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_trans_woc.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_trans_woc.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_trans_woc.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_trans_woc.iter_tab_E))
 
@@ -533,9 +543,11 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot, task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
@@ -559,11 +571,11 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_int_ctrl.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_int_ctrl.psi_up_tab))
 
-        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_int_ctrl.tvals_tab))
+        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab, test_data.prop_int_ctrl.prop_tab))
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_int_ctrl.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_int_ctrl.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_int_ctrl.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_int_ctrl.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_int_ctrl.iter_tab_E))
 
@@ -646,9 +658,11 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot, task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
@@ -672,11 +686,11 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_loc_ctrl_pop.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_loc_ctrl_pop.psi_up_tab))
 
-        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_loc_ctrl_pop.tvals_tab))
+        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab, test_data.prop_loc_ctrl_pop.prop_tab))
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_loc_ctrl_pop.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_loc_ctrl_pop.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_loc_ctrl_pop.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_loc_ctrl_pop.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_loc_ctrl_pop.iter_tab_E))
 
@@ -759,9 +773,11 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot, task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
@@ -784,11 +800,11 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_loc_ctrl_proj.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_loc_ctrl_proj.psi_up_tab))
 
-        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_loc_ctrl_proj.tvals_tab))
+        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab, test_data.prop_loc_ctrl_proj.prop_tab))
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_loc_ctrl_proj.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_loc_ctrl_proj.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_loc_ctrl_proj.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_loc_ctrl_proj.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_loc_ctrl_proj.iter_tab_E))
 
@@ -873,9 +889,11 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot, task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
@@ -899,11 +917,11 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_opt_ctrl_krot.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_opt_ctrl_krot.psi_up_tab))
 
-        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_opt_ctrl_krot.tvals_tab))
+        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab, test_data.prop_opt_ctrl_krot.prop_tab))
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_opt_ctrl_krot.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_opt_ctrl_krot.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_opt_ctrl_krot.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_krot.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_krot.iter_tab_E))
 
@@ -976,9 +994,11 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot, task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
@@ -1002,11 +1022,11 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_opt_ctrl_ut_H1.psi_tab))
         self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_opt_ctrl_ut_H1.psi_up_tab))
 
-        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.tvals_tab, test_data.prop_opt_ctrl_ut_H1.tvals_tab))
+        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab, test_data.prop_opt_ctrl_ut_H1.tvals_tab))
         self.assertTrue(
             tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_opt_ctrl_ut_H1.tvals_up_tab))
 
-        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.tvals_tab_fit, test_data.fitter_opt_ctrl_ut_H1.tvals_tab))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_opt_ctrl_ut_H1.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_ut_H1.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_ut_H1.iter_tab_E))
 
