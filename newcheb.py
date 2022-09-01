@@ -192,7 +192,7 @@ Options:
         Available options:
         "exp"       - exponential type exp(i omega_L t) (by default)
         "cos"       - cos-type cos(omega_L t)
-        "cos_set"   - a sequence of cos-type terms [cos(omega_L t) + sum(cos(omega_L t * k) + cos(omega_L t / k))]
+        "cos_set"   - a sequence of cos-type terms [w_0 * cos(omega_L t) + sum(w_i * cos(omega_L t * k) + w_j * cos(omega_L t / k))]
     w_list
         a list of 2 * pcos - 1 amplitudes for separate harmonics of the laser field high-frequency part of type "cos_set".
         Is a dummy variable for all other types of "init_guess_hf".
@@ -208,7 +208,7 @@ Options:
         number of basis vectors of the Hilbert space used in the calculation task.
         By default, is equal to 1
     pcos
-        maximum frequency multiplier for a sum [cos(omega_L t) + sum(cos(omega_L t * k) + cos(omega_L t / k))]
+        maximum frequency multiplier for a sum [w_0 * cos(omega_L t) + sum(w_i * cos(omega_L t * k) + w_j * cos(omega_L t / k))]
         with k = 2 ... pcos in the case "init_guess_hf" = "cos_set", or just a frequency multiplier itself for
         the "init_guess_hf" = "cos" case, which is used in a high-frequency part for the laser field initial guess.
         For the "init_guess_hf" = "exp" case is a dummy variable.

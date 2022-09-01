@@ -95,26 +95,21 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_single_harm_.py")
-        prop_reporter.print_all("test_data/prop_single_harm_.py", "test_data/fitter_single_harm_.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_single_harm_.py")
+        #prop_reporter.print_all("test_data/prop_single_harm_.py", "test_data/fitter_single_harm_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
         tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
-                                      0.000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.000001,
-                                      0.0001, 0.0001), 1.e-51)
-        tvals_prop_up_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
-                                      0.000001, complex(0.001, 0.001), complex(0.001, 0.001), 0.001,
+                                      0.000001, complex(0.001, 0.001), complex(0.001, 0.001),
                                       0.0001, 0.0001), 1.e-51)
 
-        tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001), 1.e-51)
-        iter_fit_comparer = TableComparer((0, 0.0001), 1.e-51)
+        tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001, 0.000001, complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-51)
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001), 1.e-51)
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-51)
 
-        self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab, test_data.prop_single_harm.psi_tab))
-        self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_up_tab, test_data.prop_single_harm.psi_up_tab))
-
-        self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab, test_data.prop_single_harm.tvals_tab))
-        self.assertTrue(tvals_prop_up_comparer.compare(prop_reporter.tvals_up_tab, test_data.prop_single_harm.tvals_up_tab))
+        for n in range(nlevs):
+            self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_single_harm.psi_tabs[n]))
+            self.assertTrue(tvals_prop_comparer.compare(prop_reporter.prop_tab[n], test_data.prop_single_harm.prop_tabs[n]))
 
         self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_single_harm.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_single_harm.iter_tab))
@@ -1033,3 +1028,11 @@ class fitter_Tests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+    # psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
+    # tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
+    #                                      0.000001, complex(0.001, 0.001), complex(0.001, 0.001),
+    #                                      0.0001, 0.0001), 1.e-51)
+    # for n in range(2):
+    #     psi_prop_comparer.compare(test_data.prop_single_harm.psi_tabs[n], test_data.prop_single_harm.psi_tabs[n])
+    #     tvals_prop_comparer.compare(test_data.prop_single_harm.psi_tabs[n], test_data.prop_single_harm.prop_tabs[n])
