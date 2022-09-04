@@ -72,7 +72,7 @@ class PropagationSolver:
         psigc_psie: complex
 
         def __init__(self, moms: phys_base.ExpectationValues, cnorm, psigc_psie: complex, psigc_dv_psie: complex,
-                     cener: list[complex], E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after):
+                     cener: List[complex], E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after):
             self.moms = moms
             self.cnorm = cnorm
             self.psigc_psie = psigc_psie

@@ -98,14 +98,14 @@ class fitter_Tests(unittest.TestCase):
         #fit_reporter_imp.print_all("test_data/fit_iter_single_harm_.py")
         #prop_reporter.print_all("test_data/prop_single_harm_.py", "test_data/fitter_single_harm_.py")
 
-        psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
-        tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
-                                      0.000001, complex(0.001, 0.001), complex(0.001, 0.001),
-                                      0.0001, 0.0001), 1.e-51)
+        psi_prop_comparer = TableComparer(epsilon=(complex(0.0001, 0.0001), 0.0001, 0.0001), delta=1.e-21)
+        tvals_prop_comparer = TableComparer(epsilon=(0.0001, 0.02, 0.001, 0.0001, 0.00001, 0.000001,
+                                             complex(0.001, 0.001), complex(0.001, 0.001),
+                                             0.0001, 0.0001), delta=1.e-21)
 
-        tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001, 0.000001, complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-51)
-        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001), 1.e-51)
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-51)
+        tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001, 0.000001, complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001)), 1.e-21)
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
 
         for n in range(nlevs):
             self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_single_harm.psi_tabs[n]))
@@ -1029,10 +1029,10 @@ class fitter_Tests(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
 
-    # psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
-    # tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
-    #                                      0.000001, complex(0.001, 0.001), complex(0.001, 0.001),
-    #                                      0.0001, 0.0001), 1.e-51)
-    # for n in range(2):
-    #     psi_prop_comparer.compare(test_data.prop_single_harm.psi_tabs[n], test_data.prop_single_harm.psi_tabs[n])
-    #     tvals_prop_comparer.compare(test_data.prop_single_harm.psi_tabs[n], test_data.prop_single_harm.prop_tabs[n])
+     # psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
+     # tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
+     #                                      0.000001, complex(0.001, 0.001), complex(0.001, 0.001),
+     #                                      0.0001, 0.0001), 1.e-51)
+     # for n in range(2):
+     #     psi_prop_comparer.compare(test_data.prop_single_harm.psi_tabs[n], test_data.prop_single_harm_.psi_tabs[n])
+     #     tvals_prop_comparer.compare(test_data.prop_single_harm.prop_tabs[n], test_data.prop_single_harm_.prop_tabs[n])

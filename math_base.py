@@ -1,4 +1,5 @@
 import math
+from typing import List
 from typing import Dict
 import numpy
 
@@ -105,7 +106,7 @@ def fold(src):
 # All the possible values of reorder() function
 # are gonna be kept in this dictionary in order
 # to avoid repeating calculation
-reorder_CACHE: Dict[int, list[int]] = {}
+reorder_CACHE: Dict[int, List[int]] = {}
 
 
 def reorder(nch):

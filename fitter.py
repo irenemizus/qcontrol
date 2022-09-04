@@ -6,13 +6,13 @@ import reporter
 from config import TaskRootConfiguration
 from propagation import *
 from psi_basis import PsiBasis, Psi
-
+from typing import List
 
 class FittingSolver:
     class FitterDynamicState:
-        chi_tlist: list[PsiBasis]
-        psi_tlist: list[PsiBasis]
-        E_tlist: list[complex]
+        chi_tlist: List[PsiBasis]
+        psi_tlist: List[PsiBasis]
+        E_tlist: List[complex]
         chi_cur: PsiBasis
         psi_cur: PsiBasis
         goal_close: List[complex]
@@ -102,8 +102,8 @@ class FittingSolver:
             return json.dumps(self, default=default,
                               sort_keys=True, indent=4), arrays
 
-    solvers: list[PropagationSolver]
-    propagation_reporters: list[PropagationReporter]
+    solvers: List[PropagationSolver]
+    propagation_reporters: List[PropagationReporter]
 
     def __initialize_propagation(self, prop_id: str, laser_field_envelope, laser_field_hf, ntriv):
 
@@ -209,7 +209,7 @@ class FittingSolver:
 
                 self.dyn.chi_tlist = [ chiT ]
 
-            self.dyn.chi_cur = self.dyn.chi_tlist[0]
+            self.dyn.chi_cur = self.dyn.chi_tList[0]
             init_psi_basis = chiT
             fin_psi_basis = self.psi_init_basis
             t_init = self.conf_fitter.propagation.T
@@ -230,7 +230,7 @@ class FittingSolver:
             if abs(E_checked - self.solvers[vect].dyn.E) > 0.001:
                 raise AssertionError("Different energies in different solvers")
 
-        E_tlist_new: list[complex] = []
+        E_tlist_new: List[complex] = []
         # Working with solvers
         if direct == PropagationSolver.Direction.FORWARD:
             # with open("test_chi_" + str(self.dyn.iter_step) + ".txt", "w") as f:
@@ -611,7 +611,7 @@ class FittingSolver:
             else:
                 conf_prop = self.conf_fitter.propagation
 
-                chie_old_psig_new = math_base.cprod(self.dyn.chi_tlist[conf_prop.nt - prop.dyn.l].psis[0].f[1],
+                chie_old_psig_new = math_base.cprod(self.dyn.chi_tList[conf_prop.nt - prop.dyn.l].psis[0].f[1],
                                                     dyn.psi_omega.f[0],
                                                     stat.dx, conf_prop.np)
 
@@ -623,7 +623,7 @@ class FittingSolver:
             conf_prop = self.conf_fitter.propagation
             if prop.dyn.l == 0:
                 E = self.dyn.E_patched
-                chi_init = self.dyn.chi_tlist[-1]
+                chi_init = self.dyn.chi_tList[-1]
                 psi_init = self.psi_init_basis
                 self.a0 = 0.0
 
@@ -631,7 +631,7 @@ class FittingSolver:
                     for n in range(self.levels_number):
                         self.a0 += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], stat.dx, conf_prop.np)
             else:
-                chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
+                chi_basis = self.dyn.chi_tList[-prop.dyn.l]
                 psi_basis = self.dyn.psi_cur
                 sum = 0.0
 
@@ -660,7 +660,7 @@ class FittingSolver:
                 if self.dyn.iter_step == 0:
                     E = E_init + delta_E
                 else:
-                    E = self.dyn.E_tlist[prop.dyn.l] + delta_E
+                    E = self.dyn.E_tList[prop.dyn.l] + delta_E
         else:
             E = self.dyn.E_patched
 
@@ -687,9 +687,9 @@ class FittingSolver:
                 E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma) * hf_part
             else:
                 if prop.dyn.l == 0:
-                    E = self.dyn.E_tlist[-1]
+                    E = self.dyn.E_tList[-1]
                 else:
-                    E = self.dyn.E_tlist[-prop.dyn.l]
+                    E = self.dyn.E_tList[-prop.dyn.l]
         else:
             E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma)
 
