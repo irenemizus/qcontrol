@@ -52,7 +52,6 @@ class TableComparer:
 
         return True
 
-
     def compare_el(self, el1, el2, eps):
         if isinstance(el1, int) and isinstance(el2, int):
             # Trivially comparing two ints
@@ -60,35 +59,12 @@ class TableComparer:
                 return False
         elif isinstance(el1, float) and isinstance(el2, float) and isinstance(eps, float):
             # Trivially comparing two floats
-            # if abs(el2) < self.delta and abs(el1) < self.delta:
-            #     pass  # Going on
-            # elif abs(el2) < self.delta and abs(el1) >= self.delta:
-            #     return False
-            # elif abs(el1 - el2) / abs(el2) >= abs(eps):
-            #     return False
             if not self.compare_floats(el1, el2, eps):
                 return False
         elif self.is_complex(el1) and self.is_complex(el2) and self.is_complex(eps):
+            # Trivially comparing two complexes
             if not self.compare_complex(el1, el2, eps):
                 return False
-
-            # Trivially comparing two complexes
-            # if abs(el2.real) < self.delta and abs(el1.real) < self.delta and \
-            #         abs(el2.imag) < self.delta and abs(el1.imag) < self.delta:
-            #     pass  # Going on
-            # elif abs(el2.real) < self.delta and abs(el1.real) >= self.delta:
-            #     return False
-            # elif abs(el2.imag) < self.delta and abs(el1.imag) >= self.delta:
-            #     return False
-            # elif abs(el2.imag) < self.delta and abs(el1.imag) < self.delta and \
-            #      abs(el2.real) >= self.delta and abs(el1.real) >= self.delta:
-            #     if abs(el1.real - el2.real) / abs(el2.real) >= abs(eps.real):
-            #         return False
-            #     else:
-            #         pass
-            # elif abs(el1.real - el2.real) / abs(el2.real) >= eps.real or \
-            #         abs(el1.imag - el2.imag) / abs(el2.imag) >= eps.imag:
-            #     return False
         elif self.is_array(el1) and self.is_array(el2) and self.is_complex(eps):
             # Comparing each element of two complex arrays
             if len(el1) != len(el2):
@@ -97,22 +73,6 @@ class TableComparer:
             for l in range(len(el1)):
                 if not self.compare_complex(el1[l], el2[l], eps):
                     return False
-
-                # print(f"{l}: {el1[l]} :: {el2[l]}")
-                # if abs(el2[l].real) < self.delta and abs(el1[l].real) < self.delta and \
-                #         abs(el2[l].imag) < self.delta and abs(el1[l].imag) < self.delta:
-                #     pass  # Two zeroes they are. They are equal
-                # elif abs(el2[l].real) < self.delta and abs(el1[l].real) >= self.delta:
-                #     return False  # el2 real part is small, el1 real part isn't small. Not equal
-                # elif abs(el2[l].imag) < self.delta and abs(el1[l].imag) >= self.delta:
-                #     return False  # el2 imag part is small, el1 imag part isn't small. Not equal
-                # elif abs(el2[l].imag) < self.delta and abs(el1[l].imag) < self.delta and \
-                #         abs(el1[l].real - el2[l].real) > self.delta:
-                #     return False    # Both are real, not equal
-                #
-                # elif abs(el1[l].real - el2[l].real) / abs(el2[l].real) >= eps.real or \
-                #         abs(el1[l].imag - el2[l].imag) / abs(el2[l].imag) >= eps.imag:
-                #     return False
         elif self.is_array(el1) and self.is_array(el2) and isinstance(eps, float):
             # Comparing each element of two real arrays
             if len(el1) != len(el2):
@@ -121,14 +81,6 @@ class TableComparer:
             for l in range(len(el1)):
                 if not self.compare_floats(el1[l], el2[l], eps):
                     return False
-
-            # for l in range(len(el1)):
-            #     if abs(el2[l]) < self.delta and abs(el1[l]) < self.delta:
-            #         pass  # Going on
-            #     elif abs(el2[l]) < self.delta and abs(el1[l]) >= self.delta:
-            #         return False
-            #     elif abs(el1[l] - el2[l]) / abs(el2[l]) >= eps:
-            #         return False
         else:
             raise ValueError(f"Invalid types to compare: {str(type(el1))} and {str(type(el2))}")
 
