@@ -348,36 +348,40 @@ def print_input(conf_rep_plot, conf_task, w_list, file_name):
     with open(os.path.join(conf_rep_plot.fitter.out_path, file_name), "w") as finp:
         finp.write("task_type:\t\t"   f"{conf_task.fitter.task_type}\n")
         finp.write("iter_max:\t\t"   f"{conf_task.fitter.iter_max}\n")
-        finp.write("epsilon:\t\t"   f"{conf_task.fitter.epsilon:.1E}\n")
+        finp.write("epsilon:\t\t"   f"{conf_task.fitter.epsilon:.20E}\n") #.1E
 
         finp.write("nb:\t\t\t"   f"{conf_task.fitter.nb}\n")
         finp.write("wf_type:\t\t"   f"{conf_task.fitter.propagation.wf_type}\n")
 
         finp.write("impulses_number:\t"   f"{conf_task.fitter.impulses_number}\n")
-        finp.write("Em:\t\t\t"   f"{conf_task.fitter.Em}\n")
-        finp.write("E0:\t\t\t"   f"{conf_task.fitter.propagation.E0}\n")
-        finp.write("t0:\t\t\t"   f"{conf_task.fitter.propagation.t0}\n")
-        finp.write("sigma:\t\t\t"   f"{conf_task.fitter.propagation.sigma:.6E}\n")
-        finp.write("nu_L:\t\t\t"   f"{conf_task.fitter.propagation.nu_L:.6E}\n")
-        finp.write("h_lambda:\t\t"   f"{conf_task.fitter.h_lambda}\n")
+        finp.write("Em:\t\t\t"   f"{conf_task.fitter.Em:.20E}\n")
+        finp.write("E0:\t\t\t"   f"{conf_task.fitter.propagation.E0:.20E}\n")
+        finp.write("t0:\t\t\t"   f"{conf_task.fitter.propagation.t0:.20E}\n")
+        finp.write("sigma:\t\t\t"   f"{conf_task.fitter.propagation.sigma:.20E}\n") #.6E
+        finp.write("nu_L:\t\t\t"   f"{conf_task.fitter.propagation.nu_L:.20E}\n") #.6E
+        finp.write("h_lambda:\t\t"   f"{conf_task.fitter.h_lambda:.20E}\n")
         finp.write("init_guess:\t\t"   f"{conf_task.fitter.init_guess}\n")
         finp.write("init_guess_hf:\t\t"   f"{conf_task.fitter.init_guess_hf}\n")
-        finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos}\n")
-        finp.write("w_list:\t\t"   f"{conf_task.fitter.w_list}\n")
+        finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos:.20E}\n")
+        #finp.write("w_list:\t\t\t"   f"{conf_task.fitter.w_list}\n")
+        finp.write("w_list:\t\t\t\n")
+        for el in conf_task.fitter.w_list:
+            finp.write(f"\t\t\t{el:.20E}\n")
+
         finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
 
         finp.write("hamil_type:\t\t"   f"{conf_task.fitter.propagation.hamil_type}\n")
-        finp.write("U:\t\t\t"   f"{conf_task.fitter.propagation.U}\n")
-        finp.write("delta:\t\t\t"   f"{conf_task.fitter.propagation.delta}\n")
+        finp.write("U:\t\t\t"   f"{conf_task.fitter.propagation.U:.20E}\n")
+        finp.write("delta:\t\t\t"   f"{conf_task.fitter.propagation.delta:.20E}\n")
 
         finp.write("pot_type:\t\t"   f"{conf_task.fitter.propagation.pot_type}\n")
-        finp.write("Du:\t\t\t"   f"{conf_task.fitter.propagation.Du}\n")
+        finp.write("Du:\t\t\t"   f"{conf_task.fitter.propagation.Du:.20E}\n")
 
         finp.write("np:\t\t\t"   f"{conf_task.fitter.propagation.np}\n")
-        finp.write("L:\t\t\t"   f"{conf_task.fitter.propagation.L}\n")
+        finp.write("L:\t\t\t"   f"{conf_task.fitter.propagation.L:.20E}\n")
         finp.write("nch:\t\t\t"   f"{conf_task.fitter.propagation.nch}\n")
         finp.write("nt:\t\t\t"   f"{conf_task.fitter.propagation.nt}\n")
-        finp.write("T:\t\t\t"   f"{conf_task.fitter.propagation.T:.6E}\n")
+        finp.write("T:\t\t\t"   f"{conf_task.fitter.propagation.T:.20E}\n") #.6E
 
 
 def main(argv):
@@ -636,6 +640,13 @@ def main(argv):
         os.mkdir(conf_rep_plot.fitter.out_path)
 
     # with open(os.path.join(conf_rep_plot.fitter.out_path, "table_glob.txt"), "w") as fout:
+    #     w0 = conf_task.fitter.w_list[0]
+    #     w0_start = w0 / 2.0
+    #     w0_step = pow(2.0, 1.0 / 5.0)
+    #     w0_cur = w0_start
+    #     for step in range(10):
+    #         conf_task.fitter.w_list[0] = round(w0_cur, 2)
+
     #     T_ac = conf_task.fitter.propagation.T #conf_task.fitter.propagation.Du / phys_base.Hz_to_cm
     #     T_start = T_ac / 1.1
     #     T0_step = pow(1.1, 1.0 / 1000) #2 * T_ac / 800 #pow(1.01, 1.0 / 200)
@@ -665,8 +676,10 @@ def main(argv):
             #     lines = f.readlines()
             #     gc_cur = float(lines[-1].strip().split(" ")[-1])
             #
-            # fout.write(f"{step}    {T_cur:.6E}    {gc_cur}\n")
+            # fout.write(f"{step}    {w0_cur:.6E}    {gc_cur}\n")
             # fout.flush()
+            #
+            # w0_cur *= w0_step
             #
             # T_cur *= T0_step
 

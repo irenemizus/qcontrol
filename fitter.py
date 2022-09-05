@@ -209,7 +209,7 @@ class FittingSolver:
 
                 self.dyn.chi_tlist = [ chiT ]
 
-            self.dyn.chi_cur = self.dyn.chi_tList[0]
+            self.dyn.chi_cur = self.dyn.chi_tlist[0]
             init_psi_basis = chiT
             fin_psi_basis = self.psi_init_basis
             t_init = self.conf_fitter.propagation.T
@@ -611,7 +611,7 @@ class FittingSolver:
             else:
                 conf_prop = self.conf_fitter.propagation
 
-                chie_old_psig_new = math_base.cprod(self.dyn.chi_tList[conf_prop.nt - prop.dyn.l].psis[0].f[1],
+                chie_old_psig_new = math_base.cprod(self.dyn.chi_tlist[conf_prop.nt - prop.dyn.l].psis[0].f[1],
                                                     dyn.psi_omega.f[0],
                                                     stat.dx, conf_prop.np)
 
@@ -623,7 +623,7 @@ class FittingSolver:
             conf_prop = self.conf_fitter.propagation
             if prop.dyn.l == 0:
                 E = self.dyn.E_patched
-                chi_init = self.dyn.chi_tList[-1]
+                chi_init = self.dyn.chi_tlist[-1]
                 psi_init = self.psi_init_basis
                 self.a0 = 0.0
 
@@ -631,7 +631,7 @@ class FittingSolver:
                     for n in range(self.levels_number):
                         self.a0 += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], stat.dx, conf_prop.np)
             else:
-                chi_basis = self.dyn.chi_tList[-prop.dyn.l]
+                chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
                 psi_basis = self.dyn.psi_cur
                 sum = 0.0
 
@@ -649,7 +649,7 @@ class FittingSolver:
                 else:
                     h_lambda = self.conf_fitter.h_lambda
 
-                delta_E = - s * (self.a0 * sum).imag / self.conf_fitter.h_lambda
+                delta_E = - s * (self.a0 * sum).imag / h_lambda
 
 #                print(f"===== Got {delta_E}")
 #                if abs(self.TMP_delta_E) > abs(delta_E):
@@ -660,7 +660,7 @@ class FittingSolver:
                 if self.dyn.iter_step == 0:
                     E = E_init + delta_E
                 else:
-                    E = self.dyn.E_tList[prop.dyn.l] + delta_E
+                    E = self.dyn.E_tlist[prop.dyn.l] + delta_E
         else:
             E = self.dyn.E_patched
 
@@ -687,9 +687,9 @@ class FittingSolver:
                 E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma) * hf_part
             else:
                 if prop.dyn.l == 0:
-                    E = self.dyn.E_tList[-1]
+                    E = self.dyn.E_tlist[-1]
                 else:
-                    E = self.dyn.E_tList[-prop.dyn.l]
+                    E = self.dyn.E_tlist[-prop.dyn.l]
         else:
             E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma)
 
