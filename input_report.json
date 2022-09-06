@@ -1,7 +1,7 @@
 {
   "fitter": {
     "out_path": "output_ut",
-    "plotting_flag": "tables",
+    "plotting_flag": "all",
 
     "table.imin": -1,
     "table.imod_fileout": 1,

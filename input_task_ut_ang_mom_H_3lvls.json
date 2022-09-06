@@ -5,14 +5,14 @@
     "impulses_number": 1,
     "nb": 3,
     "iter_max": -1,
-    "h_lambda": 0.25E-3,
+    "h_lambda": 0.167E-4,
     "init_guess": "sqrsin",
     "init_guess_hf": "cos_set",
     "w_list": [
-      1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00
+      1.00, 1.00, 1.00, 1.00, 1.00
     ],
     "lf_aug_type": "z",
-    "pcos": 4,
+    "pcos": 3,
     "Em": 10,
     "propagation": {
       "pot_type": "none",
@@ -26,7 +26,7 @@
       "nch": 8,
       "~t0": 16.678E-14,
       "t0": 0.0,
-      "E0": 200.0,
+      "E0": 500.0,
       "nt": 3300,
       "T": 3.304143E-13,
       "~T": 35.35635E-14,
