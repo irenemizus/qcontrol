@@ -7,6 +7,7 @@
     "propagation": {
       "m": 0.5,
       "pot_type": "morse",
+      "hamil_type": "ntriv",
       "a": 1.0,
       "De": 20000,
       "x0p": 0.0,

@@ -4,13 +4,10 @@
     "epsilon": 1e-8,
     "impulses_number": 1,
     "nb": 2,
-    "iter_max": 430,
+    "iter_max": 0,
     "h_lambda": 0.005,
     "init_guess": "sqrsin",
-    "init_guess_hf": "cos_set",
-    "w_list_3.991": [
-      0.82, 0.6, 0.92, 0.67, 0.71, 0.66, 0.63
-    ],
+    "init_guess_hf": "cos",
     "w_list_3.997": [
       0.82, 0.17, 0.83, 0.92, 0.67, 0.24, 0.97
     ],
@@ -21,10 +18,10 @@
       1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00
     ],
     "w_list": [
-      0.88, 0.34, 0.92, 0.27, 0.39, 0.82, 0.68
+      1.00
     ],
     "lf_aug_type": "z",
-    "pcos": 4,
+    "pcos": 1,
     "Em": 5,
     "propagation": {
       "pot_type": "none",

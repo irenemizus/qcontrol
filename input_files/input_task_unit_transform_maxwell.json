@@ -6,9 +6,13 @@
     "iter_max": -1,
     "h_lambda": 0.5,
     "init_guess": "maxwell",
+    "init_guess_hf": "cos",
+    "pcos": 1,
+    "nb": 2,
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
+      "hamil_type": "two_levels",
       "np": 1,
       "L": 1.0,
       "nch": 64,

@@ -250,7 +250,7 @@ class TaskManager:
 
         if conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV:
             print("Non-trivial type of the Hamiltonian is used")
-            print("Number of 2-level basis vectors 'nb' = 1 is used")
+            print(f"Number of 2-level basis vectors 'nb' = {conf_fitter.nb} is used") # TODO: to transfer nlevs together with nb
             self.ntriv = 1
             if not conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP:
                 raise RuntimeError("For a non-trivial Hamiltonian an exponential high-frequency part of initial guess for the laser field has to be used!")

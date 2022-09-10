@@ -1,16 +1,15 @@
 {
   "fitter": {
     "task_type": "intuitive_control",
-    "k_E": 1e29,
-    "lamb": 4e14,
-    "pow": 0.8,
-    "epsilon": 1e-15,
     "impulses_number": 2,
     "delay": 600e-15,
     "init_guess": "gauss",
+    "init_guess_hf": "exp",
+    "nb": 1,
     "propagation": {
       "m": 0.5,
       "pot_type": "morse",
+      "hamil_type": "ntriv",
       "a": 1.0,
       "De": 20000,
       "x0p": -0.17,
@@ -18,8 +17,6 @@
       "De_e": 10000,
       "Du": 20000,
       "wf_type": "morse",
-      "x0": 0.0,
-      "p0": 0.0,
       "L": 5.0,
       "T": 1200e-15,
       "np": 1024,

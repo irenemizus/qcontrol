@@ -6,9 +6,13 @@
     "iter_max": -1,
     "h_lambda": 0.5,
     "init_guess": "sqrsin",
+    "init_guess_hf": "cos",
+    "pcos": 1,
+    "nb": 2,
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
+      "hamil_type": "two_levels",
       "np": 1,
       "L": 1.0,
       "nch": 64,
@@ -18,8 +22,7 @@
       "nt": 1500,
       "T": 33.35635E-13,
       "sigma": 66.7127E-13,
-      "nu_L": 0.299792458e13,
-      "~nu_L": 0.599586e13
+      "nu_L": 0.299792458e13
     },
     "mod_log": 500
   }
