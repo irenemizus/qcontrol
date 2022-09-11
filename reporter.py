@@ -2,9 +2,11 @@ import copy
 import pathlib
 import pprint
 import re
+from collections import UserDict, UserList
 
 # Disable the orca response timeout.
 from typing import List
+from typing import Dict
 
 #import plotly.io._orca
 import retrying
@@ -22,6 +24,59 @@ from tools import print_err
 
 import config
 
+
+class formattable_float_list(list):
+
+    def __init__(self, *args):
+        super().__init__(args)
+
+    def __format__(self, format_spec):
+        return f'[{", ".join(f"{i:{format_spec}}" for i in self)}]'
+
+
+# class formattable_float_dict(dict):
+#     def __init__(self, *args):
+#         super().__init__(args)
+#
+#     def __format__(self, format_spec):
+#         res = "{"
+#         for f in self.keys():
+#             res += f'"{f}":'
+#             if self[f] is formattable_float_list:
+#                 res += self[f].__format__(format_spec)
+#             else:
+#                 res += str(self[f])
+#         res += "}"
+#         return res
+#         #return f'[{", ".join(f"{i:{format_spec}}" for i in self)}]'
+
+
+# fl = FloatList(0.1, 0.33, 0.632)
+# print(f"{fl:.2f}")  # [0.10, 0.33, 0.63]
+
+def templateSubst(templateFilename: str, substs: Dict[str, str]):
+    template_path = pathlib.Path(templateFilename).parent
+
+    with open(templateFilename, "r") as f:
+        template = f.read()
+
+    inst = template
+    for key in substs.keys():
+        inst = inst.replace(key, substs[key])
+
+    incls = []
+    prog = re.compile('{{INCLUDE:(.+)}}')
+    res = prog.finditer(template)
+    if res:
+        for r in res:
+            incls.append(r.group(1))
+
+    for el in incls:
+        with open(os.path.join(template_path, el), 'r') as fi:
+            tempi = fi.read()
+            inst = inst.replace('{{INCLUDE:' + el + '}}', tempi)
+
+    return inst
 
 class PropagationReporter:
     def __init__(self, out_path: str, nlvls: int):
@@ -593,47 +648,40 @@ class PlotFitterReporter(FitterReporter):
             K_all += 1
 
         template: str
-
         template_name = "report_templates/chart.template.html"
 
-        template_path = pathlib.Path(template_name).parent
+        xx_list = formattable_float_list()
+        xx_list.extend(E_filt[-1]["t"][0::5])
 
-        with open(template_name, "r") as f:
-            template = f.read()
-
-        inst = template\
-            .replace("{{TITLE}}", "\"" + title_plot + "\"") \
-            .replace("{{X_TITLE}}", "\"time\"") \
-            .replace("{{Y_TITLE}}", "\"" + title_y + "\"") \
-            .replace("{{T_TITLE}}", "\"iteration #\"")
-
-        incls = []
-        i = 0
-        prog = re.compile('{{INCLUDE:(.+)}}')
-        res = prog.finditer(template)
-        if res:
-            i += 1
-            for r in res:
-                incls.append(r.group(1))
-
-        for el in incls:
-            with open(os.path.join(template_path, el), 'r') as fi:
-                tempi = fi.read()
-                inst = inst.replace('{{INCLUDE:' + el + '}}', tempi)
-
-        xx_list = E_filt[-1]["t"][0::5] # list(filter(lambda x: x % 5 == 0, E_filt[-1]["t"]))
-
-        yyy_list = []
+        yyy_list_str = []
         for i in reversed(E_filt):
+            formattable = formattable_float_list()
+            formattable.extend(E_filt[i]['y'][0::5])
+            formatted = "{:.3e}".format(formattable)
+            yyy_list_str.append(
+                '{' + f" \"t\": {str(i)}, \"values\": {formatted}, \"pointRadius\": 0 " + '}'
+            )
 
-            yyy_list.append({
-                "t": str(i),
-                "values": E_filt[i]['y'][0::5], #list(filter(lambda x: x % 5 == 0, E_filt[i]['y']))
-                "pointRadius": 0
-            })
+        xx_list_str = str.format(f"{xx_list:.4e}")
+        substs = {
+            "{{TITLE}}":    "\"" + title_plot + "\"",
+            "{{X_TITLE}}":  "\"time, fs\"",
+            "{{Y_TITLE}}":  "\"" + title_y + "\"",
+            "{{T_TITLE}}":  "\"iteration #\"",
+            "{{XX_LIST}}":  xx_list_str,
+            "{{YYY_LIST}}": "[ " + ", ".join(yyy_list_str) + " ]"
+        }
 
-        inst = inst.replace("{{XX_LIST}}", pprint.pformat(xx_list)) \
-                   .replace("{{YYY_LIST}}", pprint.pformat(yyy_list))
+        inst = templateSubst(template_name, substs)
+
+        # inst = template \
+        #     .replace("{{TITLE}}", "\"" + title_plot + "\"") \
+        #     .replace("{{X_TITLE}}", "\"time\"") \
+        #     .replace("{{Y_TITLE}}", "\"" + title_y + "\"") \
+        #     .replace("{{T_TITLE}}", "\"iteration #\"")
+
+        # inst = inst.replace("{{XX_LIST}}", pprint.pformat(xx_list)) \
+        #            .replace("{{YYY_LIST}}", pprint.pformat(yyy_list))
 
         with open(plot_name, "w") as f:
             f.write(inst)
@@ -708,7 +756,7 @@ class PlotFitterReporter(FitterReporter):
         # Updating the graph for E_abs
         self.__plot_iter_time_update_graph(self.E_abs, self.conf.inumber_plotout,
                                  "Absolute value of the laser field envelope",
-                                 "abs(E)", os.path.join(self.conf.out_path, self.conf.gr_iter_E))
+                                 "abs(E), 1 / cm", os.path.join(self.conf.out_path, self.conf.gr_iter_E))
 
 
     def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, nt):
