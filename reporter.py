@@ -1,18 +1,21 @@
 import copy
+import pathlib
+import pprint
+import re
 
 # Disable the orca response timeout.
 from typing import List
 
-import plotly.io._orca
+#import plotly.io._orca
 import retrying
 
 from psi_basis import Psi
 
-unwrapped = plotly.io._orca.request_image_with_retrying.__wrapped__
-wrapped = retrying.retry(wait_random_min=1000)(unwrapped)
-plotly.io._orca.request_image_with_retrying = wrapped
+# unwrapped = plotly.io._orca.request_image_with_retrying.__wrapped__
+# wrapped = retrying.retry(wait_random_min=1000)(unwrapped)
+# plotly.io._orca.request_image_with_retrying = wrapped
 
-import plotly.graph_objects as go
+#import plotly.graph_objects as go
 import os.path
 
 from tools import print_err
@@ -41,9 +44,9 @@ class TablePropagationReporter(PropagationReporter):
                  conf: config.ReportRootConfiguration.ReportFitterConfiguration.ReportTablePropagationConfiguration):
         super().__init__(out_path=out_path, nlvls=nlvls)
         self.conf = conf
-        self.f_abs = [None] * nlvls
-        self.f_real = [None] * nlvls
-        self.f_prop = [None] * nlvls
+        self.f_abs = [list() for i in range(nlvls)]
+        self.f_real = [list() for i in range(nlvls)]
+        self.f_prop = [list() for i in range(nlvls)]
         self.f_fit = None
 
     @staticmethod
@@ -151,10 +154,10 @@ class PlotPropagationReporter(PropagationReporter):
         self.x_list = []
 
         # X = Time
-        self.x_list = [[] for i in range(self._nlvls)]
-        self.x2_list = [[] for i in range(self._nlvls)]
-        self.p_list = [[] for i in range(self._nlvls)]
-        self.p2_list = [[] for i in range(self._nlvls)]
+        self.x_list = [list() for i in range(self._nlvls)]
+        self.x2_list = [list() for i in range(self._nlvls)]
+        self.p_list = [list() for i in range(self._nlvls)]
+        self.p2_list = [list() for i in range(self._nlvls)]
 
         self.ener_list = []
         self.overlp0_list = []
@@ -182,137 +185,141 @@ class PlotPropagationReporter(PropagationReporter):
 
     @staticmethod
     def __plot_update_graph(psi, numb_plotout, title_plot, title_y, plot_name):
-        fig = go.Figure()
-
-        # Filtering the curves
-        psi_filt = {}
-
-        len_abs = len(psi)
-        mod_plotoutput = len_abs / (numb_plotout - 1) # we have the initial plots, as well
-        if mod_plotoutput == 0: mod_plotoutput = 1
-        k_filt = -1
-        K_all = 0
-        for el in psi:
-            new_k = round(K_all / mod_plotoutput)
-            if new_k > k_filt:
-                psi_filt[el] = psi[el]
-            k_filt = new_k
-            K_all += 1
-
-        for t in psi_filt:
-            sc = go.Scatter(x=psi_filt[t]['x'], y=psi_filt[t]['y'], name = str(t), mode="lines")
-            fig.add_trace(sc)  # , row=1, col=1
-
-            fig.update_layout(
-                title={
-                    'text': title_plot,
-                    'y': 0.9,
-                    'x': 0.5,
-                    'xanchor': 'center',
-                    'yanchor': 'top'
-                },
-                xaxis_title={
-                    'text': 'x'
-                },
-                yaxis_title={
-                    'text': title_y
-                }
-            )
-
-        fig.write_image(plot_name)
+        # fig = go.Figure()
+        #
+        # # Filtering the curves
+        # psi_filt = {}
+        #
+        # len_abs = len(psi)
+        # mod_plotoutput = len_abs / (numb_plotout - 1) # we have the initial plots, as well
+        # if mod_plotoutput == 0: mod_plotoutput = 1
+        # k_filt = -1
+        # K_all = 0
+        # for el in psi:
+        #     new_k = round(K_all / mod_plotoutput)
+        #     if new_k > k_filt:
+        #         psi_filt[el] = psi[el]
+        #     k_filt = new_k
+        #     K_all += 1
+        #
+        # for t in psi_filt:
+        #     sc = go.Scatter(x=psi_filt[t]['x'], y=psi_filt[t]['y'], name = str(t), mode="lines")
+        #     fig.add_trace(sc)  # , row=1, col=1
+        #
+        #     fig.update_layout(
+        #         title={
+        #             'text': title_plot,
+        #             'y': 0.9,
+        #             'x': 0.5,
+        #             'xanchor': 'center',
+        #             'yanchor': 'top'
+        #         },
+        #         xaxis_title={
+        #             'text': 'x'
+        #         },
+        #         yaxis_title={
+        #             'text': title_y
+        #         }
+        #     )
+        #
+        # fig.write_image(plot_name)
+        pass
 
 
     @staticmethod
     def __plot_moms_update_graph(t_list, moms_list, namem, title_plot, title_y, plot_name):
-        fig_mom = go.Figure()
-
-        sc_x = go.Scatter(x=t_list, y=moms_list[0], name=namem[0], mode="lines")
-        sc_x2 = go.Scatter(x=t_list, y=moms_list[1], name=namem[1], mode="lines")
-        sc_p = go.Scatter(x=t_list, y=moms_list[2], name=namem[2], mode="lines")
-
-        fig_mom.add_trace(sc_x)
-        fig_mom.add_trace(sc_x2)
-        fig_mom.add_trace(sc_p)
-
-        if len(moms_list) == 4:
-            sc_p2 = go.Scatter(x=t_list, y=moms_list[3], name=namem[3], mode="lines")
-            fig_mom.add_trace(sc_p2)
-
-        fig_mom.update_layout(
-            title={
-                'text': title_plot,
-                'y': 0.9,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            xaxis_title={
-                'text': 'time'
-            },
-            yaxis_title={
-                'text': title_y
-            }
-        )
-
-        fig_mom.write_image(plot_name)
+        # fig_mom = go.Figure()
+        #
+        # sc_x = go.Scatter(x=t_list, y=moms_list[0], name=namem[0], mode="lines")
+        # sc_x2 = go.Scatter(x=t_list, y=moms_list[1], name=namem[1], mode="lines")
+        # sc_p = go.Scatter(x=t_list, y=moms_list[2], name=namem[2], mode="lines")
+        #
+        # fig_mom.add_trace(sc_x)
+        # fig_mom.add_trace(sc_x2)
+        # fig_mom.add_trace(sc_p)
+        #
+        # if len(moms_list) == 4:
+        #     sc_p2 = go.Scatter(x=t_list, y=moms_list[3], name=namem[3], mode="lines")
+        #     fig_mom.add_trace(sc_p2)
+        #
+        # fig_mom.update_layout(
+        #     title={
+        #         'text': title_plot,
+        #         'y': 0.9,
+        #         'x': 0.5,
+        #         'xanchor': 'center',
+        #         'yanchor': 'top'
+        #     },
+        #     xaxis_title={
+        #         'text': 'time'
+        #     },
+        #     yaxis_title={
+        #         'text': title_y
+        #     }
+        # )
+        #
+        # fig_mom.write_image(plot_name)
+        pass
 
 
     @staticmethod
     def __plot_tvals_update_graph(t_list, val_list, title_plot, title_y, plot_name):
-        fig = go.Figure()
-
-        sc = go.Scatter(x=t_list, y=val_list, mode="lines")
-        fig.add_trace(sc)
-
-        fig.update_layout(
-            title={
-                'text': title_plot,
-                'y': 0.9,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            xaxis_title={
-                'text': 'time'
-            },
-            yaxis_title={
-                'text': title_y
-            }
-        )
-
-        fig.write_image(plot_name)
+        # fig = go.Figure()
+        #
+        # sc = go.Scatter(x=t_list, y=val_list, mode="lines")
+        # fig.add_trace(sc)
+        #
+        # fig.update_layout(
+        #     title={
+        #         'text': title_plot,
+        #         'y': 0.9,
+        #         'x': 0.5,
+        #         'xanchor': 'center',
+        #         'yanchor': 'top'
+        #     },
+        #     xaxis_title={
+        #         'text': 'time'
+        #     },
+        #     yaxis_title={
+        #         'text': title_y
+        #     }
+        # )
+        #
+        # fig.write_image(plot_name)
+        pass
 
 
     @staticmethod
     def __plot_tvals_mult_update_graph(t_list, vals_list, nlvls, title_plot, title_y, plot_name):
-        fig_vals = go.Figure()
-
-        vals_t_list = [[0.0] * len(t_list) for i in range(nlvls)]
-        for nt in range(len(t_list)):
-            for n in range(nlvls):
-                vals_t_list[n][nt] = vals_list[nt][n]
-
-        for n in range(nlvls):
-            sc = go.Scatter(x=t_list, y=vals_t_list[n], name="level #" + str(n), mode="lines")
-            fig_vals.add_trace(sc)
-
-        fig_vals.update_layout(
-            title={
-                'text': title_plot,
-                'y': 0.9,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            xaxis_title={
-                'text': 'time'
-            },
-            yaxis_title={
-                'text': title_y
-            }
-        )
-
-        fig_vals.write_image(plot_name)
+        # fig_vals = go.Figure()
+        #
+        # vals_t_list = [[0.0] * len(t_list) for i in range(nlvls)]
+        # for nt in range(len(t_list)):
+        #     for n in range(nlvls):
+        #         vals_t_list[n][nt] = vals_list[nt][n]
+        #
+        # for n in range(nlvls):
+        #     sc = go.Scatter(x=t_list, y=vals_t_list[n], name="level #" + str(n), mode="lines")
+        #     fig_vals.add_trace(sc)
+        #
+        # fig_vals.update_layout(
+        #     title={
+        #         'text': title_plot,
+        #         'y': 0.9,
+        #         'x': 0.5,
+        #         'xanchor': 'center',
+        #         'yanchor': 'top'
+        #     },
+        #     xaxis_title={
+        #         'text': 'time'
+        #     },
+        #     yaxis_title={
+        #         'text': title_y
+        #     }
+        # )
+        #
+        # fig_vals.write_image(plot_name)
+        pass
 
 
     def plot(self, psi:Psi, t, x, np, n):
@@ -568,7 +575,7 @@ class PlotFitterReporter(FitterReporter):
 
     @staticmethod
     def __plot_iter_time_update_graph(E_tlist, numb_plotout, title_plot, title_y, plot_name):
-        fig = go.Figure()
+        #fig = go.Figure()
 
         # Filtering the curves
         E_filt = {}
@@ -585,52 +592,99 @@ class PlotFitterReporter(FitterReporter):
             k_filt = new_k
             K_all += 1
 
-        for i in E_filt:
-            sc = go.Scatter(x=E_filt[i]['t'], y=E_filt[i]['y'], name = str(i), mode="lines")
-            fig.add_trace(sc)  # , row=1, col=1
+        template: str
 
-            fig.update_layout(
-                title={
-                    'text': title_plot,
-                    'y': 0.9,
-                    'x': 0.5,
-                    'xanchor': 'center',
-                    'yanchor': 'top'
-                },
-                xaxis_title={
-                    'text': 'time'
-                },
-                yaxis_title={
-                    'text': title_y
-                }
-            )
+        template_name = "report_templates/chart.template.html"
 
-        fig.write_image(plot_name)
+        template_path = pathlib.Path(template_name).parent
+
+        with open(template_name, "r") as f:
+            template = f.read()
+
+        inst = template\
+            .replace("{{TITLE}}", "\"" + title_plot + "\"") \
+            .replace("{{X_TITLE}}", "\"time\"") \
+            .replace("{{Y_TITLE}}", "\"" + title_y + "\"") \
+            .replace("{{T_TITLE}}", "\"iteration #\"")
+
+        incls = []
+        i = 0
+        prog = re.compile('{{INCLUDE:(.+)}}')
+        res = prog.finditer(template)
+        if res:
+            i += 1
+            for r in res:
+                incls.append(r.group(1))
+
+        for el in incls:
+            with open(os.path.join(template_path, el), 'r') as fi:
+                tempi = fi.read()
+                inst = inst.replace('{{INCLUDE:' + el + '}}', tempi)
+
+        xx_list = E_filt[-1]["t"][0::5] # list(filter(lambda x: x % 5 == 0, E_filt[-1]["t"]))
+
+        yyy_list = []
+        for i in reversed(E_filt):
+
+            yyy_list.append({
+                "t": str(i),
+                "values": E_filt[i]['y'][0::5], #list(filter(lambda x: x % 5 == 0, E_filt[i]['y']))
+                "pointRadius": 0
+            })
+
+        inst = inst.replace("{{XX_LIST}}", pprint.pformat(xx_list)) \
+                   .replace("{{YYY_LIST}}", pprint.pformat(yyy_list))
+
+        with open(plot_name, "w") as f:
+            f.write(inst)
+
+        # for i in E_filt:
+        #     sc = go.Scatter(x=E_filt[i]['t'], y=E_filt[i]['y'], name = str(i), mode="lines")
+        #     fig.add_trace(sc)  # , row=1, col=1
+        #
+        #     fig.update_layout(
+        #         title={
+        #             'text': title_plot,
+        #             'y': 0.9,
+        #             'x': 0.5,
+        #             'xanchor': 'center',
+        #             'yanchor': 'top'
+        #         },
+        #         xaxis_title={
+        #             'text': 'time'
+        #         },
+        #         yaxis_title={
+        #             'text': title_y
+        #         }
+        #     )
+        #
+        # fig.write_image(plot_name)
 
     @staticmethod
     def __plot_iter_update_graph(i_list, val_list, title_plot, title_y, plot_name):
-        fig = go.Figure()
-
-        sc = go.Scatter(x=i_list, y=val_list, mode="lines")
-        fig.add_trace(sc)
-
-        fig.update_layout(
-            title={
-                'text': title_plot,
-                'y': 0.9,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            xaxis_title={
-                'text': 'Iteration'
-            },
-            yaxis_title={
-                'text': title_y
-            }
-        )
-
-        fig.write_image(plot_name)
+        # fig = go.Figure()
+        #
+        # sc = go.Scatter(x=i_list, y=val_list, mode="lines")
+        # fig.add_trace(sc)
+        #
+        # fig.update_layout(
+        #     title={
+        #         'text': title_plot,
+        #         'y': 0.9,
+        #         'x': 0.5,
+        #         'xanchor': 'center',
+        #         'yanchor': 'top'
+        #     },
+        #     xaxis_title={
+        #         'text': 'Iteration'
+        #     },
+        #     yaxis_title={
+        #         'text': title_y
+        #     }
+        # )
+        #
+        # fig.write_image(plot_name)
+        pass
 
 
     def plot_fitter(self, iter, goal_close, Fsm):

@@ -300,7 +300,7 @@ class fitter_Tests(unittest.TestCase):
                                               task_manager_imp.pot, task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        #fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
@@ -518,14 +518,14 @@ class fitter_Tests(unittest.TestCase):
                                               task_manager_imp.pot, task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_int_ctrl_.py")
-        prop_reporter.print_all("test_data/prop_int_ctrl_.py", "test_data/fitter_int_ctrl_.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_int_ctrl_.py")
+        #prop_reporter.print_all("test_data/prop_int_ctrl_.py", "test_data/fitter_int_ctrl_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -630,14 +630,14 @@ class fitter_Tests(unittest.TestCase):
                                               task_manager_imp.pot, task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_pop_.py")
-        prop_reporter.print_all("test_data/prop_loc_ctrl_pop_.py", "test_data/fitter_loc_ctrl_pop_.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_pop_.py")
+        #prop_reporter.print_all("test_data/prop_loc_ctrl_pop_.py", "test_data/fitter_loc_ctrl_pop_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -742,14 +742,14 @@ class fitter_Tests(unittest.TestCase):
                                               task_manager_imp.pot, task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_proj_.py")
-        prop_reporter.print_all("test_data/prop_loc_ctrl_proj_.py", "test_data/fitter_loc_ctrl_proj_.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_loc_ctrl_proj_.py")
+        #prop_reporter.print_all("test_data/prop_loc_ctrl_proj_.py", "test_data/fitter_loc_ctrl_proj_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -855,14 +855,14 @@ class fitter_Tests(unittest.TestCase):
                                               task_manager_imp.pot, task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot_.py")
-        prop_reporter.print_all("test_data/prop_opt_ctrl_krot_.py", "test_data/fitter_opt_ctrl_krot_.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_krot_.py")
+        #prop_reporter.print_all("test_data/prop_opt_ctrl_krot_.py", "test_data/fitter_opt_ctrl_krot_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -963,14 +963,14 @@ class fitter_Tests(unittest.TestCase):
                                               task_manager_imp.pot, task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_ut_H1_.py")
-        prop_reporter.print_all("test_data/prop_opt_ctrl_ut_H1_.py", "test_data/fitter_opt_ctrl_ut_H1_.py")
+        #fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_ut_H1_.py")
+        #prop_reporter.print_all("test_data/prop_opt_ctrl_ut_H1_.py", "test_data/fitter_opt_ctrl_ut_H1_.py")
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -995,11 +995,3 @@ class fitter_Tests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-     # psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.0001, 0.0001), 1.e-51)
-     # tvals_prop_comparer = TableComparer((0.0001, 0.02, 0.001, 0.0001, 0.00001,
-     #                                      0.000001, complex(0.001, 0.001), complex(0.001, 0.001),
-     #                                      0.0001, 0.0001), 1.e-51)
-     # for n in range(2):
-     #     psi_prop_comparer.compare(test_data.prop_single_harm.psi_tabs[n], test_data.prop_single_harm_.psi_tabs[n])
-     #     tvals_prop_comparer.compare(test_data.prop_single_harm.prop_tabs[n], test_data.prop_single_harm_.prop_tabs[n])

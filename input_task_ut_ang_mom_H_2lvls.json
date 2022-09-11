@@ -4,7 +4,7 @@
     "epsilon": 1e-8,
     "impulses_number": 1,
     "nb": 2,
-    "iter_max": 0,
+    "iter_max": 500,
     "h_lambda": 0.005,
     "init_guess": "sqrsin",
     "init_guess_hf": "cos_set",

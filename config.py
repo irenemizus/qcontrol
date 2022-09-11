@@ -351,7 +351,7 @@ class ReportRootConfiguration(ConfigurationBase):
             self._data["imod_plotout"] = 1
             self._data["inumber_plotout"] = 15
             self._data["gr_iter"] = "fig_iter.pdf"
-            self._data["gr_iter_E"] = "fig_iter_E.pdf"
+            self._data["gr_iter_E"] = "fig_iter_E.html"
             self._data["gr_iter_F"] = "fig_iter_F.pdf"
 
 class ReportTableRootConfiguration(ReportRootConfiguration):

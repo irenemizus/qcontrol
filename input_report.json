@@ -1,7 +1,7 @@
 {
   "fitter": {
     "out_path": "output_ut",
-    "plotting_flag": "tables",
+    "plotting_flag": "all",
 
     "table.imin": -1,
     "table.imod_fileout": 1,
@@ -12,7 +12,7 @@
     "plot.imod_plotout": 1,
     "plot.inumber_plotout": 15,
     "plot.gr_iter": "fig_iter_goal.pdf",
-    "plot.gr_iter_E": "fig_gr_iter_E.pdf",
+    "plot.gr_iter_E": "fig_gr_iter_E.html",
     "plot.gr_iter_F": "fig_gr_iter_F.pdf",
 
     "propagation": {
