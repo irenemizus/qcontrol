@@ -1,27 +1,14 @@
 import copy
 import pathlib
-import pprint
 import re
-from collections import UserDict, UserList
-
-# Disable the orca response timeout.
-from typing import List
-from typing import Dict
-
-#import plotly.io._orca
-import retrying
-
-from psi_basis import Psi
-
-# unwrapped = plotly.io._orca.request_image_with_retrying.__wrapped__
-# wrapped = retrying.retry(wait_random_min=1000)(unwrapped)
-# plotly.io._orca.request_image_with_retrying = wrapped
-
-#import plotly.graph_objects as go
 import os.path
 
-from tools import print_err
+from typing import List
+from typing import Dict
+from typing.io import TextIO
 
+from psi_basis import Psi
+from tools import print_err
 import config
 
 
@@ -32,27 +19,6 @@ class formattable_float_list(list):
 
     def __format__(self, format_spec):
         return f'[{", ".join(f"{i:{format_spec}}" for i in self)}]'
-
-
-# class formattable_float_dict(dict):
-#     def __init__(self, *args):
-#         super().__init__(args)
-#
-#     def __format__(self, format_spec):
-#         res = "{"
-#         for f in self.keys():
-#             res += f'"{f}":'
-#             if self[f] is formattable_float_list:
-#                 res += self[f].__format__(format_spec)
-#             else:
-#                 res += str(self[f])
-#         res += "}"
-#         return res
-#         #return f'[{", ".join(f"{i:{format_spec}}" for i in self)}]'
-
-
-# fl = FloatList(0.1, 0.33, 0.632)
-# print(f"{fl:.2f}")  # [0.10, 0.33, 0.63]
 
 def templateSubst(templateFilename: str, substs: Dict[str, str]):
     template_path = pathlib.Path(templateFilename).parent
@@ -99,9 +65,9 @@ class TablePropagationReporter(PropagationReporter):
                  conf: config.ReportRootConfiguration.ReportFitterConfiguration.ReportTablePropagationConfiguration):
         super().__init__(out_path=out_path, nlvls=nlvls)
         self.conf = conf
-        self.f_abs = [list() for i in range(nlvls)]
-        self.f_real = [list() for i in range(nlvls)]
-        self.f_prop = [list() for i in range(nlvls)]
+        self.f_abs: List[TextIO] = [TextIO() for i in range(nlvls)]
+        self.f_real: List[TextIO] = [TextIO() for i in range(nlvls)]
+        self.f_prop: List[TextIO] = [TextIO() for i in range(nlvls)]
         self.f_fit = None
 
     @staticmethod
@@ -112,6 +78,7 @@ class TablePropagationReporter(PropagationReporter):
         if not os.path.exists(self._out_path):
             os.mkdir(self._out_path)
 
+        n: int
         for n in range(self._nlvls):
             self.f_abs[n] = open(os.path.join(self._out_path, self.name_template(self.conf.tab_abs, n)), 'w')
             self.f_real[n] = open(os.path.join(self._out_path, self.name_template(self.conf.tab_real, n)), 'w')
@@ -119,18 +86,16 @@ class TablePropagationReporter(PropagationReporter):
         self.f_fit = open(os.path.join(self._out_path, self.conf.tab_tvals_fit), 'w')
         return self
 
-
     def close(self):
         for n in range(self._nlvls):
             self.f_abs[n].close()
-            self.f_abs[n] = None
+            self.f_abs[n] = TextIO()
             self.f_real[n].close()
-            self.f_real[n] = None
+            self.f_real[n] = TextIO()
             self.f_prop[n].close()
-            self.f_prop[n] = None
+            self.f_prop[n] = TextIO()
         self.f_fit.close()
         self.f_fit = None
-
 
     @staticmethod
     def __plot_file(psi, t, x, np, f_abs, f_real):
@@ -141,7 +106,6 @@ class TablePropagationReporter(PropagationReporter):
             f_abs.flush()
             f_real.flush()
 
-
     @staticmethod
     def __plot_t_file_prop(t, momx, momx2, momp, momp2, ener, overlp0, overlpf, psi_max_abs, psi_max_real, file_prop):
         """ Plots expectation values of the current x, x*x, p and p*p, and other values,
@@ -150,7 +114,6 @@ class TablePropagationReporter(PropagationReporter):
             t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener.real, abs(overlp0), abs(overlpf), psi_max_abs,
             psi_max_real))
         file_prop.flush()
-
 
     @staticmethod
     def __plot_t_file_fitter(t, E, freq_mult, ener_tot, overlp_tot, file_fit):
@@ -170,7 +133,6 @@ class TablePropagationReporter(PropagationReporter):
     def plot_fitter(self, t, E, freq_mult, ener_tot, overlp_tot):
         self.__plot_t_file_fitter(t, E, freq_mult, ener_tot, overlp_tot, self.f_fit)
 
-
     @staticmethod
     def __plot_test_file(l, phi_l, phi_u, f):
         f.write("Step number: {0}\n".format(l))
@@ -180,7 +142,6 @@ class TablePropagationReporter(PropagationReporter):
         f.write("Upper state wavefunction:")
         for i in range(len(phi_u)):
             f.write("{0}\n".format(phi_u[i]))
-
 
     def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_real, E, freq_mult):
@@ -237,145 +198,149 @@ class PlotPropagationReporter(PropagationReporter):
     def close(self):
         pass
 
-
     @staticmethod
     def __plot_update_graph(psi, numb_plotout, title_plot, title_y, plot_name):
-        # fig = go.Figure()
-        #
-        # # Filtering the curves
-        # psi_filt = {}
-        #
-        # len_abs = len(psi)
-        # mod_plotoutput = len_abs / (numb_plotout - 1) # we have the initial plots, as well
-        # if mod_plotoutput == 0: mod_plotoutput = 1
-        # k_filt = -1
-        # K_all = 0
-        # for el in psi:
-        #     new_k = round(K_all / mod_plotoutput)
-        #     if new_k > k_filt:
-        #         psi_filt[el] = psi[el]
-        #     k_filt = new_k
-        #     K_all += 1
-        #
-        # for t in psi_filt:
-        #     sc = go.Scatter(x=psi_filt[t]['x'], y=psi_filt[t]['y'], name = str(t), mode="lines")
-        #     fig.add_trace(sc)  # , row=1, col=1
-        #
-        #     fig.update_layout(
-        #         title={
-        #             'text': title_plot,
-        #             'y': 0.9,
-        #             'x': 0.5,
-        #             'xanchor': 'center',
-        #             'yanchor': 'top'
-        #         },
-        #         xaxis_title={
-        #             'text': 'x'
-        #         },
-        #         yaxis_title={
-        #             'text': title_y
-        #         }
-        #     )
-        #
-        # fig.write_image(plot_name)
-        pass
+        # Filtering the curves
+        psi_filt = {}
 
+        len_abs = len(psi)
+        mod_plotoutput = len_abs / (numb_plotout - 1) # we have the initial plots, as well
+        if mod_plotoutput == 0: mod_plotoutput = 1
+        k_filt = -1
+        K_all = 0
+        for el in psi:
+            new_k = round(K_all / mod_plotoutput)
+            if new_k > k_filt:
+                psi_filt[el] = psi[el]
+            k_filt = new_k
+            K_all += 1
+
+        template: str
+        template_name = "report_templates/chart.template.html"
+
+        xx_list = formattable_float_list()
+
+        yyy_list_str = []
+        for i in reversed(psi_filt):
+            if len(xx_list) == 0:
+                xx_list.extend(psi_filt[i]['x'][0::2])
+
+            formattable = formattable_float_list()
+            formattable.extend(psi_filt[i]['y'][0::2])
+            formatted = "{:.4f}".format(formattable)
+            ifs = i * 1e+15
+            yyy_list_str.append(
+                '{' + f" \"t\": {ifs:.2f}, \"values\": {formatted}, \"pointRadius\": 0 " + '}'
+            )
+
+        xx_list_str = str.format(f"{xx_list:.2f}")
+        substs = {
+            "{{TITLE}}":    "\"" + title_plot + "\"",
+            "{{X_TITLE}}":  "\"x\"",
+            "{{Y_TITLE}}":  "\"" + title_y + "\"",
+            "{{T_TITLE}}":  "\"t(fs) = \"",
+            "{{XX_LIST}}":  xx_list_str,
+            "{{YYY_LIST}}": "[ " + ", ".join(yyy_list_str) + " ]"
+        }
+
+        inst = templateSubst(template_name, substs)
+
+        with open(plot_name, "w") as f:
+            f.write(inst)
 
     @staticmethod
     def __plot_moms_update_graph(t_list, moms_list, namem, title_plot, title_y, plot_name):
-        # fig_mom = go.Figure()
-        #
-        # sc_x = go.Scatter(x=t_list, y=moms_list[0], name=namem[0], mode="lines")
-        # sc_x2 = go.Scatter(x=t_list, y=moms_list[1], name=namem[1], mode="lines")
-        # sc_p = go.Scatter(x=t_list, y=moms_list[2], name=namem[2], mode="lines")
-        #
-        # fig_mom.add_trace(sc_x)
-        # fig_mom.add_trace(sc_x2)
-        # fig_mom.add_trace(sc_p)
-        #
-        # if len(moms_list) == 4:
-        #     sc_p2 = go.Scatter(x=t_list, y=moms_list[3], name=namem[3], mode="lines")
-        #     fig_mom.add_trace(sc_p2)
-        #
-        # fig_mom.update_layout(
-        #     title={
-        #         'text': title_plot,
-        #         'y': 0.9,
-        #         'x': 0.5,
-        #         'xanchor': 'center',
-        #         'yanchor': 'top'
-        #     },
-        #     xaxis_title={
-        #         'text': 'time'
-        #     },
-        #     yaxis_title={
-        #         'text': title_y
-        #     }
-        # )
-        #
-        # fig_mom.write_image(plot_name)
-        pass
+        template: str
+        template_name = "report_templates/chart.template.html"
 
+        xx_list = formattable_float_list()
+        xx_list.extend([x * 1e+15 for x in t_list[0::2]])
+
+        yyy_list_str = []
+        for i in range(len(moms_list)):
+            yyy_list = formattable_float_list()
+            yyy_list.extend(moms_list[i][0::2])
+            yyy_list_sf = str.format(f"{yyy_list:.4f}")
+            yyy_list_str.append(
+                '{' + f" \"t\": \"{namem[i]}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
+            )
+        substs = {
+            "{{TITLE}}":    "\"" + title_plot + "\"",
+            "{{X_TITLE}}":  "\"time, fs\"",
+            "{{Y_TITLE}}":  "\"" + title_y + "\"",
+            "{{T_TITLE}}":  "\"\"",
+            "{{XX_LIST}}":  str.format(f"{xx_list:.2f}"),
+            "{{YYY_LIST}}": "[ " + ", ".join(yyy_list_str) + " ]"
+        }
+
+        inst = templateSubst(template_name, substs)
+
+        with open(plot_name, "w") as f:
+            f.write(inst)
 
     @staticmethod
     def __plot_tvals_update_graph(t_list, val_list, title_plot, title_y, plot_name):
-        # fig = go.Figure()
-        #
-        # sc = go.Scatter(x=t_list, y=val_list, mode="lines")
-        # fig.add_trace(sc)
-        #
-        # fig.update_layout(
-        #     title={
-        #         'text': title_plot,
-        #         'y': 0.9,
-        #         'x': 0.5,
-        #         'xanchor': 'center',
-        #         'yanchor': 'top'
-        #     },
-        #     xaxis_title={
-        #         'text': 'time'
-        #     },
-        #     yaxis_title={
-        #         'text': title_y
-        #     }
-        # )
-        #
-        # fig.write_image(plot_name)
-        pass
+        template: str
+        template_name = "report_templates/chart.template.html"
 
+        xx_list = formattable_float_list()
+        xx_list.extend([x * 1e+15 for x in t_list[0::2]])
+
+        yyy_list_str = []
+        yyy_list = formattable_float_list()
+        yyy_list.extend(val_list)
+        yyy_list_sf = str.format(f"{yyy_list:.4f}")
+        yyy_list_str.append(
+            '{' + f" \"t\": \"{title_y}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
+        )
+        substs = {
+            "{{TITLE}}":    "\"" + title_plot + "\"",
+            "{{X_TITLE}}":  "\"time, fs\"",
+            "{{Y_TITLE}}":  "\"" + title_y + "\"",
+            "{{T_TITLE}}":  "\"\"",
+            "{{XX_LIST}}":  str.format(f"{xx_list:.2f}"),
+            "{{YYY_LIST}}": "[ " + ", ".join(yyy_list_str) + " ]"
+        }
+
+        inst = templateSubst(template_name, substs)
+
+        with open(plot_name, "w") as f:
+            f.write(inst)
 
     @staticmethod
     def __plot_tvals_mult_update_graph(t_list, vals_list, nlvls, title_plot, title_y, plot_name):
-        # fig_vals = go.Figure()
-        #
-        # vals_t_list = [[0.0] * len(t_list) for i in range(nlvls)]
-        # for nt in range(len(t_list)):
-        #     for n in range(nlvls):
-        #         vals_t_list[n][nt] = vals_list[nt][n]
-        #
-        # for n in range(nlvls):
-        #     sc = go.Scatter(x=t_list, y=vals_t_list[n], name="level #" + str(n), mode="lines")
-        #     fig_vals.add_trace(sc)
-        #
-        # fig_vals.update_layout(
-        #     title={
-        #         'text': title_plot,
-        #         'y': 0.9,
-        #         'x': 0.5,
-        #         'xanchor': 'center',
-        #         'yanchor': 'top'
-        #     },
-        #     xaxis_title={
-        #         'text': 'time'
-        #     },
-        #     yaxis_title={
-        #         'text': title_y
-        #     }
-        # )
-        #
-        # fig_vals.write_image(plot_name)
-        pass
+        vals_t_list = [[0.0] * len(t_list) for i in range(nlvls)]
+        for nt in range(len(t_list)):
+            for n in range(nlvls):
+                vals_t_list[n][nt] = vals_list[nt][n]
 
+        xx_list = formattable_float_list()
+        xx_list.extend([x * 1e+15 for x in t_list[0::2]])
+
+        template: str
+        template_name = "report_templates/chart.template.html"
+
+        yyy_list_str = []
+        for n in range(nlvls):
+            yyy_list = formattable_float_list()
+            yyy_list.extend(vals_t_list[n])
+            yyy_list_sf = str.format(f"{yyy_list:.4f}")
+            yyy_list_str.append(
+                '{' + f" \"t\": \"{str(n)}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
+            )
+        substs = {
+            "{{TITLE}}": "\"" + title_plot + "\"",
+            "{{X_TITLE}}": "\"time, fs\"",
+            "{{Y_TITLE}}": "\"" + title_y + "\"",
+            "{{T_TITLE}}": "\"level #\"",
+            "{{XX_LIST}}": str.format(f"{xx_list:.2f}"),
+            "{{YYY_LIST}}": "[ " + ", ".join(yyy_list_str) + " ]"
+        }
+
+        inst = templateSubst(template_name, substs)
+
+        with open(plot_name, "w") as f:
+            f.write(inst)
 
     def plot(self, psi:Psi, t, x, np, n):
         psi0_abs = []
@@ -406,15 +371,9 @@ class PlotPropagationReporter(PropagationReporter):
         self.p2_list[n].append(moms.p2[n].real)
 
         namem = ["<x>", "<x^2>", "<p>", "<p^2>"]
-        moms_list = [self.x_list[n], self.x2_list[n], self.p_list[n]]
+        moms_list = [self.x_list[n], self.x2_list[n], self.p_list[n], self.p2_list[n]]
 
         if self.i % self.conf.mod_update == 0:
-            # Updating the graph for moms without <p^2>
-            self.__plot_moms_update_graph(self.t_moms_list[n], moms_list, namem,
-                                          "Expectation values for the state #%d" % n, "",
-                                          os.path.join(self._out_path, self.conf.gr_moms_low.replace("{level}", str(n))))
-
-            moms_list.append(self.p2_list[n])
             # Updating the graph for moms
             self.__plot_moms_update_graph(self.t_moms_list[n], moms_list, namem,
                                           "Expectation values for the state #%d" % n, "",
@@ -431,7 +390,7 @@ class PlotPropagationReporter(PropagationReporter):
         if self.i % self.conf.mod_update == 0:
             # Updating the graph for ener
             self.__plot_tvals_mult_update_graph(self.t_list, self.ener_list, self._nlvls,
-                                                "State energies", "Energy",
+                                                "State energies", "Energy, 1 / cm",
                                                 os.path.join(self._out_path, self.conf.gr_ener))
 
             # Updating the graph for lower state population
@@ -464,7 +423,7 @@ class PlotPropagationReporter(PropagationReporter):
         if self.i % self.conf.mod_update == 0:
             # Updating the graph for laser field energy
             self.__plot_tvals_update_graph(self.t_fit_list, self.E_list,
-                                           "Laser field energy envelope", "E",
+                                           "Laser field energy envelope", "E, 1 / cm",
                                            os.path.join(self._out_path, self.conf.gr_lf_en))
 
             # Updating the graph for laser field frequency multiplier
@@ -474,7 +433,7 @@ class PlotPropagationReporter(PropagationReporter):
 
             # Updating the graph for total energy
             self.__plot_tvals_update_graph(self.t_fit_list, self.ener_tot_list,
-                                           "Total energy", "Total energy",
+                                           "Total energy", "Total energy, 1 / cm",
                                            os.path.join(self._out_path, self.conf.gr_ener_tot))
 
             # Updating the graph for total population
@@ -485,7 +444,6 @@ class PlotPropagationReporter(PropagationReporter):
             self.__plot_tvals_update_graph(self.t_fit_list, self.overlpf_tot_list,
                                            "Closeness to the goal state", "(Ψ, Ψ_goal)",
                                            os.path.join(self._out_path, self.conf.gr_overlpf_tot))
-
 
     def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_real, E, freq_mult):
@@ -627,11 +585,8 @@ class PlotFitterReporter(FitterReporter):
     def close(self):
         pass
 
-
     @staticmethod
     def __plot_iter_time_update_graph(E_tlist, numb_plotout, title_plot, title_y, plot_name):
-        #fig = go.Figure()
-
         # Filtering the curves
         E_filt = {}
 
@@ -651,7 +606,7 @@ class PlotFitterReporter(FitterReporter):
         template_name = "report_templates/chart.template.html"
 
         xx_list = formattable_float_list()
-        xx_list.extend(E_filt[-1]["t"][0::5])
+        xx_list.extend([x * 1e+15 for x in E_filt[0]['t'][0::5]])
 
         yyy_list_str = []
         for i in reversed(E_filt):
@@ -674,66 +629,34 @@ class PlotFitterReporter(FitterReporter):
 
         inst = templateSubst(template_name, substs)
 
-        # inst = template \
-        #     .replace("{{TITLE}}", "\"" + title_plot + "\"") \
-        #     .replace("{{X_TITLE}}", "\"time\"") \
-        #     .replace("{{Y_TITLE}}", "\"" + title_y + "\"") \
-        #     .replace("{{T_TITLE}}", "\"iteration #\"")
-
-        # inst = inst.replace("{{XX_LIST}}", pprint.pformat(xx_list)) \
-        #            .replace("{{YYY_LIST}}", pprint.pformat(yyy_list))
-
         with open(plot_name, "w") as f:
             f.write(inst)
 
-        # for i in E_filt:
-        #     sc = go.Scatter(x=E_filt[i]['t'], y=E_filt[i]['y'], name = str(i), mode="lines")
-        #     fig.add_trace(sc)  # , row=1, col=1
-        #
-        #     fig.update_layout(
-        #         title={
-        #             'text': title_plot,
-        #             'y': 0.9,
-        #             'x': 0.5,
-        #             'xanchor': 'center',
-        #             'yanchor': 'top'
-        #         },
-        #         xaxis_title={
-        #             'text': 'time'
-        #         },
-        #         yaxis_title={
-        #             'text': title_y
-        #         }
-        #     )
-        #
-        # fig.write_image(plot_name)
-
     @staticmethod
     def __plot_iter_update_graph(i_list, val_list, title_plot, title_y, plot_name):
-        # fig = go.Figure()
-        #
-        # sc = go.Scatter(x=i_list, y=val_list, mode="lines")
-        # fig.add_trace(sc)
-        #
-        # fig.update_layout(
-        #     title={
-        #         'text': title_plot,
-        #         'y': 0.9,
-        #         'x': 0.5,
-        #         'xanchor': 'center',
-        #         'yanchor': 'top'
-        #     },
-        #     xaxis_title={
-        #         'text': 'Iteration'
-        #     },
-        #     yaxis_title={
-        #         'text': title_y
-        #     }
-        # )
-        #
-        # fig.write_image(plot_name)
-        pass
+        template: str
+        template_name = "report_templates/chart.template.html"
 
+        yyy_list_str = []
+        yyy_list = formattable_float_list()
+        yyy_list.extend(val_list)
+        yyy_list_sf = str.format(f"{yyy_list:.4f}")
+        yyy_list_str.append(
+            '{' + f" \"t\": \"{title_y}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
+        )
+        substs = {
+            "{{TITLE}}":    "\"" + title_plot + "\"",
+            "{{X_TITLE}}":  "\"iteration #\"",
+            "{{Y_TITLE}}":  "\"" + title_y + "\"",
+            "{{T_TITLE}}":  "\"\"",
+            "{{XX_LIST}}":  str(i_list),
+            "{{YYY_LIST}}": "[ " + ", ".join(yyy_list_str) + " ]"
+        }
+
+        inst = templateSubst(template_name, substs)
+
+        with open(plot_name, "w") as f:
+            f.write(inst)
 
     def plot_fitter(self, iter, goal_close, Fsm):
         self.i_list.append(iter)
@@ -757,7 +680,6 @@ class PlotFitterReporter(FitterReporter):
         self.__plot_iter_time_update_graph(self.E_abs, self.conf.inumber_plotout,
                                  "Absolute value of the laser field envelope",
                                  "abs(E), 1 / cm", os.path.join(self.conf.out_path, self.conf.gr_iter_E))
-
 
     def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, nt):
         try:

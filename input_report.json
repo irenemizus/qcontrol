@@ -11,9 +11,9 @@
     "plot.imin": -1,
     "plot.imod_plotout": 1,
     "plot.inumber_plotout": 15,
-    "plot.gr_iter": "fig_iter_goal.pdf",
+    "plot.gr_iter": "fig_iter_goal.html",
     "plot.gr_iter_E": "fig_gr_iter_E.html",
-    "plot.gr_iter_F": "fig_gr_iter_F.pdf",
+    "plot.gr_iter_F": "fig_gr_iter_F.html",
 
     "propagation": {
       "table.lmin": 0,
