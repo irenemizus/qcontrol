@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<script>
+    // Source dataset
+    const title = {{TITLE}};
+    const x_title = {{X_TITLE}};
+    const y_title = {{Y_TITLE}};
+    const t_title = {{T_TITLE}};
+
+    const xx = {{XX_LIST}};
+
+    // The key is the time, the value is the list of values
+    const yyy = {{YYY_LIST}};
+</script>
+
+<script>
+    {{INCLUDE:chart.min.js}}
+</script>
+<head>
+    <meta charset="UTF-8">
+    <title>{{TITLE}}</title>
+</head>
+
+<body>
+<div style="width: 100%;">
+    <canvas id="myChart" width="100vw" ></canvas>
+
+    <script>
+
+        /**
+         * A linear interpolator for hexadecimal colors
+         * @param {String} a
+         * @param {String} b
+         * @param {Number} amount
+         * @example
+         * // returns #7F7F7F
+         * lerpColor('#000000', '#ffffff', 0.5)
+         * @returns {String}
+         */
+        function lerpColor(a, b, amount) {
+
+            var ah = parseInt(a.replace(/#/g, ''), 16),
+                ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff,
+                bh = parseInt(b.replace(/#/g, ''), 16),
+                br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff,
+                rr = ar + amount * (br - ar),
+                rg = ag + amount * (bg - ag),
+                rb = ab + amount * (bb - ab);
+
+            return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);
+        }
+
+        let xcount = 0;
+        let conf = {
+            type: 'line',
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: title
+                    },
+                    legend: {
+                        position: 'right'
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            autoSkip: false,
+                            // Include a dollar sign in the ticks
+                            callback: function(value, index, ticks) {
+                                const TOTAL_LABELS = 20;
+                                const labs = Math.round(ticks.length / TOTAL_LABELS) + 1;
+                                const formattedVal = (this.getLabelForValue(value)); /*.toExponential(2)*/
+                                if ((index % labs) === 0) { return formattedVal } else { return null; }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: x_title
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            autoSkip: false
+                        },
+                        title: {
+                            display: true,
+                            text: y_title
+                        }
+                    },
+                },
+            },
+            data: {
+                labels: xx,
+                datasets: []
+            }
+        }
+
+        for (let i = 0; i < yyy.length; i++) {
+            conf.data.datasets.push(
+                {
+                    data: yyy[i].values,
+                    pointRadius: 0,
+                    label: t_title + String(yyy[i].t),
+                    borderColor: lerpColor("#5435ff", "#ffb444", i / yyy.length),
+                    backgroundColor: lerpColor("#5435ff", "#ffb444", i / yyy.length),
+                    lineTension: 0,
+                    fill: false
+                }
+            )
+        }
+    </script>
+</div>
+</body>
+
+<script>
+    var ctx = document.getElementById("myChart").getContext('2d');
+    var myChart = new Chart(ctx, conf);
+</script>
+
+</html>
