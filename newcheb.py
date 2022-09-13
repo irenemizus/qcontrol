@@ -22,7 +22,14 @@ Options:
     In key "fitter":
         out_path
             a path name for the output files.
-            By default, is equal to "output"
+            If some of calculation parameters are varying, the corresponding name structure can be used:
+            "output_ut/T={input:$.fitter.propagation.T}__w_list={input:$.fitter.w_list}"
+            (for varying of fitter.propagation.T and fitter.w_list values).
+            By default, is "output"
+        table_glob_path
+            a path name for the file with global table, which contains the results in case of varying calculation parameters.
+            Shouldn't be specified otherwise.
+            By default, is ""
         plotting_flag
             a flag that indicates the type of output
             "all"       --  to print both plots and tables (option by default)
@@ -305,6 +312,13 @@ Options:
             By default, is equal to 0.29297e15 Hz,
                         is identically equated to zero for filtering / single morse / single harmonic tasks
 
+    There is a possibility of varying any input parameter specified in the json_task file.
+    The key words for that:
+
+    @SUBST:LIST
+        possible values for the given calculation parameter to be looked over are specified as a list.
+        Example: "T": { "@SUBST:LIST": [ 2.9E-13, 3.1E-13, 3.3E-13, 3.5E-13 ] }
+
 Examples:
     python newcheb.py --json_task "input_task.json" --json_rep "input_report.json"
         perform a propagation task using the parameter values specified in the json files
@@ -315,7 +329,10 @@ __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
 import random
+import re
 from pprint import pprint
+
+from jsonpath2 import Path
 
 from json_substitutions import JsonSubstitutions
 from tools import print_err
@@ -449,19 +466,15 @@ def main(argv):
         print("\tNo input json file with reporting options was provided. The default values of options will be used")
     else:
         with open(file_json_rep, "r") as read_file:
-            data_rep = json.load(read_file)
-
-    conf_rep_table = ReportTableRootConfiguration()
-    conf_rep_table.load(data_rep)
-
-    conf_rep_plot = ReportPlotRootConfiguration()
-    conf_rep_plot.load(data_rep)
+            data_rep_template = json.load(read_file)
 
     if 'file_json_task' not in locals():
         print("\tNo input json file with calculation parameters was provided. The default values of parameters will be used")
     else:
         with open(file_json_task, "r") as read_file:
             data_task_src = json.load(read_file)
+
+    first_pass = False
 
     substs = JsonSubstitutions(data_task_src)
     for data_task in substs:
@@ -470,6 +483,37 @@ def main(argv):
 
         conf_task = TaskRootConfiguration()
         conf_task.load(data_task)
+
+        data_rep = copy.deepcopy(data_rep_template)
+
+        # Processing templates in the report config
+        input_pat = re.compile("\\{input:([^\\}]*)\\}")
+        res = input_pat.finditer(data_rep['fitter']['out_path'])
+        if res:
+            try:
+                while True:
+                    r = res.__next__()
+
+                    path = r.group(1)
+                    found_subst = r.group(0)
+                    # Finding the value with a path
+                    jsonpath_expression = Path.parse_str(path)
+                    match = jsonpath_expression.match(data_task)
+
+                    m = match.__next__()
+
+                    val = m.current_value
+                    oldval = data_rep['fitter']['out_path']
+                    data_rep['fitter']['out_path'] = oldval.replace(found_subst, str(val))
+            except StopIteration:
+                # Do the nothing!
+                pass
+
+        conf_rep_table = ReportTableRootConfiguration()
+        conf_rep_table.load(data_rep)
+
+        conf_rep_plot = ReportPlotRootConfiguration()
+        conf_rep_plot.load(data_rep)
 
         # analyze provided json data
         if conf_rep_table.fitter.propagation.lmin < 0 or conf_rep_plot.fitter.propagation.lmin < 0:
@@ -680,33 +724,17 @@ def main(argv):
         step = -1
 
         if not os.path.exists(conf_rep_plot.fitter.out_path):
-            os.mkdir(conf_rep_plot.fitter.out_path)
+            os.makedirs(conf_rep_plot.fitter.out_path, exist_ok=True)
 
-        # nw = 6
-        # with open(os.path.join(conf_rep_plot.fitter.out_path, f"table_glob_w{nw}.txt"), "w") as fout:
-        #     w0 = conf_task.fitter.w_list[nw]
-        #     w0_start = w0 / 2.0
-        #     w0_step = pow(2.0, 1.0 / 5.0)
-        #     w0_cur = w0_start
-
-            # w1 = conf_task.fitter.w_list[1]
-            # w1_start = w1 / 2.0
-            # w1_step = pow(2.0, 1.0 / 5.0)
-            # w1_cur = w1_start
-
-            # for step0 in range(10):
-            #     conf_task.fitter.w_list[nw] = round(w0_cur, 2)
-                # for step1 in range(10):
-                #     conf_task.fitter.w_list[1] = round(w1_cur, 2)
-        # with open(os.path.join(conf_rep_plot.fitter.out_path, f"table_glob.txt"), "w") as fout:
         #     T_ac = conf_task.fitter.propagation.T #conf_task.fitter.propagation.Du / phys_base.Hz_to_cm
         #     T_start = T_ac / 2.0
         #     T0_step = pow(2.0, 1.0 / 100) #2 * T_ac / 800 #pow(1.01, 1.0 / 200)
         #     T_cur = T_start
         #     for step in range(200):
         #         conf_task.fitter.propagation.T = round(T_cur, 19)
+        # T_cur *= T0_step
 
-    #    print_input(conf_rep_plot, conf_task, "table_inp_" + str(step) + ".txt")
+        print_input(conf_rep_plot, conf_task, "table_inp_" + str(step) + ".txt")
 
         # setup of the time grid
         forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf_task.fitter.propagation)
@@ -723,18 +751,22 @@ def main(argv):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-            # gc_cur = 0.0
-            # with open(os.path.join(conf_rep_plot.fitter.out_path, "tab_iter.csv"), "r") as f:
-            #     lines = f.readlines()
-            #     gc_cur = float(lines[-1].strip().split(" ")[-1])
-            #
-            # fout.write(f"{step}    {T_cur:.6E}    {gc_cur}\n")
-            # fout.flush()
+        if conf_rep_table.fitter.table_glob_path != "":
+            if first_pass:
+                wa = "w"
+                first_pass = True
+            else:
+                wa = "a"
 
-#                w1_cur *= w1_step
-#            w0_cur *= w0_step
-                #
-            #T_cur *= T0_step
+            with open(conf_rep_table.fitter.table_glob_path, wa) as fout:
+                # Printing the last value into a table
+                F_cur = 0.0
+                with open(os.path.join(conf_rep_plot.fitter.out_path, "tab_iter.csv"), "r") as f:
+                    lines = f.readlines()
+                    F_cur = float(lines[-1].strip().split(" ")[-1])
+
+                fout.write(f"{step}\t{conf_rep_table.fitter.out_path}\t{F_cur}\n")
+                fout.flush()
 
 
 if __name__ == "__main__":

@@ -606,7 +606,8 @@ class PlotFitterReporter(FitterReporter):
         template_name = "report_templates/chart.template.html"
 
         xx_list = formattable_float_list()
-        xx_list.extend([x * 1e+15 for x in E_filt[0]['t'][0::5]])
+        the_first_line = E_filt[E_filt.__iter__().__next__()]
+        xx_list.extend([x * 1e+15 for x in the_first_line['t'][0::5]])
 
         yyy_list_str = []
         for i in reversed(E_filt):

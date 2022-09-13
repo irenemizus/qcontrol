@@ -277,6 +277,7 @@ class ReportRootConfiguration(ConfigurationBase):
             super().__init__(key_prefix)
             self._data["propagation"] = ReportRootConfiguration.ReportFitterConfiguration.ReportPropagationConfiguration(key_prefix=key_prefix)
             self._data["out_path"] = "output"
+            self._data["table_glob_path"] = ""
             self._data["plotting_flag"] = ReportRootConfiguration.ReportFitterConfiguration.OutputType.ALL
 
         class ReportPropagationConfiguration(ConfigurationBase):
