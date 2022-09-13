@@ -1,8 +1,8 @@
 {
   "fitter": {
-    "table_glob_path": "output_ut/glob.csv",
-    "out_path": "output_ut/T={input:$.fitter.propagation.T}__w_list={input:$.fitter.w_list}",
-    "~out_path": "output_ut",
+    "~table_glob_path": "output_ut/glob.csv",
+    "~out_path": "output_ut/T={input:$.fitter.propagation.T}__w_list={input:$.fitter.w_list}",
+    "out_path": "output_ut",
     "plotting_flag": "all",
 
     "table.imin": -1,
@@ -26,7 +26,7 @@
       "table.tab_tvals_fit": "tab_tvals_fit.csv",
 
       "plot.lmin": 0,
-      "plot.mod_plotout": 100,
+      "plot.mod_plotout": 10,
       "plot.mod_update": 20,
       "plot.number_plotout": 15
     }

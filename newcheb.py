@@ -608,10 +608,6 @@ def main(argv):
             if conf_task.fitter.task_type == conf_task.fitter.TaskType.TRANS_WO_CONTROL:
                 print("An ordinary transition task begins...")
 
-                if conf_task.fitter.init_guess != "zero":
-                    raise ValueError(
-                        "For the 'task_type' = 'trans_wo_control' the initial guess type for the laser field envelope, 'init_guess', has to be 'zero'")
-
                 if conf_task.fitter.impulses_number != 1:
                     raise ValueError(
                         "For the 'task_type' = 'trans_wo_control' the 'impulses_number' value has to be equal to 1")

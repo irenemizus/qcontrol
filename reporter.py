@@ -227,7 +227,7 @@ class PlotPropagationReporter(PropagationReporter):
 
             formattable = formattable_float_list()
             formattable.extend(psi_filt[i]['y'][0::2])
-            formatted = "{:.4f}".format(formattable)
+            formatted = "{:.3e}".format(formattable)
             ifs = i * 1e+15
             yyy_list_str.append(
                 '{' + f" \"t\": {ifs:.2f}, \"values\": {formatted}, \"pointRadius\": 0 " + '}'
@@ -260,7 +260,7 @@ class PlotPropagationReporter(PropagationReporter):
         for i in range(len(moms_list)):
             yyy_list = formattable_float_list()
             yyy_list.extend(moms_list[i][0::2])
-            yyy_list_sf = str.format(f"{yyy_list:.4f}")
+            yyy_list_sf = str.format(f"{yyy_list:.3e}")
             yyy_list_str.append(
                 '{' + f" \"t\": \"{namem[i]}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
             )
@@ -288,8 +288,8 @@ class PlotPropagationReporter(PropagationReporter):
 
         yyy_list_str = []
         yyy_list = formattable_float_list()
-        yyy_list.extend(val_list)
-        yyy_list_sf = str.format(f"{yyy_list:.4f}")
+        yyy_list.extend(val_list[0::2])
+        yyy_list_sf = str.format(f"{yyy_list:.3e}")
         yyy_list_str.append(
             '{' + f" \"t\": \"{title_y}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
         )
@@ -323,8 +323,8 @@ class PlotPropagationReporter(PropagationReporter):
         yyy_list_str = []
         for n in range(nlvls):
             yyy_list = formattable_float_list()
-            yyy_list.extend(vals_t_list[n])
-            yyy_list_sf = str.format(f"{yyy_list:.4f}")
+            yyy_list.extend(vals_t_list[n][0::2])
+            yyy_list_sf = str.format(f"{yyy_list:.3e}")
             yyy_list_str.append(
                 '{' + f" \"t\": \"{str(n)}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
             )
@@ -641,7 +641,7 @@ class PlotFitterReporter(FitterReporter):
         yyy_list_str = []
         yyy_list = formattable_float_list()
         yyy_list.extend(val_list)
-        yyy_list_sf = str.format(f"{yyy_list:.4f}")
+        yyy_list_sf = str.format(f"{yyy_list:.3e}")
         yyy_list_str.append(
             '{' + f" \"t\": \"{title_y}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
         )
