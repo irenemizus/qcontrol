@@ -1,8 +1,8 @@
 {
   "fitter": {
-    "~table_glob_path": "output_ut/glob.csv",
-    "~out_path": "output_ut/T={input:$.fitter.propagation.T}__w_list={input:$.fitter.w_list}",
-    "out_path": "output_ut",
+    "table_glob_path": "output_ut/glob.csv",
+    "out_path": "output_ut/T={input:$.fitter.propagation.T}__w_list={input:$.fitter.w_list}",
+    "~out_path": "output_ut",
     "plotting_flag": "all",
 
     "table.imin": -1,
