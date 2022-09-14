@@ -687,7 +687,8 @@ def main(argv):
 
         nw = int(2 * conf_task.fitter.pcos - 1)
         if not conf_task.fitter.w_list:
-            conf_task.fitter.w_list = [float(x) / 100.0 for x in random.sample(range(1, 101), nw)]
+            # conf_task.fitter.w_list = [float(x) / 100.0 for x in random.sample(range(1, 101), nw)]
+            conf_task.fitter.w_list = [float(x) / 10.0 - 2.0 for x in random.sample(range(0, 40), nw)]
         else:
             assert len(conf_task.fitter.w_list) == nw
 
@@ -757,9 +758,16 @@ def main(argv):
             with open(conf_rep_table.fitter.table_glob_path, wa) as fout:
                 # Printing the last value into a table
                 F_cur = 0.0
+                step = -1
                 with open(os.path.join(conf_rep_plot.fitter.out_path, "tab_iter.csv"), "r") as f:
                     lines = f.readlines()
-                    F_cur = float(lines[-1].strip().split(" ")[-1])
+                    # F_cur = float(lines[-1].strip().split(" ")[-1])
+                    for line in lines:
+                        F_last = float(line.strip().split(" ")[-1])
+                        step_last = int(line.strip().split(" ")[0])
+                        if F_last < F_cur:
+                            F_cur = F_last
+                            step = step_last
 
                 fout.write(f"{step}\t{conf_rep_table.fitter.out_path}\t{F_cur}\n")
                 fout.flush()
