@@ -7,8 +7,8 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --threads-per-core=1
 ##SBATCH --shared
-#SBATCH -A all-account
-#SBATCH -p allq
+#SBATCH -A ronnie-account
+#SBATCH -p ronnieq
 #SBATCH --mem=5000
 ##SBATCH --time=12:00:00
 python math_base_tests.py
