@@ -1,28 +1,15 @@
-# Preparing environment (journal)
-Here we put all the commands necessary to create a Python 3 virtual environment for the project.
+# Preparing environment
+Here we put all the commands necessary to create an Anaconda/Python 3 virtual environment for the project.
 
-Tested on pure Ubuntu 20.04.2, Python 3.8.5
+Tested on macOS Monterey 12.6 with Anaconda 4.12.0
 
-```sudo apt install python3-venv```
+```
+> conda create -n newcheb numpy==1.23.1
+> conda activate newcheb
+> pip install jsonpath2==0.4.5
+```
 
-Change dir to `newcheb`.
-
-```python3 -m venv venv```
-
-The Virtual Environment is created in a folder `venv`
-
-Then the newly created environment should be activated by
-
-```source venv/bin/activate```
-
-Then as we are inside the env, let's install the required Python packages into it.
-
-```pip install --upgrade pip setuptools```
-
-```pip install -r requirements.txt```
-
-# Activating the environment
-
-Go to the `newcheb` folder
-
-```source venv/bin/activate```
+Every time you need to use the application, activate the environment with:
+```
+conda activate newcheb
+```
