@@ -74,6 +74,7 @@ class TaskRootConfiguration(ConfigurationBase):
     def __init__(self):
         super().__init__(key_prefix="")
         self._data["fitter"] = TaskRootConfiguration.FitterConfiguration()
+        self._data["run_id"] = "no_id"
 
     class FitterConfiguration(ConfigurationBase):
         class PropagationConfiguration(ConfigurationBase):
