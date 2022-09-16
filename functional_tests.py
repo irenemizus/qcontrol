@@ -895,7 +895,7 @@ class fitter_Tests(unittest.TestCase):
             "h_lambda": 0.5,
             "init_guess": "sqrsin",
             "init_guess_hf": "cos",
-            "pcos": 0.58,
+            "pcos": 1.00,
             "nb": 2,
             "propagation": {
                 "pot_type": "none",
@@ -907,7 +907,7 @@ class fitter_Tests(unittest.TestCase):
                 "Du": 100,
                 "t0": 0.0,
                 "E0": 40.0,
-                "nt": 1000,
+                "nt": 1500,
                 "T": 33.35635E-13,
                 "sigma": 66.7127E-13,
                 "nu_L": 0.299792458e13
