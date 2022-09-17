@@ -20,7 +20,6 @@ class JsonSubstitutionsIterator:
 
                 JsonSubstitutionsIterator.replace_obj(root[i], obj, value)
 
-
     @staticmethod
     def replace_subst_id(root, id, value):
         if isinstance(root, dict):
@@ -42,7 +41,6 @@ class JsonSubstitutionsIterator:
 
                 JsonSubstitutionsIterator.replace_subst_id(root[k], id, value)
 
-
     def __init__(self, json_data_src):
         self.__json_data_src = copy.deepcopy(json_data_src)   # The full JSON template
         self.__substs = []                     # The substitutional parts in the template
@@ -56,14 +54,12 @@ class JsonSubstitutionsIterator:
         jsonpath_expression = Path.parse_str('$..*[?(@["@SUBST:LIST"])]')
         match = jsonpath_expression.match(self.__json_data_src)
 
-
         for m in match:
             val = m.current_value
             JsonSubstitutionsIterator.replace_obj(self.__json_data_src, val,
                                                   {"@SUBST:ID": len(self.__substs)}
             )
             self.__substs.append(val)
-
 
         for subst in self.__substs:
             if "@SUBST:LIST" in subst:
