@@ -127,7 +127,6 @@ class propagation_Tests(unittest.TestCase):
 
         def laser_field_hf(nu_L, t, pcos, w_list):
             return task_manager._LaserFieldsHighFrequencyPart.cexp(nu_L, t, pcos, w_list)
-                #conf.propagation.nu_L, dyn.t, conf.pcos, conf.w_list)
 
         def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult, dir):
             assert dir == PropagationSolver.Direction.FORWARD
@@ -249,9 +248,9 @@ class propagation_Tests(unittest.TestCase):
 
         for n in range(nlevs):
             self.assertTrue(
-                psi_prop_comparer.compare(reporter_impl.psi_tab[n], test_data.prop_trans_woc_forw.psi_tabs[n]))
+                psi_prop_comparer.compare(reporter_impl.psi_tab[n], test_data.prop_trans_woc_back.psi_tabs[n]))
             self.assertTrue(
-                tvals_prop_comparer.compare(reporter_impl.prop_tab[n], test_data.prop_trans_woc_forw.prop_tabs[n]))
+                tvals_prop_comparer.compare(reporter_impl.prop_tab[n], test_data.prop_trans_woc_back.prop_tabs[n]))
 
         # psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         # tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,

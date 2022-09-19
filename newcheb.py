@@ -15,6 +15,9 @@ Options:
         input json file name, in which all the following calculation parameters should be provided.
         If something is not provided in the file or this option is missing at all,
         the following default values will be used
+    --json_create
+        instead of running calculation, create a set of input_task json files from the source file also given
+        by option "--json_task" to use them in a subsequent batch run, and exit
 
 
     Content of the json_rep file
@@ -349,6 +352,7 @@ import os.path
 import getopt
 import json
 import math
+import pprint
 
 import grid_setup
 import fitter
@@ -373,44 +377,11 @@ def _warning_time_steps(nt, nt_min):
     print_err("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
           "You've got a divergence!".format(nt, nt_min))
 
-def print_input_test(conf_rep_plot, conf_task, file_name):
-    with open(os.path.join(conf_rep_plot.fitter.out_path, file_name), "w") as finp:
-        finp.write("task_type:\t\t"   f"{conf_task.fitter.task_type}\n")
-        finp.write("iter_max:\t\t"   f"{conf_task.fitter.iter_max}\n")
-        finp.write("epsilon:\t\t"   f"{conf_task.fitter.epsilon:.20E}\n") #.1E
-
-        finp.write("nb:\t\t\t"   f"{conf_task.fitter.nb}\n")
-        finp.write("wf_type:\t\t"   f"{conf_task.fitter.propagation.wf_type}\n")
-
-        finp.write("impulses_number:\t"   f"{conf_task.fitter.impulses_number}\n")
-        finp.write("Em:\t\t\t"   f"{conf_task.fitter.Em:.20E}\n")
-        finp.write("E0:\t\t\t"   f"{conf_task.fitter.propagation.E0:.20E}\n")
-        finp.write("t0:\t\t\t"   f"{conf_task.fitter.propagation.t0:.20E}\n")
-        finp.write("sigma:\t\t\t"   f"{conf_task.fitter.propagation.sigma:.20E}\n") #.6E
-        finp.write("nu_L:\t\t\t"   f"{conf_task.fitter.propagation.nu_L:.20E}\n") #.6E
-        finp.write("h_lambda:\t\t"   f"{conf_task.fitter.h_lambda:.20E}\n")
-        finp.write("init_guess:\t\t"   f"{conf_task.fitter.init_guess}\n")
-        finp.write("init_guess_hf:\t\t"   f"{conf_task.fitter.init_guess_hf}\n")
-        finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos:.20E}\n")
-        finp.write("w_list:\t\t\t\n")
-        for el in conf_task.fitter.w_list:
-            finp.write(f"\t\t\t{el:.20E}\n")
-
-        finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
-
-        finp.write("hamil_type:\t\t"   f"{conf_task.fitter.propagation.hamil_type}\n")
-        finp.write("U:\t\t\t"   f"{conf_task.fitter.propagation.U:.20E}\n")
-        finp.write("delta:\t\t\t"   f"{conf_task.fitter.propagation.delta:.20E}\n")
-
-        finp.write("pot_type:\t\t"   f"{conf_task.fitter.propagation.pot_type}\n")
-        finp.write("Du:\t\t\t"   f"{conf_task.fitter.propagation.Du:.20E}\n")
-
-        finp.write("np:\t\t\t"   f"{conf_task.fitter.propagation.np}\n")
-        finp.write("L:\t\t\t"   f"{conf_task.fitter.propagation.L:.20E}\n")
-        finp.write("nch:\t\t\t"   f"{conf_task.fitter.propagation.nch}\n")
-        finp.write("nt:\t\t\t"   f"{conf_task.fitter.propagation.nt}\n")
-        finp.write("T:\t\t\t"   f"{conf_task.fitter.propagation.T:.20E}\n") #.6E
-
+def print_json_input_task(conf_task, id):
+    file_name = f"input_task_ut_ang_mom_H_var{id}.json"
+    pretty_print_json = pprint.pformat(conf_task).replace("'", '"')
+    with open(file_name, "w") as finp:
+        finp.write(pretty_print_json)
 
 def print_input(conf_rep_plot, conf_task, file_name):
     with open(os.path.join(conf_rep_plot.fitter.out_path, file_name), "w") as finp:
@@ -489,7 +460,7 @@ def main(argv):
     """ The main() function """
     # analyze cmdline:
     try:
-        options, arguments = getopt.getopt(argv, 'h', ['help', 'json_rep=', 'json_task='])
+        options, arguments = getopt.getopt(argv, 'h', ['help', 'json_create', 'json_rep=', 'json_task='])
     except getopt.GetoptError:
         print_err("\tThere are unrecognized options!")
         print_err("\tRun this script with '-h' option to see the usage info and available options.")
@@ -497,12 +468,15 @@ def main(argv):
 
     file_json_rep = None
     file_json_task = None
+    json_create = False
 
     # analyze provided options and their values (if any):
     for opt, val in options:
         if opt in ("-h", "--help"):
             usage()
             sys.exit()
+        elif opt in ("--json_create"):
+            json_create = True
         elif opt in ("--json_rep"):
             file_json_rep = val
         elif opt in ("--json_task"):
@@ -533,8 +507,12 @@ def main(argv):
 
     futures = []
     job_id: int = 0
+    json_id: int = 0
     for dt in substs:
-
+        if json_create:
+            print_json_input_task(dt, json_id)
+            json_id += 1
+            continue
         def job(id: int, data_task):
             try:
                 print(f"Running variant {id}:")
