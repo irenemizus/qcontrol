@@ -18,6 +18,11 @@ Options:
 
 
     Content of the json_rep file
+    run_id
+        An ID parameter (or a set if IDs for different runs in case of batch execution), which is augmented to the name
+        of output folder specified in the "out_path" key of the json_rep file.
+        For 3 runs its values can be specified as { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3" ] }.
+        By default, is "no_id"
 
     In key "fitter":
         out_path
@@ -764,6 +769,8 @@ def main(argv):
                 #     for step in range(200):
                 #         conf_task.fitter.propagation.T = round(T_cur, 19)
                 # T_cur *= T0_step
+
+                conf_task.fitter.propagation.sigma = 2.0 * conf_task.fitter.propagation.T
 
                 print_input(conf_rep_plot, conf_task, "table_inp_" + str(step) + ".txt")
 

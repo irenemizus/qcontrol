@@ -29,8 +29,8 @@ class test_facilities_Tests(unittest.TestCase):
 
         nlevs = 2
         for n in range(nlevs):
-            self.assertTrue(psi_comparer.compare(test_data.prop_trans_woc.psi_tab[n], test_data.prop_trans_woc.psi_tab[n]))
-            self.assertTrue(tvals_comparer.compare(test_data.prop_trans_woc.prop_tab[n], test_data.prop_trans_woc.prop_tab[n]))
+            self.assertTrue(psi_comparer.compare(test_data.prop_trans_woc.psi_tabs[n], test_data.prop_trans_woc.psi_tabs[n]))
+            self.assertTrue(tvals_comparer.compare(test_data.prop_trans_woc.prop_tabs[n], test_data.prop_trans_woc.prop_tabs[n]))
 
 
 class propagation_Tests(unittest.TestCase):
@@ -125,10 +125,9 @@ class propagation_Tests(unittest.TestCase):
             return task_manager._LaserFields.laser_field_gauss(conf.propagation.E0, dyn.t,
                                          conf.propagation.t0, conf.propagation.sigma)
 
-        def laser_field_hf(prop: PropagationSolver, stat: PropagationSolver.StaticState,
-                               dyn: PropagationSolver.DynamicState):
-            return task_manager._LaserFieldsHighFrequencyPart.cexp(conf.propagation.nu_L, dyn.t,
-                                         conf.pcos, conf.w_list)
+        def laser_field_hf(nu_L, t, pcos, w_list):
+            return task_manager._LaserFieldsHighFrequencyPart.cexp(nu_L, t, pcos, w_list)
+                #conf.propagation.nu_L, dyn.t, conf.pcos, conf.w_list)
 
         def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult, dir):
             assert dir == PropagationSolver.Direction.FORWARD
@@ -168,19 +167,16 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        reporter_impl.print_all("test_data/prop_trans_woc_forw_.py", None)
+        #reporter_impl.print_all("test_data/prop_trans_woc_forw_.py", None)
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
                                       0.0000001, complex(0.001, 0.001), complex(0.001, 0.001),
                                       0.0001, 0.0001), 1.e-21)
-        tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001,
-                                            complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
 
         for n in range(nlevs):
             self.assertTrue(psi_prop_comparer.compare(reporter_impl.psi_tab[n], test_data.prop_trans_woc_forw.psi_tabs[n]))
             self.assertTrue(tvals_prop_comparer.compare(reporter_impl.prop_tab[n], test_data.prop_trans_woc_forw.prop_tabs[n]))
-        self.assertTrue(tvals_fit_comparer.compare(reporter_impl.fit_tab, test_data.prop_trans_woc_forw.tvals_tab))
 
 
     def test_prop_backward(self):
@@ -203,10 +199,8 @@ class propagation_Tests(unittest.TestCase):
             return task_manager._LaserFields.laser_field_gauss(conf.propagation.E0, dyn.t,
                                          conf.propagation.t0, conf.propagation.sigma)
 
-        def laser_field_hf(prop: PropagationSolver, stat: PropagationSolver.StaticState,
-                               dyn: PropagationSolver.DynamicState):
-            return task_manager._LaserFieldsHighFrequencyPart.cexp(conf.propagation.nu_L, dyn.t,
-                                         conf.pcos, conf.w_list)
+        def laser_field_hf(nu_L, t, pcos, w_list):
+            return task_manager._LaserFieldsHighFrequencyPart.cexp(nu_L, t, pcos, w_list)
 
         def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult, dir):
             assert dir == PropagationSolver.Direction.BACKWARD
@@ -246,21 +240,18 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        reporter_impl.print_all("test_data/prop_trans_woc_back_.py", None)
+        #reporter_impl.print_all("test_data/prop_trans_woc_back_.py", None)
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
                                       0.0000001, complex(0.001, 0.001), complex(0.001, 0.001),
                                       0.0001, 0.0001), 1.e-21)
-        tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001,
-                                            complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
 
         for n in range(nlevs):
             self.assertTrue(
                 psi_prop_comparer.compare(reporter_impl.psi_tab[n], test_data.prop_trans_woc_forw.psi_tabs[n]))
             self.assertTrue(
                 tvals_prop_comparer.compare(reporter_impl.prop_tab[n], test_data.prop_trans_woc_forw.prop_tabs[n]))
-        self.assertTrue(tvals_fit_comparer.compare(reporter_impl.fit_tab, test_data.prop_trans_woc_forw.tvals_tab))
 
         # psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-51)
         # tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,

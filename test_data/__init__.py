@@ -24,6 +24,6 @@ from test_data import fitter_opt_ctrl_krot
 from test_data import prop_opt_ctrl_krot
 from test_data import prop_trans_woc_forw
 from test_data import prop_trans_woc_back
-from test_data import fit_iter_opt_ctrl_ut_H1
-from test_data import fitter_opt_ctrl_ut_H1
-from test_data import prop_opt_ctrl_ut_H1
+from test_data import fit_iter_opt_ctrl_ut_HB_2lvls
+from test_data import fitter_opt_ctrl_ut_HB_2lvls
+from test_data import prop_opt_ctrl_ut_HB_2lvls
