@@ -10,4 +10,4 @@
 #SBATCH -p ronnieq
 #SBATCH --mem=5000
 ##SBATCH --time=12:00:00
-python newcheb.py --json-rep "input_report.json" --json-task "input_task_ut_ang_mom_H_run2_var$i.json" > out2_$1.txt 2>err2_$1 &
+python newcheb.py --json_rep "input_report.json" --json_task "batch_jsons/input_task_ut_ang_mom_H_run2_var$i.json" > batch_jsons_out/out2_$1.txt 2>batch_jsons_out/err2_$1 &
