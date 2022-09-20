@@ -1,11 +1,11 @@
 {
-  "run_id": { "@SUBST:LIST": [ "ut/run2" ] },
+  "run_id": "ut/run2",
   "fitter": {
     "task_type": "optimal_control_unit_transform",
     "epsilon": 1e-8,
     "impulses_number": 1,
     "nb": 2,
-    "iter_max": 100,
+    "iter_max": 500,
     "h_lambda": 0.005,
     "init_guess": "sqrsin",
     "init_guess_hf": "cos_set",

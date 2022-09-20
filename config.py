@@ -263,8 +263,9 @@ class ReportRootConfiguration(ConfigurationBase):
         class OutputType(Enum):
             ALL = 0
             TABLES = 1
-            PLOTS = 2
-            NONE = 3
+            TABLES_ITER = 2
+            PLOTS = 3
+            NONE = 4
 
             @staticmethod
             def from_int(i):

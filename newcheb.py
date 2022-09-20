@@ -40,10 +40,11 @@ Options:
             By default, is ""
         plotting_flag
             a flag that indicates the type of output
-            "all"       --  to print both plots and tables (option by default)
-            "tables"    --  to print only tables
-            "plots"     --  to print only plots
-            "none"      --  no printing to files at all
+            "all"           --  to print both plots and tables (option by default)
+            "tables"        --  to print only tables
+            "tables_iter"   --  to print only "global" tables with dependency on iteration number
+            "plots"         --  to print only plots
+            "none"          --  no printing to files at all
 
         parameters, which has to be specified if writing of the resulting tables for "global" values as a function
         of iteration number is needed.
@@ -339,7 +340,7 @@ __license__ = "Python"
 import random
 import re
 from multiprocessing import Lock
-from pprint import pprint
+from pprint import pprint, pformat
 
 from jsonpath2 import Path
 
@@ -352,7 +353,6 @@ import os.path
 import getopt
 import json
 import math
-import pprint
 
 import grid_setup
 import fitter
@@ -377,9 +377,9 @@ def _warning_time_steps(nt, nt_min):
     print_err("WARNING: The number of time steps nt = {} should be more than an estimated value {}. "
           "You've got a divergence!".format(nt, nt_min))
 
-def print_json_input_task(conf_task, id):
-    file_name = f"input_task_ut_ang_mom_H_var{id}.json"
-    pretty_print_json = pprint.pformat(conf_task).replace("'", '"')
+def print_json_input_task(conf_task, run_id,  id):
+    file_name = f"input_task_ut_ang_mom_H_{run_id}_var{id}.json"
+    pretty_print_json = pformat(conf_task).replace("'", '"')
     with open(file_name, "w") as finp:
         finp.write(pretty_print_json)
 
@@ -508,9 +508,10 @@ def main(argv):
     futures = []
     job_id: int = 0
     json_id: int = 0
+    run_id = data_task_src["run_id"].split("/")[-1]
     for dt in substs:
         if json_create:
-            print_json_input_task(dt, json_id)
+            print_json_input_task(dt, run_id, json_id)
             json_id += 1
             continue
         def job(id: int, data_task):
@@ -748,7 +749,7 @@ def main(argv):
                 #         conf_task.fitter.propagation.T = round(T_cur, 19)
                 # T_cur *= T0_step
 
-                conf_task.fitter.propagation.sigma = 2.0 * conf_task.fitter.propagation.T
+                conf_task.fitter.propagation.sigma = 2.0 * conf_task.fitter.propagation.T #TODO: to add a possibility to vary groups of parameters
 
                 print_input(conf_rep_plot, conf_task, "table_inp_" + str(step) + ".txt")
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#python newcheb.py --json-rep "input_report.json" --json-task "input_task_ut_ang_mom_H_2lvls.json" > out.txt 2>err &
 #
 #SBATCH --job-name=try500
 #SBATCH --output=er_%j.txt
@@ -11,4 +10,4 @@
 #SBATCH -p ronnieq
 #SBATCH --mem=5000
 ##SBATCH --time=12:00:00
-python math_base_tests.py
+python newcheb.py --json-rep "input_report.json" --json-task "input_task_ut_ang_mom_H_var$i.json" > out$1.txt 2>err$1 &

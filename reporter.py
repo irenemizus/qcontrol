@@ -44,6 +44,14 @@ def templateSubst(templateFilename: str, substs: Dict[str, str]):
 
     return inst
 
+def mod_plot_count(np, max_np):
+    mod = 0
+    while np > max_np:
+        mod += 1
+        np = np // 2
+    m = 2 ** mod
+    return m
+
 class PropagationReporter:
     def __init__(self, out_path: str, nlvls: int):
         self._out_path = out_path
@@ -155,7 +163,7 @@ class PlotPropagationReporter(PropagationReporter):
     def __init__(self, out_path: str, nlvls: int,
                  conf: config.ReportRootConfiguration.ReportFitterConfiguration.ReportPlotPropagationConfiguration):
         super().__init__(out_path=out_path, nlvls=nlvls)
-        self.conf = conf
+        self.conf = conf # TODO: to add index.html
 
     def open(self):
         if not os.path.exists(self._out_path):
@@ -219,15 +227,17 @@ class PlotPropagationReporter(PropagationReporter):
         template_name = "report_templates/chart.template.html"
 
         xx_list = formattable_float_list()
+        nx = len(psi_filt[0]['x'])
+        m = mod_plot_count(nx, 1000)
 
         yyy_list_str = []
         for i in reversed(psi_filt):
             if len(xx_list) == 0:
-                xx_list.extend(psi_filt[i]['x'][0::2])
+                xx_list.extend(psi_filt[i]['x'][0::m])
 
             formattable = formattable_float_list()
-            formattable.extend(psi_filt[i]['y'][0::2])
-            formatted = "{:.3e}".format(formattable)
+            formattable.extend(psi_filt[i]['y'][0::m])
+            formatted = "{:.4e}".format(formattable)
             ifs = i * 1e+15
             yyy_list_str.append(
                 '{' + f" \"t\": {ifs:.2f}, \"values\": {formatted}, \"pointRadius\": 0 " + '}'
@@ -254,13 +264,15 @@ class PlotPropagationReporter(PropagationReporter):
         template_name = "report_templates/chart.template.html"
 
         xx_list = formattable_float_list()
-        xx_list.extend([x * 1e+15 for x in t_list[0::2]])
+        nt = len(t_list)
+        m = mod_plot_count(nt, 1000)
+        xx_list.extend([x * 1e+15 for x in t_list[0::m]])
 
         yyy_list_str = []
         for i in range(len(moms_list)):
             yyy_list = formattable_float_list()
-            yyy_list.extend(moms_list[i][0::2])
-            yyy_list_sf = str.format(f"{yyy_list:.3e}")
+            yyy_list.extend(moms_list[i][0::m])
+            yyy_list_sf = str.format(f"{yyy_list:.4e}")
             yyy_list_str.append(
                 '{' + f" \"t\": \"{namem[i]}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
             )
@@ -284,12 +296,14 @@ class PlotPropagationReporter(PropagationReporter):
         template_name = "report_templates/chart.template.html"
 
         xx_list = formattable_float_list()
-        xx_list.extend([x * 1e+15 for x in t_list[0::2]])
+        nt = len(t_list)
+        m = mod_plot_count(nt, 1000)
+        xx_list.extend([x * 1e+15 for x in t_list[0::m]])
 
         yyy_list_str = []
         yyy_list = formattable_float_list()
-        yyy_list.extend(val_list[0::2])
-        yyy_list_sf = str.format(f"{yyy_list:.3e}")
+        yyy_list.extend(val_list[0::m])
+        yyy_list_sf = str.format(f"{yyy_list:.4e}")
         yyy_list_str.append(
             '{' + f" \"t\": \"{title_y}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
         )
@@ -315,7 +329,10 @@ class PlotPropagationReporter(PropagationReporter):
                 vals_t_list[n][nt] = vals_list[nt][n]
 
         xx_list = formattable_float_list()
-        xx_list.extend([x * 1e+15 for x in t_list[0::2]])
+        nt = len(t_list)
+        m = mod_plot_count(nt, 1000)
+
+        xx_list.extend([x * 1e+15 for x in t_list[0::m]])
 
         template: str
         template_name = "report_templates/chart.template.html"
@@ -323,8 +340,8 @@ class PlotPropagationReporter(PropagationReporter):
         yyy_list_str = []
         for n in range(nlvls):
             yyy_list = formattable_float_list()
-            yyy_list.extend(vals_t_list[n][0::2])
-            yyy_list_sf = str.format(f"{yyy_list:.3e}")
+            yyy_list.extend(vals_t_list[n][0::m])
+            yyy_list_sf = str.format(f"{yyy_list:.4e}")
             yyy_list_str.append(
                 '{' + f" \"t\": \"{str(n)}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
             )
@@ -607,13 +624,15 @@ class PlotFitterReporter(FitterReporter):
 
         xx_list = formattable_float_list()
         the_first_line = E_filt[E_filt.__iter__().__next__()]
-        xx_list.extend([x * 1e+15 for x in the_first_line['t'][0::5]])
+        nt = len(the_first_line['t'])
+        m = mod_plot_count(nt, 1000)
+        xx_list.extend([x * 1e+15 for x in the_first_line['t'][0::m]])
 
         yyy_list_str = []
         for i in reversed(E_filt):
             formattable = formattable_float_list()
-            formattable.extend(E_filt[i]['y'][0::5])
-            formatted = "{:.3e}".format(formattable)
+            formattable.extend(E_filt[i]['y'][0::m])
+            formatted = "{:.4e}".format(formattable)
             yyy_list_str.append(
                 '{' + f" \"t\": {str(i)}, \"values\": {formatted}, \"pointRadius\": 0 " + '}'
             )
@@ -641,7 +660,7 @@ class PlotFitterReporter(FitterReporter):
         yyy_list_str = []
         yyy_list = formattable_float_list()
         yyy_list.extend(val_list)
-        yyy_list_sf = str.format(f"{yyy_list:.3e}")
+        yyy_list_sf = str.format(f"{yyy_list:.4e}")
         yyy_list_str.append(
             '{' + f" \"t\": \"{title_y}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
         )
@@ -704,7 +723,8 @@ class MultipleFitterReporter(FitterReporter):
             self.reps.append(PlotFitterReporter(conf_rep_plot))
         if not conf_rep_table.is_empty() and \
                 (conf_rep_table.plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.ALL or
-                 conf_rep_table.plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.TABLES):
+                 conf_rep_table.plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.TABLES or
+                 conf_rep_table.plotting_flag == config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.TABLES_ITER):
             self.reps.append(TableFitterReporter(conf_rep_table))
         self.conf_rep_table = conf_rep_table
         self.conf_rep_plot = conf_rep_plot
@@ -718,7 +738,9 @@ class MultipleFitterReporter(FitterReporter):
         out_path = prop_conf_rep_table.out_path
         plotting_flag = prop_conf_rep_table.plotting_flag
         prop_out_path = os.path.join(out_path, prop_id)
-        if not os.path.exists(prop_out_path):
+        if not os.path.exists(prop_out_path) \
+                and plotting_flag != config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.TABLES_ITER \
+                and plotting_flag != config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.NONE:
             os.makedirs(prop_out_path)
 
         return MultiplePropagationReporter(out_path=prop_out_path, plotting_flag=plotting_flag, nlvls=nlvls,

@@ -4,7 +4,7 @@
     "out_path": "output_{input:$.run_id}/T={input:$.fitter.propagation.T}",
     "~~out_path": "output_{input:$.run_id}/T={input:$.fitter.propagation.T}__w_list={input:$.fitter.w_list}",
     "~out_path": "output_ut",
-    "plotting_flag": "tables",
+    "plotting_flag": "tables_iter",
 
     "table.imin": -1,
     "table.imod_fileout": 1,
