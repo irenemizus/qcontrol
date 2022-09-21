@@ -227,7 +227,8 @@ class PlotPropagationReporter(PropagationReporter):
         template_name = "report_templates/chart.template.html"
 
         xx_list = formattable_float_list()
-        nx = len(psi_filt[0]['x'])
+        the_first_line = psi_filt[psi_filt.__iter__().__next__()]
+        nx = len(the_first_line['x'])
         m = mod_plot_count(nx, 1000)
 
         yyy_list_str = []

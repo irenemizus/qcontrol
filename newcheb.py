@@ -508,12 +508,13 @@ def main(argv):
     futures = []
     job_id: int = 0
     json_id: int = 0
-    run_id = data_task_src["run_id"].split("/")[-1]
     for dt in substs:
         if json_create:
+            run_id = dt["run_id"].split("/")[-1]
             print_json_input_task(dt, run_id, json_id)
             json_id += 1
             continue
+
         def job(id: int, data_task):
             try:
                 print(f"Running variant {id}:")
@@ -749,7 +750,9 @@ def main(argv):
                 #         conf_task.fitter.propagation.T = round(T_cur, 19)
                 # T_cur *= T0_step
 
-                conf_task.fitter.propagation.sigma = 2.0 * conf_task.fitter.propagation.T #TODO: to add a possibility to vary groups of parameters
+                if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN and \
+                   conf_task.run_id != "no_id":
+                    conf_task.fitter.propagation.sigma = 2.0 * conf_task.fitter.propagation.T #TODO: to add a possibility to vary groups of parameters
 
                 print_input(conf_rep_plot, conf_task, "table_inp_" + str(step) + ".txt")
 
