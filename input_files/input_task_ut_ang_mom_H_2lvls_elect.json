@@ -1,0 +1,51 @@
+{
+  "fitter": {
+    "task_type": "optimal_control_unit_transform",
+    "epsilon": 1e-8,
+    "impulses_number": 1,
+    "nb": 2,
+    "iter_max": 500,
+    "h_lambda": 0.005,
+    "init_guess": "sqrsin",
+    "init_guess_hf": "cos_set",
+    "w_list_3.997": [
+      0.82, 0.17, 0.83, 0.92, 0.67, 0.24, 0.97
+    ],
+    "w_list_3.999": [
+      0.88, 0.34, 0.92, 0.27, 0.39, 0.82, 0.68
+    ],
+    "w_list_1": [
+      1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00
+    ],
+    "w_list": [
+      0.88, 0.34, 0.92, 0.27, 0.00, 0.00, 0.00
+    ],
+    "lf_aug_type": "z",
+    "pcos": 4,
+    "Em": 5,
+    "propagation": {
+      "pot_type": "none",
+      "wf_type": "const",
+      "hamil_type": "BH_model",
+      "U": 5,
+      "delta": 25,
+      "Du": 1,
+      "np": 1,
+      "L": 1.0,
+      "nch": 8,
+      "t0": 0.0,
+      "E0": 40.0,
+      "nt": 3500,
+      "T": 3.306555E-13,
+      "sigma": 6.671270E-13,
+      "T_3.999": 3.306555E-13,
+      "T_3.995": 3.508755E-13,
+      "sigma_3.999": 6.671270E-13,
+      "sigma_3.995": 7.281270E-13,
+      "~~t0": 16.678E-14,
+      "~~sigma": 4.765E-14,
+      "nu_L": 0.299793E14
+    },
+    "mod_log": 500
+  }
+}
