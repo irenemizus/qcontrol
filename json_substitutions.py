@@ -26,7 +26,7 @@ class JsonSubstitutionsIterator:
             for k in root.keys():
                 if isinstance(root[k], dict) and \
                         "@SUBST:ID" in root[k] and \
-                        root[k]["@SUBST:ID"] == id:
+                        root[k]["@SUBST:ID"] == id: # TODO: to make @ITER:ID
                     root[k] = value
 
                 JsonSubstitutionsIterator.replace_subst_id(root[k], id, value)
