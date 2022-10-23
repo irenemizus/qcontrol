@@ -1,5 +1,5 @@
 #!/bin/bash
-for i in {0..71}
+for i in {0..39}
 do
    echo "Running input_task_ut_ang_mom_H_run1_var$i.json"
    sbatch run1-batch.sh $i
