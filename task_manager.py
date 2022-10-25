@@ -3,6 +3,7 @@ import math
 
 import numpy
 
+import phys_base
 from config import TaskRootConfiguration
 from propagation import PropagationSolver
 from psi_basis import PsiBasis
@@ -526,7 +527,7 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             for v2 in range(nb):
                 F.itemset((v1, v2), omega**(v1 * v2) / math.sqrt(nb))
 
-        return F
+        return numpy.matrix(F)
 
     @staticmethod
     def _matrix_PsiBasis_mult(F: numpy.matrix, psi: PsiBasis, nb, np):
