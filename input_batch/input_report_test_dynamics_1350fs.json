@@ -1,6 +1,6 @@
 {
   "fitter": {
-    "out_path": "output_1350fs",
+    "out_path": "../output_1350fs",
     "plotting_flag": "all",
 
     "table.imin": -1,

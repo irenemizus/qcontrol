@@ -11,6 +11,7 @@ from psi_basis import Psi
 from tools import print_err
 import config
 
+FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 class formattable_float_list(list):
 
@@ -224,7 +225,7 @@ class PlotPropagationReporter(PropagationReporter):
             K_all += 1
 
         template: str
-        template_name = "report_templates/chart.template.html"
+        template_name = os.path.join(FILE_PATH, "report_templates/chart.template.html")
 
         xx_list = formattable_float_list()
         the_first_line = psi_filt[psi_filt.__iter__().__next__()]
@@ -262,7 +263,7 @@ class PlotPropagationReporter(PropagationReporter):
     @staticmethod
     def __plot_moms_update_graph(t_list, moms_list, namem, title_plot, title_y, plot_name):
         template: str
-        template_name = "report_templates/chart.template.html"
+        template_name = os.path.join(FILE_PATH, "report_templates/chart.template.html")
 
         xx_list = formattable_float_list()
         nt = len(t_list)
@@ -294,7 +295,7 @@ class PlotPropagationReporter(PropagationReporter):
     @staticmethod
     def __plot_tvals_update_graph(t_list, val_list, title_plot, title_y, plot_name):
         template: str
-        template_name = "report_templates/chart.template.html"
+        template_name = os.path.join(FILE_PATH, "report_templates/chart.template.html")
 
         xx_list = formattable_float_list()
         nt = len(t_list)
@@ -336,7 +337,7 @@ class PlotPropagationReporter(PropagationReporter):
         xx_list.extend([x * 1e+15 for x in t_list[0::m]])
 
         template: str
-        template_name = "report_templates/chart.template.html"
+        template_name = os.path.join(FILE_PATH, "report_templates/chart.template.html")
 
         yyy_list_str = []
         for n in range(nlvls):
@@ -621,7 +622,7 @@ class PlotFitterReporter(FitterReporter):
             K_all += 1
 
         template: str
-        template_name = "report_templates/chart.template.html"
+        template_name = os.path.join(FILE_PATH, "report_templates/chart.template.html")
 
         xx_list = formattable_float_list()
         the_first_line = E_filt[E_filt.__iter__().__next__()]
@@ -656,7 +657,7 @@ class PlotFitterReporter(FitterReporter):
     @staticmethod
     def __plot_iter_update_graph(i_list, val_list, title_plot, title_y, plot_name):
         template: str
-        template_name = "report_templates/chart.template.html"
+        template_name = os.path.join(FILE_PATH, "report_templates/chart.template.html")
 
         yyy_list_str = []
         yyy_list = formattable_float_list()
