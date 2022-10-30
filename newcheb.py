@@ -785,7 +785,6 @@ def main(argv):
                             step = -1
                             with open(os.path.join(conf_rep_plot.fitter.out_path, "tab_iter.csv"), "r") as f:
                                 lines = f.readlines()
-                                # F_cur = float(lines[-1].strip().split(" ")[-1])
                                 for line in lines:
                                     F_last = float(line.strip().split(" ")[-1])
                                     step_last = int(line.strip().split(" ")[0])
@@ -793,7 +792,26 @@ def main(argv):
                                         F_cur = F_last
                                         step = step_last
 
-                            fout.write(f"{step}\t{conf_rep_table.fitter.out_path}\t{F_cur}\n")
+                            E_sqr_int = 0.0
+                            t_prev = -1.0
+                            for line_E in open(os.path.join(conf_rep_plot.fitter.out_path, "tab_iter_E.csv"), "r"):
+                                ll = line_E.strip().split(" ")
+                                step_E = int(ll[0])
+                                t = float(ll[1])
+                                if step_E == step:
+                                    if t_prev < 0: t_prev = t
+                                    E_cur = float(ll[-1])
+                                    E_sqr_int += E_cur * E_cur * (t - t_prev)
+                                    t_prev = t
+
+                                # lines_E = fE.readlines()
+                                # for line_E in lines_E:
+                                #     step_E = int(line_E.strip().split(" ")[0])
+                                #     if step_E == step:
+                                #         E_cur = float(line_E.strip().split(" ")[-1])
+                                #         E2_int += E_cur * E_cur
+
+                            fout.write(f"{step}\t{conf_rep_table.fitter.out_path}\t{F_cur}\t{E_sqr_int}\n")
                             fout.flush()
             except Exception as e:
                 print_err(f"An exception interrupted the job #{job_id}: {str(e)}")
