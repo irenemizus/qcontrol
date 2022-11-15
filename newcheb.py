@@ -453,7 +453,6 @@ def process_input_templates_in_report(data_task, data_rep_node):
             except StopIteration:
                 # Do the nothing!
                 pass
-            #print(data_rep_node)
     return data_rep_node
 
 def main(argv):
@@ -742,14 +741,6 @@ def main(argv):
                 if not os.path.exists(conf_rep_plot.fitter.out_path):
                     os.makedirs(conf_rep_plot.fitter.out_path, exist_ok=True)
 
-                #     T_ac = conf_task.fitter.propagation.T #conf_task.fitter.propagation.Du / phys_base.Hz_to_cm
-                #     T_start = T_ac / 2.0
-                #     T0_step = pow(2.0, 1.0 / 100) #2 * T_ac / 800 #pow(1.01, 1.0 / 200)
-                #     T_cur = T_start
-                #     for step in range(200):
-                #         conf_task.fitter.propagation.T = round(T_cur, 19)
-                # T_cur *= T0_step
-
                 if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN and \
                    conf_task.run_id != "no_id":
                     conf_task.fitter.propagation.sigma = 2.0 * conf_task.fitter.propagation.T #TODO: to add a possibility to vary groups of parameters
@@ -770,49 +761,6 @@ def main(argv):
                                                       )
                 fitting_solver.time_propagation(dx, x, t_step, t_list)
                 fit_reporter_imp.close()
-
-                with job_mutex:
-                    if conf_rep_table.fitter.table_glob_path != "":
-                        if first_pass["val"]:
-                            wa = "w"
-                            first_pass["val"] = True
-                        else:
-                            wa = "a"
-
-                        with open(conf_rep_table.fitter.table_glob_path, wa) as fout:
-                            # Printing the last value into a table
-                            F_cur = 0.0
-                            step = -1
-                            with open(os.path.join(conf_rep_plot.fitter.out_path, "tab_iter.csv"), "r") as f:
-                                lines = f.readlines()
-                                for line in lines:
-                                    F_last = float(line.strip().split(" ")[-1])
-                                    step_last = int(line.strip().split(" ")[0])
-                                    if F_last < F_cur:
-                                        F_cur = F_last
-                                        step = step_last
-
-                            E_sqr_int = 0.0
-                            t_prev = -1.0
-                            for line_E in open(os.path.join(conf_rep_plot.fitter.out_path, "tab_iter_E.csv"), "r"):
-                                ll = line_E.strip().split(" ")
-                                step_E = int(ll[0])
-                                t = float(ll[1])
-                                if step_E == step:
-                                    if t_prev < 0: t_prev = t
-                                    E_cur = float(ll[-1])
-                                    E_sqr_int += E_cur * E_cur * (t - t_prev)
-                                    t_prev = t
-
-                                # lines_E = fE.readlines()
-                                # for line_E in lines_E:
-                                #     step_E = int(line_E.strip().split(" ")[0])
-                                #     if step_E == step:
-                                #         E_cur = float(line_E.strip().split(" ")[-1])
-                                #         E2_int += E_cur * E_cur
-
-                            fout.write(f"{step}\t{conf_rep_table.fitter.out_path}\t{F_cur}\t{E_sqr_int}\n")
-                            fout.flush()
             except Exception as e:
                 print_err(f"An exception interrupted the job #{job_id}: {str(e)}")
                 print_err(traceback.format_exc())

@@ -8,3 +8,5 @@ do
        sbatch runT-batch.sh $var $j
    done
 done
+cd ../output_ut || exit
+sbatch post_processing.sh
