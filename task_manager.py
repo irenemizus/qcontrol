@@ -3,7 +3,6 @@ import math
 
 import numpy
 
-import phys_base
 from config import TaskRootConfiguration
 from propagation import PropagationSolver
 from psi_basis import PsiBasis
@@ -23,7 +22,6 @@ class _LaserFields:
             E0      amplitude value of the laser field energy envelope
             t0      initial time, when the laser field is switched on
             sigma   scaling parameter of the laser field envelope
-            nu_L    basic frequency of the laser field
             t       current time value
             OUTPUT
             E       complex value of current external laser field  """
@@ -39,7 +37,6 @@ class _LaserFields:
             E0      amplitude value of the laser field energy envelope
             t0      initial time, when the laser field is switched on
             sigma   scaling parameter of the laser field envelope
-            nu_L    basic frequency of the laser field
             t       current time value
             OUTPUT
             E       complex value of current external laser field  """
@@ -55,7 +52,6 @@ class _LaserFields:
             E0      amplitude value of the laser field energy envelope
             t0      initial time, when the laser field is switched on
             sigma   scaling parameter of the laser field envelope
-            nu_L    basic frequency of the laser field
             t       current time value
             OUTPUT
             E       complex value of current external laser field  """
@@ -66,56 +62,59 @@ class _LaserFields:
 
 class _LaserFieldsHighFrequencyPart:
     @staticmethod
-    def cexp(nu_L, t, pcos, w_list):
+    def cexp(nu, freq_mult, t, pcos, w_list):
         """ Calculates a high-frequency part of external laser field pulse energy
             INPUT
-            nu_L    basic frequency of the laser field
-            t       current time value
-            pcos    maximum frequency multiplier of the cos set (if applicable)
-            w_list  list of partial amplitudes for the cos set (if applicable)
+            nu           basic laser field frequency
+            freq_mult    basic laser field frequency multiplier
+            t            current time value
+            pcos         maximum frequency multiplier of the cos set (if applicable)
+            w_list       list of partial amplitudes for the cos set (if applicable)
             OUTPUT
-            E_omega complex value of a high-frequency part for current external laser field  """
+            E_omega      complex value of a high-frequency part for current external laser field  """
 
-        E_omega = cmath.exp(1j * 2.0 * math.pi * nu_L * t)
+        E_omega = cmath.exp(1j * 2.0 * math.pi * nu * freq_mult * t)
 
         return E_omega
 
     @staticmethod
-    def cos(nu_L, t, pcos, w_list):
+    def cos(nu, freq_mult, t, pcos, w_list):
         """ Calculates a high-frequency part of external laser field pulse energy
             INPUT
-            nu_L    basic frequency of the laser field
-            t       current time value
-            pcos    maximum frequency multiplier of the cos set (if applicable)
-            w_list  list of partial amplitudes for the cos set (if applicable)
+            nu           basic laser field frequency
+            freq_mult    basic laser field frequency multiplier
+            t            current time value
+            pcos         maximum frequency multiplier of the cos set (if applicable)
+            w_list       list of partial amplitudes for the cos set (if applicable)
             OUTPUT
-            E_omega complex value of a high-frequency part for current external laser field  """
+            E_omega      complex value of a high-frequency part for current external laser field  """
 
-        E_omega = math.cos(2.0 * math.pi * pcos * nu_L * t)
+        E_omega = math.cos(2.0 * math.pi * pcos * nu * freq_mult * t)
 
         return E_omega
 
     @staticmethod
-    def cos_set(nu_L, t, pcos, w_list):
+    def cos_set(nu, freq_mult, t, pcos, w_list):
         """ Calculates a high-frequency part of external laser field pulse energy
             INPUT
-            nu_L    basic frequency of the laser field
-            t       current time value
-            pcos    maximum frequency multiplier of the cos set (if applicable)
-            w_list  list of (2 * pcos - 1) partial amplitudes for the cos set (if applicable)
+            nu           basic laser field frequency
+            freq_mult    basic laser field frequency multiplier
+            t            current time value
+            pcos         maximum frequency multiplier of the cos set (if applicable)
+            w_list       list of (2 * pcos - 1) partial amplitudes for the cos set (if applicable)
             OUTPUT
-            E_omega complex value of a high-frequency part for current external laser field  """
+            E_omega      complex value of a high-frequency part for current external laser field  """
 
         #E_omega = 0.0
         #for p in range(-pcos, pcos + 1):
-        #    E_omega += math.cos(2.0**(p + 1) * math.pi * nu_L * t)
+        #    E_omega += math.cos(2.0**(p + 1) * math.pi * nu * freq_mult * t)
 
-        E_omega = w_list[0] * math.cos(2.0 * math.pi * nu_L * t)
+        E_omega = w_list[0] * math.cos(2.0 * math.pi * nu * freq_mult * t)
         i = -1
         for p in range(2, math.floor(pcos) + 1):
             i += 2
-            E_omega += w_list[i] * math.cos(2.0 * math.pi * nu_L * t * p)
-            E_omega += w_list[i + 1] * math.cos(2.0 * math.pi * nu_L * t / p)
+            E_omega += w_list[i] * math.cos(2.0 * math.pi * nu * freq_mult * t * p)
+            E_omega += w_list[i + 1] * math.cos(2.0 * math.pi * nu * freq_mult * t / p)
 
         return E_omega
 
@@ -276,7 +275,10 @@ class TaskManager:
 
         self.conf_fitter = conf_fitter
         self.init_dir = PropagationSolver.Direction.FORWARD
-
+        self.nu = self.conf_fitter.propagation.nu_L
+        # if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM and \
+        #    self.conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.NONE:
+        #     self.nu = 1.0 / 2.0 / self.conf_fitter.propagation.T
 
     def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb):
         raise NotImplementedError()
@@ -284,14 +286,14 @@ class TaskManager:
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb):
         raise NotImplementedError()
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         raise NotImplementedError()
 
     def laser_field(self, E0, t, t0, sigma):
         return self.lf_init_guess(E0, t, t0, sigma)
 
-    def laser_field_hf(self, nu_L, t, pcos, w_list):
-        return self.lf_init_guess_hf(nu_L, t, pcos, w_list)
+    def laser_field_hf(self, freq_mult, t, pcos, w_list):
+        return self.lf_init_guess_hf(self.nu, freq_mult, t, pcos, w_list)
 
 
 class HarmonicSingleStateTaskManager(TaskManager):
@@ -320,7 +322,7 @@ class HarmonicSingleStateTaskManager(TaskManager):
         v.append((0.0, v_l))
         return v
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         """ Potential energy vector
             INPUT
             x       vector of length np defining positions of grid points
@@ -332,7 +334,6 @@ class HarmonicSingleStateTaskManager(TaskManager):
             De_e    dissociation energy of the excited state (dummy variable)
             a_e     scaling factor of the excited state (dummy variable)
             Du      energy shift between the minima of the potentials (dummy variable)
-            nu_l    basic frequency of the laser field in Hz (dummy variable)
 
             OUTPUT
             v       real vector of length np describing the dimensionless potential V(X) """
@@ -366,7 +367,7 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
                  conf_fitter: TaskRootConfiguration.FitterConfiguration):
         super().__init__(wf_type, conf_fitter)
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         """ Potential energy vector
             INPUT
             x       vector of length np defining positions of grid points
@@ -378,7 +379,6 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
             De_e    dissociation energy of the excited state (dummy variable)
             a_e     scaling factor of the excited state (dummy variable)
             Du      energy shift between the minima of the potentials (dummy variable)
-            nu_l    basic frequency of the laser field in Hz (dummy variable)
 
             OUTPUT
             v       real vector of length np describing the dimensionless potential V(X) """
@@ -428,7 +428,7 @@ class MorseSingleStateTaskManager(TaskManager):
 
         return v
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         """ Potential energy vectors
             INPUT
             x           vector of length np defining positions of grid points
@@ -440,7 +440,6 @@ class MorseSingleStateTaskManager(TaskManager):
             De_e        dissociation energy of the excited state
             a_e         scaling factor of the excited state
             Du          energy shift between the minima of the potentials
-            nu_l    basic frequency of the laser field in Hz (dummy variable)
 
             OUTPUT
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
@@ -475,7 +474,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
         super().__init__(wf_type, conf_fitter)
 
     @staticmethod
-    def _pot(x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
+    def _pot(x, np, m, De, a, x0p, De_e, a_e, Du):
         # Lower morse potential
         v = MorseSingleStateTaskManager._pot_level1(x, m, De, a)
 
@@ -486,7 +485,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 
         return v
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         """ Potential energy vectors
             INPUT
             x           vector of length np defining positions of grid points
@@ -498,12 +497,11 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
             De_e        dissociation energy of the excited state
             a_e         scaling factor of the excited state
             Du          energy shift between the minima of the potentials
-            nu_l        basic frequency of the laser field in Hz (dummy variable)
 
             OUTPUT
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
 
-        return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du, nu_L)
+        return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du)
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb) -> PsiBasis:
         psi_goal_obj = PsiBasis(nb)
@@ -561,7 +559,7 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
 
         return phi
 
-    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du, nu_L):
+    def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         """ Potential energy vectors
             INPUT
             x           vector of length np defining positions of grid points
@@ -573,7 +571,6 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             De_e        dissociation energy of the excited state
             a_e         scaling factor of the excited state
             Du          energy shift between the minima of the potentials
-            nu_l    basic frequency of the laser field in Hz
 
             OUTPUT
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """

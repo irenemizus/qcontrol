@@ -318,7 +318,7 @@ class PropagationSolver:
 
     def start(self, dx, x, t_step, psi0, psif, dir: Direction):
         # evaluating of potential(s)
-        v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du, self.nu_L)
+        v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du)
 
         # evaluating of k vector
         akx2 = math_base.initak(self.np, dx, 2, self.ntriv)
