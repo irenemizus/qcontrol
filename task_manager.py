@@ -276,9 +276,9 @@ class TaskManager:
         self.conf_fitter = conf_fitter
         self.init_dir = PropagationSolver.Direction.FORWARD
         self.nu = self.conf_fitter.propagation.nu_L
-        # if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM and \
-        #    self.conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.NONE:
-        #     self.nu = 1.0 / 2.0 / self.conf_fitter.propagation.T
+        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM and \
+           self.conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.NONE:
+            self.nu = 1.0 / 2.0 / self.conf_fitter.propagation.T
 
     def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb):
         raise NotImplementedError()
