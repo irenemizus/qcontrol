@@ -2,9 +2,11 @@ import collections
 import copy
 import os, csv
 import statistics
-
+import sys
 import reporter
 
+
+work_dir = sys.argv[1]
 
 def num(s):
     try:
@@ -57,7 +59,7 @@ class batch_result:
         return "[ #" + str(self.iter) + ", gc: " + str(self.goal_close) + ", F_sm: " + str(self.F_sm) + " ]"
 
 
-root = "."
+root = work_dir
 run_dirs = [f.path for f in os.scandir(root) if f.is_dir()]
 print(run_dirs)
 
