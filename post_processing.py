@@ -7,7 +7,9 @@ import reporter
 
 
 work_dir = sys.argv[1]
-print(work_dir)
+out_dir = sys.argv[2]
+print(f"Input directory: {work_dir}")
+print(f"Output directory: {out_dir}")
 
 def num(s):
     try:
@@ -43,7 +45,7 @@ def plot_vals_update_graph(t_list, vals_list, namem, title_plot, title_y, plot_n
 
     inst = reporter.templateSubst(template_name, substs)
 
-    with open(plot_name, "w") as f:
+    with open(os.path.join(out_dir, plot_name), "w") as f:
         f.write(inst)
 
 class batch_result:
@@ -75,7 +77,7 @@ for run_dir in run_dirs:
         time_val = float(os.path.split(time_dir)[-1].split('T=')[-1])
 
         print(time_dir)
-        with open(os.path.join(time_dir, "tab_iter.csv")) as f:
+        with open(os.path.join(time_dir, "tab_iter.csv"), "r") as f:
             reader = csv.reader(f, delimiter=' ')
             data = list(reader)
 
@@ -108,11 +110,11 @@ for r in runs:
         pass
 
 # Writing the tables with minimum values of F_sm during the iterative procedures for each run_id and each T value into a set of txt files
-if not os.path.exists("glob_tabs"):
+if not os.path.exists(os.path.join(out_dir, "glob_tabs")):
     os.makedirs("glob_tabs", exist_ok=True)
 
 for r in runs_min:
-    with open(os.path.join("glob_tabs", "glob_" + r + ".txt"), "w") as fout:
+    with open(os.path.join(out_dir, "glob_tabs", "glob_" + r + ".txt"), "w") as fout:
         run = runs_min[r]
 
         for t in run:
@@ -176,7 +178,7 @@ for t in runs_inv_sort:
 # Plotting the results to txt format
 
 # Writing the total table with minimum values of F_sm during the iterative procedure for each run_id for each T value
-with open("glob.txt", "w") as f_gl:
+with open(os.path.join(out_dir, "glob.txt"), "w") as f_gl:
     for t in runs_inv_sort:
         tfs = t * 1e+15
         f_gl.write("T = {:.1f} fs\n".format(tfs))
@@ -189,7 +191,7 @@ with open("glob.txt", "w") as f_gl:
         f_gl.write("\n")
 
 # Writing the table with minimum values of F_sm among all the runs as a function of T value
-with open("glob_F_graph.txt", "w") as f_fgr:
+with open(os.path.join(out_dir, "glob_F_graph.txt"), "w") as f_fgr:
     for t in runs_inv_sort:
         tfs = float(t) * 1e+15
         min = runs_min_min[t]
@@ -200,7 +202,7 @@ with open("glob_F_graph.txt", "w") as f_fgr:
 
 # Writing the table with integral energies of optimal laser field corresponding to the minimum values of F_sm among all the runs as a function of T value
 E_int_dict = dict()
-with open("glob_E_graph.txt", "w") as f_egr:
+with open(os.path.join(out_dir, "glob_E_graph.txt"), "w") as f_egr:
     for tmin in F_sm_min_full_data:
         fmin = F_sm_min_full_data[tmin]
 
