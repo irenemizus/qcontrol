@@ -1,5 +1,5 @@
 #!/bin/bash
-for i in {0..34}
+for i in {0..0}
 do
    for j in {1..10}
    do

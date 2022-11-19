@@ -110,11 +110,11 @@ for r in runs:
         pass
 
 # Writing the tables with minimum values of F_sm during the iterative procedures for each run_id and each T value into a set of txt files
-if not os.path.exists(os.path.join(out_dir, "glob_tabs")):
-    os.makedirs("glob_tabs", exist_ok=True)
+glob_tabs_path = os.path.join(out_dir, "glob_tabs")
+os.makedirs(glob_tabs_path, exist_ok=True)
 
 for r in runs_min:
-    with open(os.path.join(out_dir, "glob_tabs", "glob_" + r + ".txt"), "w") as fout:
+    with open(os.path.join(glob_tabs_path, "glob_" + r + ".txt"), "w") as fout:
         run = runs_min[r]
 
         for t in run:
@@ -211,7 +211,8 @@ with open(os.path.join(out_dir, "glob_E_graph.txt"), "w") as f_egr:
 
         E_int = 0.0
         t_prev = -1.0
-        Efile_path = os.path.join(rmin, "T=" + str(tmin), "tab_iter_E.csv")
+        Efile_path = os.path.join(out_dir, rmin, "T=" + str(tmin), "tab_iter_E.csv")
+        print(Efile_path)
         ifExists = os.path.exists(Efile_path)
         if ifExists:
             for line_E in open(Efile_path, "r"):
@@ -227,6 +228,8 @@ with open(os.path.join(out_dir, "glob_E_graph.txt"), "w") as f_egr:
             E_int_dict[tmin] = E_int
             f_egr.write("{:.4f}\t{:.4f}\n".format(tminfs, E_int))
             f_egr.flush()
+        else:
+            raise FileNotFoundError(f"Can't find the file {Efile_path}")
 
 # Plotting the results to html format
 
