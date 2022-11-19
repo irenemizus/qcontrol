@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 #SBATCH --job-name=try500
-#SBATCH --output=er_%j.txt
+#SBATCH --output=../batch_jsons_out/er_%j.txt
 #
 #SBATCH --cpus-per-task=1
 #SBATCH --threads-per-core=1

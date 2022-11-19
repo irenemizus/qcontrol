@@ -7,6 +7,7 @@ import reporter
 
 
 work_dir = sys.argv[1]
+print(work_dir)
 
 def num(s):
     try:
