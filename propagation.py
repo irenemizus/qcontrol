@@ -237,9 +237,9 @@ class PropagationSolver:
         fm_start = 1.0
 
         # plotting initial values
-        self.reporter.print_time_point_prop(self.dyn.l, self.stat.psi0, self.dyn.t, self.stat.x, self.np, self.stat.moms0,
-                                       self.stat.cener0, self.stat.overlp00, self.stat.overlpf0, overlp0_tot, cener0_tot,
-                                       psi_max_abs, psi_max_real, self.dyn.E, fm_start)
+        self.reporter.print_time_point_prop(self.dyn.l, self.stat.psi0, self.dyn.t, self.stat.x, self.np, self.nt,
+                                            self.stat.moms0, self.stat.cener0, self.stat.overlp00, self.stat.overlpf0,
+                                            overlp0_tot, cener0_tot, psi_max_abs, psi_max_real, self.dyn.E, fm_start)
 
         print("Initial emax = ", emax0)
         print("Initial emin = ", emin0)
@@ -290,9 +290,9 @@ class PropagationSolver:
         else:
             E = self.dyn.E.real
 
-        self.reporter.print_time_point_prop(self.dyn.l, self.dyn.psi, self.dyn.t, self.stat.x, self.np, self.instr.moms,
-                                            self.instr.cener, self.instr.overlp0, self.instr.overlpf, overlp_tot,
-                                            cener_tot, psi_max_abs, psi_max_real, E, self.dyn.freq_mult)
+        self.reporter.print_time_point_prop(self.dyn.l, self.dyn.psi, self.dyn.t, self.stat.x, self.np, self.nt,
+                                            self.instr.moms, self.instr.cener, self.instr.overlp0, self.instr.overlpf,
+                                            overlp_tot, cener_tot, psi_max_abs, psi_max_real, E, self.dyn.freq_mult)
 
         if self.dyn.l % self.mod_log == 0:
             if self.np < np_min:

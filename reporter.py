@@ -2,6 +2,7 @@ import copy
 import pathlib
 import re
 import os.path
+import traceback
 
 from typing import List
 from typing import Dict
@@ -64,7 +65,7 @@ class PropagationReporter:
     def close(self):
         raise NotImplementedError()
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_rel, E, freq_mult):
         raise NotImplementedError()
 
@@ -152,7 +153,7 @@ class TablePropagationReporter(PropagationReporter):
         for i in range(len(phi_u)):
             f.write("{0}\n".format(phi_u[i]))
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_real, E, freq_mult):
         if l % self.conf.mod_fileout == 0 and l >= self.conf.lmin:
             self.plot(psi, t, x, np)
@@ -257,7 +258,7 @@ class PlotPropagationReporter(PropagationReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w") as f:
+        with open(plot_name, "w", encoding="utf-8") as f:
             f.write(inst)
 
     @staticmethod
@@ -289,7 +290,7 @@ class PlotPropagationReporter(PropagationReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w") as f:
+        with open(plot_name, "w", encoding="utf-8") as f:
             f.write(inst)
 
     @staticmethod
@@ -320,7 +321,7 @@ class PlotPropagationReporter(PropagationReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w") as f:
+        with open(plot_name, "w", encoding="utf-8") as f:
             f.write(inst)
 
     @staticmethod
@@ -358,7 +359,7 @@ class PlotPropagationReporter(PropagationReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w") as f:
+        with open(plot_name, "w", encoding="utf-8") as f:
             f.write(inst)
 
     def plot(self, psi:Psi, t, x, np, n):
@@ -464,7 +465,7 @@ class PlotPropagationReporter(PropagationReporter):
                                            "Closeness to the goal state", "(Ψ, Ψ_goal)",
                                            os.path.join(self._out_path, self.conf.gr_overlpf_tot))
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_real, E, freq_mult):
         try:
             if l % self.conf.mod_plotout == 0 and l >= self.conf.lmin:
@@ -477,6 +478,7 @@ class PlotPropagationReporter(PropagationReporter):
                 self.i += 1
         except ValueError as err:
             print_err("A nasty error has occurred during the reporting: ", err)
+            traceback.print_stack()
             print_err("Hopefully that doesn't affect the calculations, so the application is going on...")
 
 
@@ -503,10 +505,10 @@ class MultiplePropagationReporter(PropagationReporter):
     def close(self):
         pass
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_real, E, freq_mult):
         for rep in self.reps:
-            rep.print_time_point_prop(l, psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+            rep.print_time_point_prop(l, psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
                                       psi_max_abs, psi_max_real, E, freq_mult)
 
 
@@ -651,7 +653,7 @@ class PlotFitterReporter(FitterReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w") as f:
+        with open(plot_name, "w", encoding="utf-8") as f:
             f.write(inst)
 
     @staticmethod
@@ -677,7 +679,7 @@ class PlotFitterReporter(FitterReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w") as f:
+        with open(plot_name, "w", encoding="utf-8") as f:
             f.write(inst)
 
     def plot_fitter(self, iter, goal_close, Fsm):
