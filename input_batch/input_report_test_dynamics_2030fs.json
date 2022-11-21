@@ -25,7 +25,7 @@
 
       "plot.lmin": 0,
       "plot.mod_plotout": 100,
-      "plot.mod_update": 20,
+      "plot.mod_update": 1,
       "plot.number_plotout": 30
     }
   }

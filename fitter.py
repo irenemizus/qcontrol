@@ -633,17 +633,24 @@ class FittingSolver:
                 chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
                 psi_basis = self.dyn.psi_cur
                 sum = 0.0
+                goal_close_abs = 0.0
 
                 for vect in range(self.basis_length):
+                    goal_close_abs += self.dyn.goal_close[vect]
                     for n in range(self.levels_number):
                         sum += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
 
+                goal_close_abs = abs(goal_close_abs)
                 hf_part = self.laser_field_hf(1.0, dyn.t - (abs(stat.dt) / 2.0), self.conf_fitter.pcos, self.conf_fitter.w_list)
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 E_init = s * conf_prop.E0 * hf_part
 
                 if self.ntriv == -1:
-                    h_lambda = self.conf_fitter.h_lambda * phys_base.Red_Planck_h / phys_base.cm_to_erg
+                    h_lambda_0 = self.conf_fitter.h_lambda * phys_base.Red_Planck_h / phys_base.cm_to_erg
+                    if goal_close_abs:
+                        h_lambda = h_lambda_0 * self.basis_length / goal_close_abs
+                    else:
+                        h_lambda = h_lambda_0
                 else:
                     h_lambda = self.conf_fitter.h_lambda
 
