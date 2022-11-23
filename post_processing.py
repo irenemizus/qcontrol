@@ -222,7 +222,7 @@ with open(os.path.join(out_dir, "glob_E_graph.txt"), "w") as f_egr:
                 if step_E == imin:
                     if t_prev < 0: t_prev = t
                     E_cur = float(ll[-1])
-                    E_int += E_cur * (t - t_prev)
+                    E_int += E_cur * E_cur * (t - t_prev)
                     t_prev = t
             tminfs = tmin * 1e+15
             E_int_dict[tmin] = E_int
