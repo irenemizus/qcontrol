@@ -196,6 +196,14 @@ Options:
         parameter, which is applicable for the task_type = "optimal_control_..." only.
         For all other cases is a dummy variable.
         By default, is equal to 0.0066
+    h_lambda_mode
+        type of using the h_lambda parameter. Applicable for the
+        task_type = "optimal_control_..." only.
+        For all other cases is a dummy variable.
+        Available options:
+        "const"     - constant value given in input json file
+        "dynamical" - dynamically changeable parameter obtained as
+                      h_lambda * nb / (nb - abs(sum(<psi_k_goal|psi_k(T)>)))
     init_guess
         type of initial guessed laser field envelope used in propagation tasks.
         Available options:
@@ -218,8 +226,8 @@ Options:
         a way of adding the controlling laser field to "BH_model"-type Hamiltonian.
         For all other variants of "hamil_type" variables is a dummy variable.
         Available options:
-        "z" - H = H0 + 2E(t)Jz (by default)
-        "x" - H = H0 + 2E(t)Jx
+        "z" - H = -2 * delta * Jx + 2 * U * Jx**2 + 2 * E(t) * Jz (by default)
+        "x" - H = -2 * delta * Jx * E(t) + 2 * U * Jz
     nb
         number of basis vectors of the Hilbert space used in the calculation task.
         By default, is equal to 1
@@ -316,10 +324,18 @@ Options:
             scaling parameter of the laser field envelope in sec.
             Is a dummy variable for filtering / single morse / single harmonic tasks.
             By default, is equal to 50e-15 s
+        sigma_auto
+            parameter that controls the way of using sigma parameter.
+            If specified as "True", is calculated automatically as a function of T.
+            By default, is "False"
         nu_L
             basic frequency of the laser field in Hz.
             By default, is equal to 0.29297e15 Hz,
                         is identically equated to zero for filtering / single morse / single harmonic tasks
+        nu_L_auto
+            parameter that controls the way of using nu_L parameter.
+            If specified as "True", is calculated automatically as a function of T.
+            By default, is "False"
 
     There is a possibility of varying any input parameter specified in the json_task file.
     The key words for that:

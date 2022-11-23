@@ -42,7 +42,10 @@ def hamil_cpu(psi, v, akx2, np, ntriv):
         np      number of grid points
         ntriv   constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                     0 -- a trivial 2-level system
-                                   -1 -- a trivian n-level system with angular momentum Hamiltonian
+                                   -1 -- a trivial n-level system with angular momentum Hamiltonian and
+                                         with external laser field augmented inside a Jz term
+                                   -2 -- a trivial n-level system with angular momentum Hamiltonian and
+                                         with external laser field augmented inside a Jx term
         OUTPUT
         phi = H psi list of complex vectors of length np """
 
@@ -75,7 +78,10 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
         E_full      a complex value of external laser field
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
-                                       -1 -- a trivian n-level system with angular momentum Hamiltonian
+                                       -1 -- a trivial n-level system with angular momentum Hamiltonian and
+                                             with external laser field augmented inside a Jz term
+                                       -2 -- a trivial n-level system with angular momentum Hamiltonian and
+                                             with external laser field augmented inside a Jx term
         orig        a boolean parameter that depends
                     if an original form of the Hamiltonian should be used (orig = True) or
                     the shifted real version (orig = False -- by default)
@@ -106,11 +112,11 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
                 H.itemset((vi - 1, vi), P)
                 H.itemset((vi, vi - 1), R)
         elif ntriv == -2:
-            H.itemset((0, 0), 2.0 * l**2 * U)
+            H.itemset((0, 0), 2.0 * l * U)
             for vi in range(1, nb):
-                Q = 2.0 * (l - vi)**2 * U # U ~ 1 / cm
-                P = -(delta - E) * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-                R = -(delta - E) * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+                Q = 2.0 * (l - vi) * U # U ~ 1 / cm
+                P = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+                R = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
                 H.itemset((vi, vi), Q)
                 H.itemset((vi - 1, vi), P)
                 H.itemset((vi, vi - 1), R)
@@ -175,7 +181,10 @@ def residum_cpu(psi: Psi, v, akx2, xp, np, emin, emax, E, eL, U, delta, ntriv, E
         eL          a laser field energy shift
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
-                                       -1 -- a trivian n-level system with angular momentum Hamiltonian
+                                       -1 -- a trivial n-level system with angular momentum Hamiltonian and
+                                             with external laser field augmented inside a Jz term
+                                       -2 -- a trivial n-level system with angular momentum Hamiltonian and
+                                             with external laser field augmented inside a Jx term
         U, delta    parameters of angular momentum-type Hamiltonian
 
         OUTPUT
@@ -238,7 +247,10 @@ def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, delta, ntri
         eL          a laser field energy shift
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
-                                       -1 -- a trivian n-level system with angular momentum Hamiltonian
+                                       -1 -- a trivial n-level system with angular momentum Hamiltonian and
+                                             with external laser field augmented inside a Jz term
+                                       -2 -- a trivial n-level system with angular momentum Hamiltonian and
+                                             with external laser field augmented inside a Jx term
         U, delta    parameters of angular momentum-type Hamiltonian
 
         OUTPUT
@@ -302,8 +314,10 @@ def exp_vals_calc(psi: Psi, x, akx2, dx, np, m, ntriv):
         m       reduced mass of the system
         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                         0 -- a trivial 2-level system
-                                       -1 -- a trivian n-level system with angular momentum Hamiltonian
-
+                                       -1 -- a trivial n-level system with angular momentum Hamiltonian and
+                                             with external laser field augmented inside a Jz term
+                                       -2 -- a trivial n-level system with angular momentum Hamiltonian and
+                                             with external laser field augmented inside a Jx term
         OUTPUT
         moms  list of complex vectors of length np """
 

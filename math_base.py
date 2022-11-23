@@ -68,7 +68,10 @@ def initak(n, dx, iorder, ntriv):
                 derivative when the FFT is used for differentiating)
         ntriv   constant parameter; 1 -- an ordinary non-trivial diatomic-like system
                                     0 -- a trivial 2-level system
-                                   -1 -- a trivian n-level system with angular momentum Hamiltonian
+                                   -1 -- a trivial n-level system with angular momentum Hamiltonian and
+                                         with external laser field augmented inside a Jz term
+                                   -2 -- a trivial n-level system with angular momentum Hamiltonian and
+                                         with external laser field augmented inside a Jx term
         OUTPUT
         ak      complex one dimensional array of length n """
 

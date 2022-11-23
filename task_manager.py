@@ -602,7 +602,7 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
                 vmax = 2.0 * U * l**2 + 2.0 * Emax * l
                 vmin = -2.0 * Emax * l
             elif self.ntriv == -2:
-                vmax = 2.0 * U * l ** 2
+                vmax = 2.0 * U * l
                 vmin = 0.0
             else:
                 raise RuntimeError("Impossible case in the LfAugType class")
