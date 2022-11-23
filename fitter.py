@@ -641,7 +641,7 @@ class FittingSolver:
                         sum += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
 
                 goal_close_abs = abs(goal_close_abs)
-                hf_part = self.laser_field_hf(1.0, dyn.t - (abs(stat.dt) / 2.0), self.conf_fitter.pcos, self.conf_fitter.w_list)
+                hf_part = self.laser_field_hf(dyn.freq_mult, dyn.t - (abs(stat.dt) / 2.0), self.conf_fitter.pcos, self.conf_fitter.w_list)
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 E_init = s * conf_prop.E0 * hf_part
 
@@ -688,7 +688,7 @@ class FittingSolver:
         # optimal control unitary transformation algorithm
         elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             if self.dyn.iter_step == 0:
-                hf_part = self.laser_field_hf(1.0, dyn.t, self.conf_fitter.pcos, self.conf_fitter.w_list)
+                hf_part = self.laser_field_hf(dyn.freq_mult, dyn.t, self.conf_fitter.pcos, self.conf_fitter.w_list)
                 E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma) * hf_part
             else:
                 if prop.dyn.l == 0:

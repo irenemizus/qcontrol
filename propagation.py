@@ -382,7 +382,7 @@ class PropagationSolver:
         # Here we're transforming the problem to the one for psi_omega -- if needed
         if self.ntriv == 1:
             self.dyn.freq_mult = self.freq_multiplier(self.dyn, self.stat)
-            exp_L = cmath.sqrt(self.laser_field_hf(self.nu_L * self.dyn.freq_mult, self.dyn.t, self.pcos, self.w_list))
+            exp_L = cmath.sqrt(self.laser_field_hf(self.dyn.freq_mult, self.dyn.t, self.pcos, self.w_list))
 
             psi_omega_l = self.dyn.psi.f[0] / exp_L
             self.dyn.psi_omega.f[0][:] = psi_omega_l[:]

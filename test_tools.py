@@ -161,7 +161,7 @@ class TestPropagationReporter(PropagationReporter):
             t, E, freq_mult, ener_tot.real, overlp_tot[0], overlp_tot[1]
         ))
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_real, E, freq_mult):
         if l % self.mod_fileout == 0 and l >= self.lmin:
             self.plot(psi, t, x, np)
