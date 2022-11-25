@@ -1,5 +1,4 @@
 {
-  "run_id": { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3", "ut/run4", "ut/run5", "ut/run6", "ut/run7", "ut/run8", "ut/run9", "ut/run10" ] },
   "fitter": {
     "task_type": "optimal_control_unit_transform",
     "epsilon": 1e-3,
@@ -9,6 +8,7 @@
     "h_lambda": 0.001,
     "init_guess": "sqrsin",
     "init_guess_hf": "cos_set",
+    "w_list": [0.8999999999999999, -0.10000000000000009, -2.0, 1.6, 1.7000000000000002, 0.3999999999999999, -0.5],
     "lf_aug_type": "z",
     "pcos": 4,
     "Em": 5,
@@ -25,9 +25,9 @@
       "t0": 0.0,
       "E0": 40.0,
       "nt": 3500,
-      "T": 3.0E-13
+      "T": 3.5E-13,
+      "sigma": 7E-13
     },
     "mod_log": 500
   }
 }
-
