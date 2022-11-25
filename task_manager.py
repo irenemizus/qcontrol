@@ -68,8 +68,8 @@ class _LaserFieldsHighFrequencyPart:
             nu           basic laser field frequency
             freq_mult    basic laser field frequency multiplier
             t            current time value
-            pcos         maximum frequency multiplier of the cos set (if applicable)
-            w_list       list of partial amplitudes for the cos set (if applicable)
+            pcos         maximum frequency multiplier of the cos/sin set (dummy variable)
+            w_list       list of partial amplitudes for the cos/sin set (dummy variable)
             OUTPUT
             E_omega      complex value of a high-frequency part for current external laser field  """
 
@@ -84,12 +84,28 @@ class _LaserFieldsHighFrequencyPart:
             nu           basic laser field frequency
             freq_mult    basic laser field frequency multiplier
             t            current time value
-            pcos         maximum frequency multiplier of the cos set (if applicable)
-            w_list       list of partial amplitudes for the cos set (if applicable)
+            pcos         maximum frequency multiplier of the cos/sin set (if applicable)
+            w_list       list of partial amplitudes for the cos/sin set (dummy variable)
             OUTPUT
             E_omega      complex value of a high-frequency part for current external laser field  """
 
         E_omega = math.cos(2.0 * math.pi * pcos * nu * freq_mult * t)
+
+        return E_omega
+
+    @staticmethod
+    def sin(nu, freq_mult, t, pcos, w_list):
+        """ Calculates a high-frequency part of external laser field pulse energy
+            INPUT
+            nu           basic laser field frequency
+            freq_mult    basic laser field frequency multiplier
+            t            current time value
+            pcos         maximum frequency multiplier of the cos/sin set (if applicable)
+            w_list       list of partial amplitudes for the cos/sin set (dummy variable)
+            OUTPUT
+            E_omega      complex value of a high-frequency part for current external laser field  """
+
+        E_omega = math.sin(2.0 * math.pi * pcos * nu * freq_mult * t)
 
         return E_omega
 
@@ -100,24 +116,37 @@ class _LaserFieldsHighFrequencyPart:
             nu           basic laser field frequency
             freq_mult    basic laser field frequency multiplier
             t            current time value
-            pcos         maximum frequency multiplier of the cos set (if applicable)
-            w_list       list of (2 * pcos - 1) partial amplitudes for the cos set (if applicable)
+            pcos         maximum frequency multiplier of the cos/sin set (if applicable)
+            w_list       list of (2 * pcos - 1) partial amplitudes for the cos/sin set (if applicable)
             OUTPUT
             E_omega      complex value of a high-frequency part for current external laser field  """
 
-        #E_omega = 0.0
-        #for p in range(-pcos, pcos + 1):
-        #    E_omega += math.cos(2.0**(p + 1) * math.pi * nu * freq_mult * t)
+        E_omega = w_list[0] * math.cos(2.0 * math.pi * nu * freq_mult * t)
+        i = -1
+        for p in range(2, math.floor(pcos) + 1):
+            i += 2
+            E_omega += w_list[i] * math.cos(2.0 * math.pi * nu * freq_mult * t * p)
+            E_omega += w_list[i + 1] * math.cos(2.0 * math.pi * nu * freq_mult * t / p)
+
+        return E_omega
+
+    @staticmethod
+    def sin_set(nu, freq_mult, t, pcos, w_list):
+        """ Calculates a high-frequency part of external laser field pulse energy
+            INPUT
+            nu           basic laser field frequency
+            freq_mult    basic laser field frequency multiplier
+            t            current time value
+            pcos         maximum frequency multiplier of the cos/sin set (if applicable)
+            w_list       list of (2 * pcos - 1) partial amplitudes for the cos/sin set (if applicable)
+            OUTPUT
+            E_omega      complex value of a high-frequency part for current external laser field  """
 
         E_omega = w_list[0] * math.sin(2.0 * math.pi * nu * freq_mult * t)
-        E_omega += w_list[1] * math.sin(2.0 * math.pi * nu * freq_mult * t * 2.0)
-        E_omega += w_list[2] * math.sin(2.0 * math.pi * nu * freq_mult * t / 2.0)
-
-        # i = -1
-        # for p in range(2, math.floor(pcos) + 1):
-        #     i += 2
-        #     E_omega += w_list[i] * math.sin(2.0 * math.pi * nu * freq_mult * t * p)
-        #     E_omega += w_list[i + 1] * math.sin(2.0 * math.pi * nu * freq_mult * t / p)
+        i = 0
+        for p in range(1, math.floor(pcos) + 1):
+            i += 1
+            E_omega += w_list[i] * math.sin(2.0 * math.pi * nu * freq_mult * t * (2 * p + 1))
 
         return E_omega
 
@@ -240,6 +269,10 @@ class TaskManager:
             print("Cos-like high-frequency part of initial guess for the laser field with frequency multiplier "
                   "'pcos' = %f is used" % conf_fitter.pcos)
             self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cos
+        elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.SIN:
+            print("Sin-like high-frequency part of initial guess for the laser field with frequency multiplier "
+                  "'pcos' = %f is used" % conf_fitter.pcos)
+            self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.sin
         elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.COS_SET:
             print("A sequence of cos-type terms with 'pcos' = %f as the high-frequency part of initial guess "
                   "for the laser field is used. The maximum frequency multiplier equal to floor(pcos) will be used"
@@ -248,6 +281,14 @@ class TaskManager:
                 raise ValueError("The maximum frequency multiplier in the high frequency part of the laser field, "
                                  "'pcos', has to be > 1")
             self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cos_set
+        elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.SIN_SET:
+            print("A sequence of sin-type terms with 'pcos' = %f as the high-frequency part of initial guess "
+                  "for the laser field is used. The maximum frequency multiplier equal to floor(pcos) will be used"
+                  % conf_fitter.pcos)
+            if not conf_fitter.pcos > 1.0:
+                raise ValueError("The maximum frequency multiplier in the high frequency part of the laser field, "
+                                 "'pcos', has to be > 1")
+            self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.sin_set
         else:
             raise RuntimeError("Impossible case in the InitGuessHf class")
 
@@ -278,10 +319,11 @@ class TaskManager:
 
         self.conf_fitter = conf_fitter
         self.init_dir = PropagationSolver.Direction.FORWARD
-        self.nu = self.conf_fitter.propagation.nu_L
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM and \
-           self.conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.NONE:
+
+        if self.conf_fitter.propagation.nu_L_auto == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.nu_LType.TRUE:
             self.nu = 1.0 / 2.0 / self.conf_fitter.propagation.T
+        else:
+            self.nu = self.conf_fitter.propagation.nu_L
 
     def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb):
         raise NotImplementedError()
@@ -606,23 +648,15 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
                 vmin = -2.0 * Emax * l
             elif self.ntriv == -2:
                 vmax = 2.0 * U * l
-                vmin = 0.0
+                vmin = -2.0 * U * l
             else:
                 raise RuntimeError("Impossible case in the LfAugType class")
-
-            # The lowest and the highest level energies
-            #v_min = numpy.array([0.0] * np)
-            #v_max = numpy.array([U * l**2] * np)
-            #v.append((vmin, v_min))
 
             for n in range(self.conf_fitter.nb):
                 #vn = -2.0 * Emax * (l - n)
                 #v_n = numpy.array([U * (l - n)**2] * np)
                 vmax_list = numpy.array([vmax] * np)
                 v.append((vmin, vmax_list))
-            #v.append((vmax, v_max))
-#            for n in range(self.conf_fitter.nb):
-#                print(v[n][1][0])
         else:
             raise RuntimeError("Unsupported type of potential!")
 

@@ -126,7 +126,7 @@ class propagation_Tests(unittest.TestCase):
                                          conf.propagation.t0, conf.propagation.sigma)
 
         def laser_field_hf(freq_mult, t, pcos, w_list):
-            return task_manager._LaserFieldsHighFrequencyPart.cexp(0.0, 1.0, t, pcos, w_list)
+            return task_manager._LaserFieldsHighFrequencyPart.cexp(conf.propagation.nu_L, 1.0, t, pcos, w_list)
 
         def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult, dir):
             assert dir == PropagationSolver.Direction.FORWARD
@@ -166,7 +166,7 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        #reporter_impl.print_all("test_data/prop_trans_woc_forw_.py", None)
+        reporter_impl.print_all("test_data/prop_trans_woc_forw_.py", None)
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
@@ -199,7 +199,7 @@ class propagation_Tests(unittest.TestCase):
                                          conf.propagation.t0, conf.propagation.sigma)
 
         def laser_field_hf(freq_mult, t, pcos, w_list):
-            return task_manager._LaserFieldsHighFrequencyPart.cexp(0.0, 1.0, t, pcos, w_list)
+            return task_manager._LaserFieldsHighFrequencyPart.cexp(conf.propagation.nu_L, 1.0, t, pcos, w_list)
 
         def dynamic_state_factory(l, t, psi, psi_omega, E, freq_mult, dir):
             assert dir == PropagationSolver.Direction.BACKWARD
@@ -239,7 +239,7 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        #reporter_impl.print_all("test_data/prop_trans_woc_back_.py", None)
+        reporter_impl.print_all("test_data/prop_trans_woc_back_.py", None)
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,

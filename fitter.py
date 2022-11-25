@@ -34,6 +34,7 @@ class FittingSolver:
             self.chi_cur = PsiBasis(basis_length, levels_number)
             self.psi_cur = PsiBasis(basis_length, levels_number)
 
+            self.goal_close_abs_dyn = 0.0
             self.goal_close = [complex(0.0)] * basis_length
             self.E_tlist = []
 
@@ -369,6 +370,7 @@ class FittingSolver:
                 self.dyn.Fsm -= self.dyn.goal_close[vect] * self.dyn.goal_close[vect1].conjugate()
 
         print("Fsm = ", -self.dyn.Fsm)
+        self.dyn.goal_close_abs_dyn = goal_close_abs
 
         self.__finalize_propagation()
         return chiT, goal_close_abs
@@ -633,28 +635,34 @@ class FittingSolver:
                 chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
                 psi_basis = self.dyn.psi_cur
                 sum = 0.0
-                goal_close_abs = 0.0
 
                 for vect in range(self.basis_length):
-                    goal_close_abs += self.dyn.goal_close[vect]
                     for n in range(self.levels_number):
                         sum += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
 
-                goal_close_abs = abs(goal_close_abs)
                 hf_part = self.laser_field_hf(dyn.freq_mult, dyn.t - (abs(stat.dt) / 2.0), self.conf_fitter.pcos, self.conf_fitter.w_list)
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 E_init = s * conf_prop.E0 * hf_part
 
                 if self.ntriv == -1:
                     h_lambda_0 = self.conf_fitter.h_lambda * phys_base.Red_Planck_h / phys_base.cm_to_erg
-                    if goal_close_abs:
-                        h_lambda = h_lambda_0 * self.basis_length / goal_close_abs
+                else:
+                    h_lambda_0 = self.conf_fitter.h_lambda
+
+                if self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.DYNAMICAL:
+                    if self.dyn.goal_close_abs_dyn:
+                        h_lambda = h_lambda_0 * self.basis_length / self.dyn.goal_close_abs_dyn
                     else:
                         h_lambda = h_lambda_0
+                elif self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.CONST:
+                    h_lambda = h_lambda_0
                 else:
-                    h_lambda = self.conf_fitter.h_lambda
+                    raise RuntimeError("Impossible case in the HlambdaModeType class")
 
                 delta_E = - s * (self.a0 * sum).imag / h_lambda
+
+                print("Current goal_close_abs:\t\t"   f"{self.dyn.goal_close_abs_dyn}\n")
+                print("Current lambda:\t\t"   f"{h_lambda}\n")
 
 #                print(f"===== Got {delta_E}")
 #                if abs(self.TMP_delta_E) > abs(delta_E):

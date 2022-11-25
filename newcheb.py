@@ -198,10 +198,10 @@ Options:
         By default, is equal to 0.0066
     h_lambda_mode
         type of using the h_lambda parameter. Applicable for the
-        task_type = "optimal_control_..." only.
+        task_type = "optimal_control_unit_transform" only.
         For all other cases is a dummy variable.
         Available options:
-        "const"     - constant value given in input json file
+        "const"     - constant value given in input json file (by default)
         "dynamical" - dynamically changeable parameter obtained as
                       h_lambda * nb / (nb - abs(sum(<psi_k_goal|psi_k(T)>)))
     init_guess
@@ -216,7 +216,11 @@ Options:
         Available options:
         "exp"       - exponential type exp(i omega_L t) (by default)
         "cos"       - cos-type cos(omega_L t)
+        "sin"       - sin-type sin(omega_L t)
         "cos_set"   - a sequence of cos-type terms [w_0 * cos(omega_L t) + sum(w_i * cos(omega_L t * k) + w_j * cos(omega_L t / k))]
+        "sin_set"   - a sequence of sin-type terms [w_0 * sin(omega_L t) + w_1 * sin(omega_L t * 3) + w_2 * sin(omega_L t * 5) + ...)]
+                     (should be used together with a sqrsin- or gauss-type envelope if a symmetric initial guess is needed,
+                     for example, for an Hadamard-like Hamiltonian in a unitary transformation task)
     w_list
         a list of 2 * pcos - 1 amplitudes for separate harmonics of the laser field high-frequency part of type "cos_set".
         Is a dummy variable for all other types of "init_guess_hf".
@@ -233,15 +237,18 @@ Options:
         By default, is equal to 1
     pcos
         maximum frequency multiplier for a sum [w_0 * cos(omega_L t) + sum(w_i * cos(omega_L t * k) + w_j * cos(omega_L t / k))]
-        with k = 2 ... pcos in the case "init_guess_hf" = "cos_set", or just a frequency multiplier itself for
-        the "init_guess_hf" = "cos" case, which is used in a high-frequency part for the laser field initial guess.
+        or [w_0 * sin(omega_L t) + w_1 * sin(omega_L t * 3) + w_2 * sin(omega_L t * 5) + ... + w_(2 * pcos - 2) * sin(omega_L t * (4 * pcos - 3)))]
+        with k = 2 ... pcos in the cases "init_guess_hf" = "cos_set" and "sin_set", or just a frequency multiplier itself for
+        the "init_guess_hf" = "cos" and "sin" cases, which is used in a high-frequency part for the laser field initial guess.
         For the "init_guess_hf" = "exp" case is a dummy variable.
-        In the case "init_guess_hf" = "cos_set" the maximum frequency multiplier equal to floor(pcos) will be used;
+        In the cases "init_guess_hf" = "cos_set" and "sin_set" the maximum frequency multiplier equal to floor(pcos) will be used;
         it has to be greater than 1 then.
         By default, is equal to 1
     Em
         a multiplier used for evaluation of the laser field energy maximum value (E_max = E0 * Em),
-        which can be reached during the controlling procedure.
+        which can be reached during the controlling procedure
+        (for the "BH_model"-type Hamiltonian with lf_aug_type = "z", only).
+        For all other variants of Hamiltonian is a dummy variable.
         By default, is equal to 1.5
     mod_log
         step of output to stdout (to write to stdout each <val>-th time step).
@@ -326,7 +333,11 @@ Options:
             By default, is equal to 50e-15 s
         sigma_auto
             parameter that controls the way of using sigma parameter.
-            If specified as "True", is calculated automatically as a function of T.
+            If specified as "True", is calculated automatically as a function of T as follows:
+                for  init_guess = "sqrsin"  -- sigma = 2 * T
+                for  init_guess = "maxwell" -- sigma = T / 5
+                for  init_guess = "gauss"   -- sigma = T / 8
+            Must be explicitly set to "True" if a batch calculation is running!
             By default, is "False"
         nu_L
             basic frequency of the laser field in Hz.
@@ -334,7 +345,7 @@ Options:
                         is identically equated to zero for filtering / single morse / single harmonic tasks
         nu_L_auto
             parameter that controls the way of using nu_L parameter.
-            If specified as "True", is calculated automatically as a function of T.
+            If specified as "True", is calculated automatically as a function of T: nu_L = 1 / (2 * T).
             By default, is "False"
 
     There is a possibility of varying any input parameter specified in the json_task file.
@@ -614,6 +625,8 @@ def main(argv):
                         "of a scaling parameter of the laser field envelope, 'sigma',"
                         "and of a basic frequency of the laser field, 'nu_L', have to be positive")
 
+                if conf_task.run_id != "no_id" and conf_task.fitter.propagation.sigma_auto != TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.sigmaType.TRUE:
+                    raise ValueError("A batch calculation is running. 'sigma_auto' parameter must be set to 'True'!")
 
                 if conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.FILTERING or \
                         conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.SINGLE_POT:
@@ -757,9 +770,15 @@ def main(argv):
                 if not os.path.exists(conf_rep_plot.fitter.out_path):
                     os.makedirs(conf_rep_plot.fitter.out_path, exist_ok=True)
 
-                if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN and \
-                   conf_task.run_id != "no_id":
-                    conf_task.fitter.propagation.sigma = 2.0 * conf_task.fitter.propagation.T #TODO: to add a possibility to vary groups of parameters
+                if conf_task.fitter.propagation.sigma_auto == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.sigmaType.TRUE:
+                    if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
+                        conf_task.fitter.propagation.sigma = 2.0 * conf_task.fitter.propagation.T #TODO: to add a possibility to vary groups of parameters
+                    elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
+                        conf_task.fitter.propagation.sigma = conf_task.fitter.propagation.T / 5.0
+                    elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+                        conf_task.fitter.propagation.sigma = conf_task.fitter.propagation.T / 8.0
+                    else:
+                        pass
 
                 print_input(conf_rep_plot, conf_task, "table_inp_" + str(step) + ".txt")
 

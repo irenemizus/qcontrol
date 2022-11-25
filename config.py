@@ -109,6 +109,34 @@ class TaskRootConfiguration(ConfigurationBase):
                     return TaskRootConfiguration.FitterConfiguration.\
                         PropagationConfiguration.PotentialType[s.upper()]
 
+            class nu_LType(Enum):
+                FALSE = 0
+                TRUE = 1
+
+                @staticmethod
+                def from_int(i):
+                    return TaskRootConfiguration.FitterConfiguration. \
+                        PropagationConfiguration.nu_LType(i)
+
+                @staticmethod
+                def from_str(s):
+                    return TaskRootConfiguration.FitterConfiguration. \
+                        PropagationConfiguration.nu_LType[s.upper()]
+
+            class sigmaType(Enum):
+                FALSE = 0
+                TRUE = 1
+
+                @staticmethod
+                def from_int(i):
+                    return TaskRootConfiguration.FitterConfiguration. \
+                        PropagationConfiguration.sigmaType(i)
+
+                @staticmethod
+                def from_str(s):
+                    return TaskRootConfiguration.FitterConfiguration. \
+                        PropagationConfiguration.sigmaType[s.upper()]
+
             def __init__(self):
                 super().__init__(key_prefix="")
                 # default input values
@@ -150,11 +178,14 @@ class TaskRootConfiguration(ConfigurationBase):
                 self._data["E0"] = 71.54    # 1/cm
                 self._data["t0"] = 300e-15  # s
                 self._data["sigma"] = 50e-15    # s
+                self._data["sigma_auto"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.sigmaType.FALSE
                 self._data["nu_L"] = 0.29297e15 # Hz
                 # 0.29297e15 -- for the working transition between PECs;
                 # 0.5879558e15 -- analytical difference b/w excited and ground energies;
                 # 0.5859603e15 -- calculated difference b/w excited and ground energies !!;
                 # 0.599586e15 = 20000 1/cm
+                self._data[
+                    "nu_L_auto"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.nu_LType.FALSE
 
 
         class TaskType(Enum):
@@ -204,7 +235,6 @@ class TaskRootConfiguration(ConfigurationBase):
             def from_str(s):
                 return TaskRootConfiguration.FitterConfiguration.HamilType[s.upper()]
 
-
         class LfAugType(Enum):
             Z = 0
             X = 1
@@ -217,11 +247,24 @@ class TaskRootConfiguration(ConfigurationBase):
             def from_str(s):
                 return TaskRootConfiguration.FitterConfiguration.LfAugType[s.upper()]
 
+        class HlambdaModeType(Enum):
+            CONST = 0
+            DYNAMICAL = 1
+
+            @staticmethod
+            def from_int(i):
+                return TaskRootConfiguration.FitterConfiguration.HlambdaModeType(i)
+
+            @staticmethod
+            def from_str(s):
+                return TaskRootConfiguration.FitterConfiguration.HlambdaModeType[s.upper()]
 
         class InitGuessHf(Enum):
             EXP = 0
             COS = 1
             COS_SET = 2
+            SIN = 3
+            SIN_SET = 4
 
             @staticmethod
             def from_int(i):
@@ -249,6 +292,7 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["mod_log"] = 500
             self._data["iter_max"] = -1
             self._data["h_lambda"] = 0.0066
+            self._data["h_lambda_mode"] = TaskRootConfiguration.FitterConfiguration.HlambdaModeType.CONST
             self._data["nb"] = 1
             self._data["pcos"] = 1.0
             self._data["Em"] = 1.5
