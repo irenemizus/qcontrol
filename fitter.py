@@ -15,7 +15,7 @@ class FittingSolver:
         E_tlist: List[complex]
         chi_cur: PsiBasis
         psi_cur: PsiBasis
-        goal_close: List[complex]
+        goal_close_vec: List[complex]
 
         def __init__(self, basis_length, levels_number, E_vel=0.0, freq_mult_vel=0.0, iter_step=0, dir=PropagationSolver.Direction.FORWARD):
             self.E_vel = E_vel
@@ -34,8 +34,9 @@ class FittingSolver:
             self.chi_cur = PsiBasis(basis_length, levels_number)
             self.psi_cur = PsiBasis(basis_length, levels_number)
 
-            self.goal_close_abs_dyn = 0.0
-            self.goal_close = [complex(0.0)] * basis_length
+            self.goal_close_abs = 0.0
+            self.goal_close_scal = 0.0
+            self.goal_close_vec = [complex(0.0)] * basis_length
             self.E_tlist = []
 
             self.res = PropagationSolver.StepReaction.OK
@@ -177,7 +178,7 @@ class FittingSolver:
 #        self.TMP_delta_E = []
 
     # single propagation to the given direction; returns new chiT
-    def __single_propagation(self, dx, x, t_step, direct: PropagationSolver.Direction, chiT: PsiBasis, goal_close_abs):
+    def __single_propagation(self, dx, x, t_step, direct: PropagationSolver.Direction, chiT: PsiBasis):
         self.dyn.dir = direct
         init_psi_basis: PsiBasis
         fin_psi_basis: PsiBasis
@@ -312,7 +313,7 @@ class FittingSolver:
 #                    f.write("    " + str(l) + ",\n")
 #                f.write("]\n\n")
 
-        self.dyn.goal_close = [complex(0.0, 0.0)] * self.basis_length
+        self.dyn.goal_close_vec = [complex(0.0, 0.0)] * self.basis_length
         self.dyn.Fsm = complex(0.0, 0.0)
         for vect in range(self.basis_length):
             solver = self.solvers[vect]
@@ -331,12 +332,12 @@ class FittingSolver:
 
                     print("psi_%d(T)" % n + " = ", solver.dyn.psi.f[n][0])
 
-                    self.dyn.goal_close[vect] += math_base.cprod(solver.stat.psif.f[n], solver.dyn.psi.f[n],
-                                                      solver.stat.dx, self.conf_fitter.propagation.np)
+                    self.dyn.goal_close_vec[vect] += math_base.cprod(solver.stat.psif.f[n], solver.dyn.psi.f[n],
+                                                                     solver.stat.dx, self.conf_fitter.propagation.np)
 
                 if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
                     chiT_part.f[0] = numpy.array([0.0] * self.conf_fitter.propagation.np).astype(complex)
-                    chiT_part.f[1] = self.dyn.goal_close[vect] * solver.stat.psif.f[1]
+                    chiT_part.f[1] = self.dyn.goal_close_vec[vect] * solver.stat.psif.f[1]
 
                     # renormalization
                     cnorm = math_base.cprod(chiT_part.f[1], chiT_part.f[1], dx, self.conf_fitter.propagation.np)
@@ -353,31 +354,31 @@ class FittingSolver:
                     chiT.psis[vect] = copy.deepcopy(chiT_part)
 
                 elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                    print("goal_close value for the basis vector ", vect, " = ", self.dyn.goal_close[vect])
+                    print("goal_close value for the basis vector ", vect, " = ", self.dyn.goal_close_vec[vect])
                 else:
                     pass
 
-            goal_close_abs += self.dyn.goal_close[vect]
+            self.dyn.goal_close_scal += self.dyn.goal_close_vec[vect]
 
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV and \
                 direct == PropagationSolver.Direction.FORWARD:
             self.dyn.chi_tlist = [ chiT_omega ]
 
-        goal_close_abs = abs(goal_close_abs)
+        if direct == PropagationSolver.Direction.FORWARD:
+            self.dyn.goal_close_abs = abs(self.dyn.goal_close_scal)
 
         for vect in range(self.basis_length):
             for vect1 in range(self.basis_length):
-                self.dyn.Fsm -= self.dyn.goal_close[vect] * self.dyn.goal_close[vect1].conjugate()
+                self.dyn.Fsm -= self.dyn.goal_close_vec[vect] * self.dyn.goal_close_vec[vect1].conjugate()
 
         print("Fsm = ", -self.dyn.Fsm)
-        self.dyn.goal_close_abs_dyn = goal_close_abs
 
         self.__finalize_propagation()
-        return chiT, goal_close_abs
+        return chiT
 
     # single simple forward propagation
     def __single_iteration_simple(self, dx, x, t_step, t_list):
-        chiT, goal_close_abs = self.__single_propagation(dx, x, t_step, PropagationSolver.Direction.FORWARD, self.psi_goal_basis, 0.0)
+        chiT = self.__single_propagation(dx, x, t_step, PropagationSolver.Direction.FORWARD, self.psi_goal_basis)
 
         E_list = []
         for E in self.dyn.E_tlist:
@@ -386,7 +387,7 @@ class FittingSolver:
             else:
                 E_list.append(E.real)
 
-        self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, E_list, t_list, self.dyn.Fsm,
+        self.reporter.print_iter_point_fitter(self.dyn.iter_step, self.dyn.goal_close_abs, E_list, t_list, self.dyn.Fsm,
                                               self.conf_fitter.propagation.nt)
 
         return 0.0
@@ -396,13 +397,13 @@ class FittingSolver:
         assert (dx > 0.0)
 
         chiT = PsiBasis(self.basis_length, self.levels_number)
-        goal_close_abs = 0.0
+        self.dyn.goal_close_scal = 0.0
 
         direct = self.init_dir
         for run in range(2):
             print(f"Iteration = {self.dyn.iter_step}, {direct.name} direction begins...")
             # calculating chiT
-            chiT, goal_close_abs = self.__single_propagation(dx, x, t_step, direct, chiT, goal_close_abs)
+            chiT = self.__single_propagation(dx, x, t_step, direct, chiT)
 
 #            if direct == PropagationSolver.Direction.FORWARD:
 #                ind_dir = 'f'
@@ -424,7 +425,7 @@ class FittingSolver:
 #            np.savez_compressed(os.path.join(path, "fitter_state_bins.npz"), arrays)
 
             if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                if abs(goal_close_abs - self.basis_length) <= self.conf_fitter.epsilon and self.dyn.iter_step == 0:
+                if abs(self.dyn.goal_close_abs - self.basis_length) <= self.conf_fitter.epsilon and self.dyn.iter_step == 0:
                     print("The goal has been reached on the very first iteration. You don't need the control!")
                     self.dyn.res = PropagationSolver.StepReaction.OK
                     break
@@ -437,12 +438,10 @@ class FittingSolver:
                     else:
                         E_list.append(E.real)
 
-                self.reporter.print_iter_point_fitter(self.dyn.iter_step, goal_close_abs, E_list, t_list, self.dyn.Fsm,
+                self.reporter.print_iter_point_fitter(self.dyn.iter_step, self.dyn.goal_close_abs, E_list, t_list, self.dyn.Fsm,
                                                       self.conf_fitter.propagation.nt)
 
             direct = PropagationSolver.Direction(-direct.value)
-
-        return goal_close_abs
 
     def time_propagation(self, dx, x, t_step, t_list):
         self.dyn = FittingSolver.FitterDynamicState(self.basis_length, self.levels_number, E_vel=0.0, freq_mult_vel=0.0,
@@ -450,13 +449,13 @@ class FittingSolver:
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
 
             E_tlist_init = []
-            goal_close_abs_init = 0.0
+            goal_close_scal_init = 0.0
             for vect in range(self.basis_length):
                 for n in range(self.levels_number):
-                    goal_close_abs_init += math_base.cprod(self.psi_goal_basis.psis[vect].f[n], self.psi_init_basis.psis[vect].f[n],
+                    goal_close_scal_init += math_base.cprod(self.psi_goal_basis.psis[vect].f[n], self.psi_init_basis.psis[vect].f[n],
                                                            dx, self.conf_fitter.propagation.np)
 
-            goal_close_abs_init = abs(goal_close_abs_init)
+            goal_close_abs_init = abs(goal_close_scal_init)
 
             for t in t_list:
                 hf_part = self.laser_field_hf(1.0, t, self.conf_fitter.pcos, self.conf_fitter.w_list)
@@ -470,17 +469,17 @@ class FittingSolver:
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
            self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             # 0-th iteration
-            goal_close_abs = self.__single_iteration_optimal(dx, x, t_step, t_list)
+            self.__single_iteration_optimal(dx, x, t_step, t_list)
 #                self.dyn = FittingSolver.FitterDynamicState.from_json(saved_json)
 #                print(self.dyn)
 
             # iterative procedure
-            while abs(goal_close_abs - self.basis_length) > self.conf_fitter.epsilon and \
+            while abs(self.dyn.goal_close_abs - self.basis_length) > self.conf_fitter.epsilon and \
                     (self.dyn.iter_step < self.conf_fitter.iter_max or self.conf_fitter.iter_max == -1):
                 self.dyn.iter_step += 1
-                goal_close_abs = self.__single_iteration_optimal(dx, x, t_step, t_list)
+                self.__single_iteration_optimal(dx, x, t_step, t_list)
 
-            if abs(goal_close_abs - self.basis_length) <= self.conf_fitter.epsilon:
+            if abs(self.dyn.goal_close_abs - self.basis_length) <= self.conf_fitter.epsilon:
                 print("The goal has been successfully reached on the " + str(self.dyn.iter_step) + " iteration.")
             else:
                 print("The goal has not been reached during the calculation.")
@@ -627,6 +626,22 @@ class FittingSolver:
                 chi_init = self.dyn.chi_tlist[-1]
                 psi_init = self.psi_init_basis
                 self.a0 = 0.0
+                print("Current goal_close_abs:\t\t"   f"{self.dyn.goal_close_abs}\n")
+
+                if self.ntriv == -1:
+                    h_lambda_0 = self.conf_fitter.h_lambda * phys_base.Red_Planck_h / phys_base.cm_to_erg
+                else:
+                    h_lambda_0 = self.conf_fitter.h_lambda
+
+                if self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.DYNAMICAL:
+                    if self.dyn.goal_close_abs:
+                        self.h_lambda = h_lambda_0 * self.basis_length / self.dyn.goal_close_abs
+                    else:
+                        self.h_lambda = h_lambda_0
+                elif self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.CONST:
+                    self.h_lambda = h_lambda_0
+                else:
+                    raise RuntimeError("Impossible case in the HlambdaModeType class")
 
                 for vect in range(self.basis_length):
                     for n in range(self.levels_number):
@@ -644,25 +659,7 @@ class FittingSolver:
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 E_init = s * conf_prop.E0 * hf_part
 
-                if self.ntriv == -1:
-                    h_lambda_0 = self.conf_fitter.h_lambda * phys_base.Red_Planck_h / phys_base.cm_to_erg
-                else:
-                    h_lambda_0 = self.conf_fitter.h_lambda
-
-                if self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.DYNAMICAL:
-                    if self.dyn.goal_close_abs_dyn:
-                        h_lambda = h_lambda_0 * self.basis_length / self.dyn.goal_close_abs_dyn
-                    else:
-                        h_lambda = h_lambda_0
-                elif self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.CONST:
-                    h_lambda = h_lambda_0
-                else:
-                    raise RuntimeError("Impossible case in the HlambdaModeType class")
-
-                delta_E = - s * (self.a0 * sum).imag / h_lambda
-
-                print("Current goal_close_abs:\t\t"   f"{self.dyn.goal_close_abs_dyn}\n")
-                print("Current lambda:\t\t"   f"{h_lambda}\n")
+                delta_E = - s * (self.a0 * sum).imag / self.h_lambda
 
 #                print(f"===== Got {delta_E}")
 #                if abs(self.TMP_delta_E) > abs(delta_E):

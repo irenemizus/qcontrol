@@ -5,13 +5,13 @@
     "impulses_number": 1,
     "nb": 2,
     "iter_max": 500,
-    "h_lambda": 0.0000001,
+    "h_lambda": 0.00005,
     "h_lambda_mode": "dynamical",
     "init_guess": "sqrsin",
     "init_guess_hf": "sin_set",
     "lf_aug_type": "x",
     "pcos": 2,
-    "w_list": [1.0, 1.0, 1.0],
+    "~w_list": [1.0, 1.0, 1.0],
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
@@ -26,7 +26,7 @@
       "E0": 40.0,
       "nt": 3500,
       "T": 35E-13,
-      "sigma": 70E-13,
+      "sigma_auto": "True",
       "nu_L_auto": "True"
     },
     "mod_log": 500
