@@ -635,7 +635,7 @@ class FittingSolver:
 
                 if self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.DYNAMICAL:
                     if self.dyn.goal_close_abs:
-                        self.h_lambda = h_lambda_0 * self.basis_length / self.dyn.goal_close_abs
+                        self.h_lambda = h_lambda_0 * self.basis_length / math.sqrt(self.dyn.goal_close_abs)
                     else:
                         self.h_lambda = h_lambda_0
                 elif self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.CONST:
