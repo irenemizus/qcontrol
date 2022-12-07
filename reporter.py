@@ -6,7 +6,7 @@ import traceback
 
 from typing import List
 from typing import Dict
-from typing.io import TextIO
+from typing.io import TextIO        # pylint: disable=import-error
 
 from psi_basis import Psi
 from tools import print_err
@@ -524,7 +524,7 @@ class FitterReporter:
     def close(self):
         raise NotImplementedError()
 
-    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, nt):
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, E_int, J, nt):
         raise NotImplementedError()
 
     def create_propagation_reporter(self, prop_id: str, nlvls: int):
@@ -548,7 +548,8 @@ class TableFitterReporter(FitterReporter):
             os.mkdir(self.conf.out_path)
 
         self.f_ifit = open(os.path.join(self.conf.out_path, self.conf.tab_iter), 'w')
-        self.f_ifit_E = open(os.path.join(self.conf.out_path, self.conf.tab_iter_E), 'w')
+        if self.conf.plotting_flag != config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.TABLES_ITER:
+            self.f_ifit_E = open(os.path.join(self.conf.out_path, self.conf.tab_iter_E), 'w')
         return self
 
     def close(self):
@@ -559,9 +560,9 @@ class TableFitterReporter(FitterReporter):
         pass
 
     @staticmethod
-    def __plot_i_file_fitter(iter, goal_close, Fsm, file_ifit):
+    def __plot_i_file_fitter(iter, goal_close, Fsm, E_int, J, file_ifit):
         """ Plots the values, which are modified by fitter, as a function of iteration """
-        file_ifit.write("{:2d} {:.6f} {:.6f} \n".format(int(iter), goal_close, Fsm.real))
+        file_ifit.write("{:2d} {:.6f} {:.6f} {:.4f} {:.6f}\n".format(int(iter), goal_close, Fsm.real, E_int, J))
         file_ifit.flush()
 
     @staticmethod
@@ -574,13 +575,14 @@ class TableFitterReporter(FitterReporter):
     def plot_i_E(self, E_tlist, iter, t_list, nt):
         self.__plot_i_file_E(E_tlist, iter, t_list, nt, self.f_ifit_E)
 
-    def plot_fitter(self, iter, goal_close, Fsm):
-        self.__plot_i_file_fitter(iter, goal_close, Fsm, self.f_ifit)
+    def plot_fitter(self, iter, goal_close, Fsm, E_int, J):
+        self.__plot_i_file_fitter(iter, goal_close, Fsm, E_int, J, self.f_ifit)
 
-    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, nt):
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, E_int, J, nt):
         if iter % self.conf.imod_fileout == 0 and iter >= self.conf.imin:
-            self.plot_fitter(iter, goal_close, Fsm)
-            self.plot_i_E(E_tlist, iter, t_list, nt)
+            self.plot_fitter(iter, goal_close, Fsm, E_int, J)
+            if self.conf.plotting_flag != config.ReportRootConfiguration.ReportFitterConfiguration.OutputType.TABLES_ITER:
+                self.plot_i_E(E_tlist, iter, t_list, nt)
 
 
 class PlotFitterReporter(FitterReporter):
@@ -598,6 +600,8 @@ class PlotFitterReporter(FitterReporter):
         self.i_list = []
         self.gc_list = []
         self.Fsm_list = []
+        self.E_int_list = []
+        self.J_list = []
 
         # t = Coordinate
         self.E_abs = {}  # key: iter, value: {'t': [], 'y': []}
@@ -664,7 +668,7 @@ class PlotFitterReporter(FitterReporter):
         yyy_list_str = []
         yyy_list = formattable_float_list()
         yyy_list.extend(val_list)
-        yyy_list_sf = str.format(f"{yyy_list:.4e}")
+        yyy_list_sf = str.format(f"{yyy_list:.6e}")
         yyy_list_str.append(
             '{' + f" \"t\": \"{title_y}\", \"values\": {yyy_list_sf}, \"pointRadius\": 0 " + '}'
         )
@@ -682,10 +686,12 @@ class PlotFitterReporter(FitterReporter):
         with open(plot_name, "w", encoding="utf-8") as f:
             f.write(inst)
 
-    def plot_fitter(self, iter, goal_close, Fsm):
+    def plot_fitter(self, iter, goal_close, Fsm, E_int, J):
         self.i_list.append(iter)
         self.gc_list.append(goal_close)
         self.Fsm_list.append(Fsm.real)
+        self.E_int_list.append(E_int)
+        self.J_list.append(J)
 
         # Updating the graph for closeness of the result to the goal
         self.__plot_iter_update_graph(self.i_list, self.gc_list,
@@ -697,6 +703,16 @@ class PlotFitterReporter(FitterReporter):
                                       "F_sm value for the current result", "F_sm",
                                       os.path.join(self.conf.out_path, self.conf.gr_iter_F))
 
+        # Updating the graph for J = Fsm - lambda^2 * E_int value
+        self.__plot_iter_update_graph(self.i_list, self.J_list,
+                                      "J = F_sm - lambda^2 * E_int value value for the current result", "J",
+                                      os.path.join(self.conf.out_path, self.conf.gr_iter_J))
+
+        # Updating the graph for E_int value
+        self.__plot_iter_update_graph(self.i_list, self.E_int_list,
+                                      "Integral of the squared laser field energy value for the current result", "E_int, fs / cm^2",
+                                      os.path.join(self.conf.out_path, self.conf.gr_iter_E_int))
+
     def plot_E(self, E, iter, t, nt):
         self.E_abs[iter] = {'t': t, 'y': E}
 
@@ -705,10 +721,10 @@ class PlotFitterReporter(FitterReporter):
                                  "Absolute value of the laser field envelope",
                                  "abs(E), 1 / cm", os.path.join(self.conf.out_path, self.conf.gr_iter_E))
 
-    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, nt):
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, E_int, J, nt):
         try:
             if iter % self.conf.imod_plotout == 0 and iter >= self.conf.imin:
-                self.plot_fitter(iter, goal_close, Fsm)
+                self.plot_fitter(iter, goal_close, Fsm, E_int, J)
                 self.plot_E(E_tlist, iter, t_list, nt)
 
         except ValueError as err:
@@ -759,6 +775,6 @@ class MultipleFitterReporter(FitterReporter):
     def close(self):
         pass
 
-    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, nt):
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, E_int, J, nt):
         for rep in self.reps:
-            rep.print_iter_point_fitter(iter, goal_close, E_tlist, t_list, Fsm, nt)
+            rep.print_iter_point_fitter(iter, goal_close, E_tlist, t_list, Fsm, E_int, J, nt)

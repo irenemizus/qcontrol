@@ -27,6 +27,9 @@ class FittingSolver:
             self.freq_mult_patched = 1.0
             self.dAdt_happy = 0.0
             self.Fsm = complex(0.0, 0.0)
+            self.E_int = 0.0
+            self.J = 0.0
+            self.h_lambda = 0.0
 
             self.chi_tlist = []
             self.psi_tlist = []
@@ -185,6 +188,7 @@ class FittingSolver:
         chiT_omega = PsiBasis(self.basis_length, self.levels_number)
         self.dyn.chi_cur = None
         self.dyn.psi_cur = None
+        self.dyn.h_lambda = self.conf_fitter.h_lambda
         if direct == PropagationSolver.Direction.FORWARD:
             ind_dir = "f"
             laser_field = self.LaserFieldEnvelope
@@ -301,6 +305,12 @@ class FittingSolver:
 
         if direct == PropagationSolver.Direction.FORWARD:
             self.dyn.E_tlist = E_tlist_new
+
+            self.dyn.E_int = 0.0
+            for el in range(len(self.dyn.E_tlist) - 1):
+                E_cur = abs(self.dyn.E_tlist[el + 1])
+                self.dyn.E_int += E_cur * E_cur * (t_step * 1e15)
+
 #            with open("test_E_" + str(self.dyn.iter_step) + ".txt", "w") as f:
 #                f.write("TMP_delta_E = [\n")
 #                for l in self.TMP_delta_E:
@@ -371,7 +381,9 @@ class FittingSolver:
             for vect1 in range(self.basis_length):
                 self.dyn.Fsm -= self.dyn.goal_close_vec[vect] * self.dyn.goal_close_vec[vect1].conjugate()
 
-        print("Fsm = ", -self.dyn.Fsm)
+        print("Fsm = ", self.dyn.Fsm.real)
+
+        self.dyn.J = self.dyn.Fsm.real - self.dyn.h_lambda * self.dyn.h_lambda * self.dyn.E_int
 
         self.__finalize_propagation()
         return chiT
@@ -388,7 +400,7 @@ class FittingSolver:
                 E_list.append(E.real)
 
         self.reporter.print_iter_point_fitter(self.dyn.iter_step, self.dyn.goal_close_abs, E_list, t_list, self.dyn.Fsm,
-                                              self.conf_fitter.propagation.nt)
+                                              self.dyn.E_int, self.dyn.J, self.conf_fitter.propagation.nt)
 
         return 0.0
 
@@ -439,7 +451,7 @@ class FittingSolver:
                         E_list.append(E.real)
 
                 self.reporter.print_iter_point_fitter(self.dyn.iter_step, self.dyn.goal_close_abs, E_list, t_list, self.dyn.Fsm,
-                                                      self.conf_fitter.propagation.nt)
+                                                      self.dyn.E_int, self.dyn.J, self.conf_fitter.propagation.nt)
 
             direct = PropagationSolver.Direction(-direct.value)
 
@@ -447,15 +459,21 @@ class FittingSolver:
         self.dyn = FittingSolver.FitterDynamicState(self.basis_length, self.levels_number, E_vel=0.0, freq_mult_vel=0.0,
                                                     iter_step=0, dir=self.init_dir)
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-
             E_tlist_init = []
+            goal_close_init = [complex(0.0, 0.0)] * self.basis_length
             goal_close_scal_init = 0.0
             for vect in range(self.basis_length):
                 for n in range(self.levels_number):
-                    goal_close_scal_init += math_base.cprod(self.psi_goal_basis.psis[vect].f[n], self.psi_init_basis.psis[vect].f[n],
+                    goal_close_init[vect] += math_base.cprod(self.psi_goal_basis.psis[vect].f[n], self.psi_init_basis.psis[vect].f[n],
                                                            dx, self.conf_fitter.propagation.np)
+                goal_close_scal_init += goal_close_init[vect]
 
             goal_close_abs_init = abs(goal_close_scal_init)
+
+            Fsm_init = complex(0.0, 0.0)
+            for vect in range(self.basis_length):
+                for vect1 in range(self.basis_length):
+                    Fsm_init -= goal_close_init[vect] * goal_close_init[vect1].conjugate()
 
             for t in t_list:
                 hf_part = self.laser_field_hf(1.0, t, self.conf_fitter.pcos, self.conf_fitter.w_list)
@@ -463,8 +481,15 @@ class FittingSolver:
                                      self.conf_fitter.propagation.sigma) * hf_part
                 E_tlist_init.append(E.real)
 
-            self.reporter.print_iter_point_fitter(-1, goal_close_abs_init, E_tlist_init, t_list, self.dyn.Fsm,
-                                                  self.conf_fitter.propagation.nt)
+            E_int_init = 0.0
+            for el in range(len(E_tlist_init) - 1):
+                E_cur_init = abs(E_tlist_init[el + 1])
+                E_int_init += E_cur_init * E_cur_init * (t_step * 1e15)
+
+            J_init = Fsm_init.real - self.conf_fitter.h_lambda * self.conf_fitter.h_lambda * E_int_init
+
+            self.reporter.print_iter_point_fitter(-1, goal_close_abs_init, E_tlist_init, t_list, Fsm_init,
+                                                  E_int_init, J_init, self.conf_fitter.propagation.nt)
 
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
            self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
@@ -635,11 +660,11 @@ class FittingSolver:
 
                 if self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.DYNAMICAL:
                     if self.dyn.goal_close_abs:
-                        self.h_lambda = h_lambda_0 * self.basis_length / math.sqrt(self.dyn.goal_close_abs)
+                        self.dyn.h_lambda = h_lambda_0 * self.basis_length / math.sqrt(self.dyn.goal_close_abs)
                     else:
-                        self.h_lambda = h_lambda_0
+                        self.dyn.h_lambda = h_lambda_0
                 elif self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.CONST:
-                    self.h_lambda = h_lambda_0
+                    self.dyn.h_lambda = h_lambda_0
                 else:
                     raise RuntimeError("Impossible case in the HlambdaModeType class")
 
@@ -659,7 +684,7 @@ class FittingSolver:
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 E_init = s * conf_prop.E0 * hf_part
 
-                delta_E = - s * (self.a0 * sum).imag / self.h_lambda
+                delta_E = - s * (self.a0 * sum).imag / self.dyn.h_lambda
 
 #                print(f"===== Got {delta_E}")
 #                if abs(self.TMP_delta_E) > abs(delta_E):

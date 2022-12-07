@@ -52,14 +52,19 @@ class batch_result:
     iter: int
     goal_close: float
     F_sm: float
+    E_int: float
+    J: float
 
-    def __init__(self, iter, goal_close, F_sm):
+    def __init__(self, iter, goal_close, F_sm, E_int, J):
         self.iter = iter
         self.goal_close = goal_close
         self.F_sm = F_sm
+        self.E_int = E_int
+        self.J = J
 
     def __str__(self):
-        return "[ #" + str(self.iter) + ", gc: " + str(self.goal_close) + ", F_sm: " + str(self.F_sm) + " ]"
+        return "[ #" + str(self.iter) + ", gc: " + str(self.goal_close) + ", F_sm: " + str(self.F_sm) + \
+               ", E_int: " + str(self.E_int) + ", J: " + str(self.J) + " ]"
 
 
 root = work_dir
@@ -83,13 +88,14 @@ for run_dir in run_dirs:
 
             for i in range(len(data)):
                 data[i] = [x for x in data[i] if x != '']
-                data[i] = batch_result(int(data[i][0]), float(data[i][1]), float(data[i][2]))
+                data[i] = batch_result(int(data[i][0]), float(data[i][1]), float(data[i][2]), float(data[i][3]), float(data[i][4]))
 
         times[time_val] = data
 
     runs[run_id] = times
 
-# Searching fot the minimum value of F_sm during the iterative procedure for each run_id and each T value
+# Searching for the minimum value of F_sm together with corresponding E_int and J values during the iterative procedure
+# for each run_id and each T value
 runs_min = dict()
 for r in runs:
     runs_min[r] = dict()
@@ -105,7 +111,7 @@ for r in runs:
                 F_sm_min = tt.F_sm
                 time_min = copy.deepcopy(tt)
         if time_min is None:
-            time_min = batch_result(0, 0.0, 0.0)
+            time_min = batch_result(0, 0.0, 0.0, 0.0, 0.0)
         runs_min[r][t] = time_min
         pass
 
@@ -148,6 +154,9 @@ runs_inv_sort = collections.OrderedDict(sorted(runs_inv.items()))
 runs_min_min = dict()
 runs_min_avg = dict()
 runs_min_med = dict()
+
+runs_min_min_E = dict()
+runs_min_min_J = dict()
 
 min_min_run = []
 F_sm_min_full_data = dict()
@@ -200,36 +209,18 @@ with open(os.path.join(out_dir, "glob_F_graph.txt"), "w") as f_fgr:
         f_fgr.write("{:.1f}\t{:.4f}\t{:.4f}\t{:.4f}\n".format(tfs, min, avg, med))
         f_fgr.flush()
 
-# Writing the table with integral energies of optimal laser field corresponding to the minimum values of F_sm among all the runs as a function of T value
+# Writing the table with integral energies of optimal laser field corresponding to the minimum values of F_sm among
+# all the runs as a function of T value
 E_int_dict = dict()
-with open(os.path.join(out_dir, "glob_E_graph.txt"), "w") as f_egr:
-    for tmin in F_sm_min_full_data:
-        fmin = F_sm_min_full_data[tmin]
+with open(os.path.join(out_dir, "glob_E_int_graph.txt"), "w") as f_eigr:
+    for t in F_sm_min_full_data:
+        tfs = float(t) * 1e+15
+        time = F_sm_min_full_data[t]
+        E2_int = time[1].E_int
+        E_int_dict[t] = E2_int
 
-        rmin = fmin[0]
-        imin = fmin[1].iter
-
-        E_int = 0.0
-        t_prev = -1.0
-        Efile_path = os.path.join(out_dir, rmin, "T=" + str(tmin), "tab_iter_E.csv")
-        print(Efile_path)
-        ifExists = os.path.exists(Efile_path)
-        if ifExists:
-            for line_E in open(Efile_path, "r"):
-                ll = line_E.strip().split(" ")
-                step_E = int(ll[0])
-                t = float(ll[1])
-                if step_E == imin:
-                    if t_prev < 0: t_prev = t
-                    E_cur = float(ll[-1])
-                    E_int += E_cur * E_cur * (t - t_prev)
-                    t_prev = t
-            tminfs = tmin * 1e+15
-            E_int_dict[tmin] = E_int
-            f_egr.write("{:.4f}\t{:.4f}\n".format(tminfs, E_int))
-            f_egr.flush()
-        else:
-            raise FileNotFoundError(f"Can't find the file {Efile_path}")
+        f_eigr.write("{:.4f}\t{:.4f}\n".format(tfs, E2_int))
+        f_eigr.flush()
 
 # Plotting the results to html format
 
@@ -267,4 +258,4 @@ vals_list = [E_int_list]
 # Updating the graph for integral energy of optimal laser field
 plot_vals_update_graph(t_list, vals_list, namee,
                               "Integral energy of the optimal laser field", "",
-                              "glob_E_graph.html")
+                              "glob_E_int_graph.html")
