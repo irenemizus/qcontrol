@@ -400,6 +400,8 @@ class ReportRootConfiguration(ConfigurationBase):
             self._data["gr_iter"] = "fig_iter.html"
             self._data["gr_iter_E"] = "fig_iter_E.html"
             self._data["gr_iter_F"] = "fig_iter_F.html"
+            self._data["gr_iter_E_int"] = "fig_iter_E_int.html"
+            self._data["gr_iter_J"] = "fig_iter_J.html"
 
 class ReportTableRootConfiguration(ReportRootConfiguration):
     def __init__(self):
