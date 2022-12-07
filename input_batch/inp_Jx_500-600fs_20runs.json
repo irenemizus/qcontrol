@@ -5,9 +5,9 @@
     "epsilon": 1e-4,
     "impulses_number": 1,
     "nb": 2,
-    "iter_max": 2000,
+    "iter_max": 600,
     "h_lambda": 0.00005,
-    "h_lambda_mode": "dynamical",
+    "h_lambda_mode":"dynamical",
     "init_guess": "sqrsin",
     "init_guess_hf": "sin_set",
     "lf_aug_type": "x",
@@ -25,7 +25,13 @@
       "t0": 0.0,
       "E0": 40.0,
       "nt": 3500,
-      "T": 15E-13,
+      "T": { "@SUBST:LIST":
+        [
+          5.05E-13,   5.1E-13,   5.15E-13,   5.2E-13,   5.25E-13,
+          5.3E-13,    5.35E-13,  5.4E-13,    5.45E-13,  5.5E-13,
+          5.55E-13,   5.6E-13,   5.65E-13,   5.7E-13,   5.75E-13,
+          5.8E-13,    5.85E-13,  5.9E-13,    5.95E-13,  5E-13
+        ] },
       "sigma_auto": "True",
       "nu_L_auto": "True"
     },
