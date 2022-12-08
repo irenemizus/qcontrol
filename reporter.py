@@ -258,8 +258,12 @@ class PlotPropagationReporter(PropagationReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w", encoding="utf-8") as f:
-            f.write(inst)
+        try:
+            with open(plot_name, "w", encoding="utf-8") as f:
+                f.write(inst)
+        except FileNotFoundError:
+            traceback.print_exc()
+            print("Continuing without writing to html")
 
     @staticmethod
     def __plot_moms_update_graph(t_list, moms_list, namem, title_plot, title_y, plot_name):
@@ -290,8 +294,12 @@ class PlotPropagationReporter(PropagationReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w", encoding="utf-8") as f:
-            f.write(inst)
+        try:
+            with open(plot_name, "w", encoding="utf-8") as f:
+                f.write(inst)
+        except FileNotFoundError:
+            traceback.print_exc()
+            print("Continuing without writing to html")
 
     @staticmethod
     def __plot_tvals_update_graph(t_list, val_list, title_plot, title_y, plot_name):
@@ -321,8 +329,12 @@ class PlotPropagationReporter(PropagationReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w", encoding="utf-8") as f:
-            f.write(inst)
+        try:
+            with open(plot_name, "w", encoding="utf-8") as f:
+                f.write(inst)
+        except FileNotFoundError:
+            traceback.print_exc()
+            print("Continuing without writing to html")
 
     @staticmethod
     def __plot_tvals_mult_update_graph(t_list, vals_list, nlvls, title_plot, title_y, plot_name):
@@ -359,8 +371,12 @@ class PlotPropagationReporter(PropagationReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w", encoding="utf-8") as f:
-            f.write(inst)
+        try:
+            with open(plot_name, "w", encoding="utf-8") as f:
+                f.write(inst)
+        except FileNotFoundError:
+            traceback.print_exc()
+            print("Continuing without writing to html")
 
     def plot(self, psi:Psi, t, x, np, n):
         psi0_abs = []
@@ -657,8 +673,12 @@ class PlotFitterReporter(FitterReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w", encoding="utf-8") as f:
-            f.write(inst)
+        try:
+            with open(plot_name, "w", encoding="utf-8") as f:
+                f.write(inst)
+        except FileNotFoundError:
+            traceback.print_exc()
+            print("Continuing without writing to html")
 
     @staticmethod
     def __plot_iter_update_graph(i_list, val_list, title_plot, title_y, plot_name):
@@ -683,8 +703,12 @@ class PlotFitterReporter(FitterReporter):
 
         inst = templateSubst(template_name, substs)
 
-        with open(plot_name, "w", encoding="utf-8") as f:
-            f.write(inst)
+        try:
+            with open(plot_name, "w", encoding="utf-8") as f:
+                f.write(inst)
+        except FileNotFoundError:
+            traceback.print_exc()
+            print("Continuing without writing to html")
 
     def plot_fitter(self, iter, goal_close, Fsm, E_int, J):
         self.i_list.append(iter)
