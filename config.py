@@ -291,6 +291,9 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["delay"] = 600e-15   # s
             self._data["mod_log"] = 500
             self._data["iter_max"] = -1
+            self._data["iter_mid_1"] = 0
+            self._data["iter_mid_2"] = 1
+            self._data["q"] = 0.0
             self._data["h_lambda"] = 0.0066
             self._data["h_lambda_mode"] = TaskRootConfiguration.FitterConfiguration.HlambdaModeType.CONST
             self._data["nb"] = 1

@@ -30,6 +30,8 @@ class FittingSolver:
             self.E_int = 0.0
             self.J = 0.0
             self.h_lambda = 0.0
+            self.F_sm_mid_1 = 0.0
+            self.F_sm_mid_2 = 0.0
 
             self.chi_tlist = []
             self.psi_tlist = []
@@ -437,7 +439,7 @@ class FittingSolver:
 #            np.savez_compressed(os.path.join(path, "fitter_state_bins.npz"), arrays)
 
             if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                if abs(self.dyn.goal_close_abs - self.basis_length) <= self.conf_fitter.epsilon and self.dyn.iter_step == 0:
+                if abs(self.dyn.Fsm.real + self.basis_length * self.basis_length) <= self.conf_fitter.epsilon and self.dyn.iter_step == 0:
                     print("The goal has been reached on the very first iteration. You don't need the control!")
                     self.dyn.res = PropagationSolver.StepReaction.OK
                     break
@@ -499,12 +501,26 @@ class FittingSolver:
 #                print(self.dyn)
 
             # iterative procedure
-            while abs(self.dyn.goal_close_abs - self.basis_length) > self.conf_fitter.epsilon and \
+            while abs(self.dyn.Fsm.real + self.basis_length * self.basis_length) > self.conf_fitter.epsilon and \
                     (self.dyn.iter_step < self.conf_fitter.iter_max or self.conf_fitter.iter_max == -1):
                 self.dyn.iter_step += 1
                 self.__single_iteration_optimal(dx, x, t_step, t_list)
 
-            if abs(self.dyn.goal_close_abs - self.basis_length) <= self.conf_fitter.epsilon:
+                if self.conf_fitter.q:
+                    if self.dyn.iter_step == self.conf_fitter.iter_mid_1:
+                        self.dyn.F_sm_mid_1 = self.dyn.Fsm.real
+                    elif self.dyn.iter_step == self.conf_fitter.iter_mid_2:
+                        self.dyn.F_sm_mid_2 = self.dyn.Fsm.real
+                        if (self.dyn.F_sm_mid_1 > -self.basis_length * self.basis_length * self.conf_fitter.q or
+                            self.dyn.F_sm_mid_2 > -self.basis_length * self.basis_length * self.conf_fitter.q or
+                            self.dyn.F_sm_mid_1 < self.dyn.F_sm_mid_2):
+                            print(f"Fsm(iter_mid_1) = {str(self.dyn.F_sm_mid_1)}, Fsm(iter_mid_2) = {str(self.dyn.F_sm_mid_2)}. "
+                                  f"Is the calculation diverging?..")
+                            raise ValueError("The calculation is probably going to diverge.  Stopping the run...")
+                    else:
+                        pass
+
+            if abs(self.dyn.Fsm.real + self.basis_length * self.basis_length) <= self.conf_fitter.epsilon:
                 print("The goal has been successfully reached on the " + str(self.dyn.iter_step) + " iteration.")
             else:
                 print("The goal has not been reached during the calculation.")

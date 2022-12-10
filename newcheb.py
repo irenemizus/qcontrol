@@ -192,6 +192,26 @@ Options:
         given criteria hasn't been reached. Is a dummy variable for all other task types.
         If iter_max = -1, there is no limitation on the maximum number of iterations.
         By default, is equal to -1
+    iter_mid_1
+        iteration number for the "optimal_control_..." task_type, which is used to predict if the calculation converges
+        or not. If a current value of the operator F at the corresponding iteration is less that its value at
+        the iteration iter_mis_2 or is larger that the value nb * nb * q,
+        the calculation is considered as divergent, and the calculation stops.
+        Is a dummy variable for all other task types.
+        By default, is equal to 0
+    iter_mid_2
+        iteration number for the "optimal_control_..." task_type, which is used to predict if the calculation converges
+        or not. If a current value of the operator F at the corresponding iteration is larger that the value nb * nb * q,
+        the calculation is considered as divergent, and the calculation stops.
+        Is a dummy variable for all other task types.
+        By default, is equal to 1
+    q
+        a coefficient for the "optimal_control_..." task_type, which is used to predict if the calculation converges
+        or not. If a current value of the operator F at two prespecified iterations iter_mid_1 and iter_mid_1
+        is larger that the value nb * nb * q,
+        the calculation is considered as divergent, and the calculation stops.
+        Is a dummy variable for all other task types.
+        By default, is equal to 0.0 (the check is switched off)
     h_lambda
         parameter, which is applicable for the task_type = "optimal_control_..." only.
         For all other cases is a dummy variable.
@@ -414,6 +434,9 @@ def print_input(conf_rep_plot, conf_task, file_name):
     with open(os.path.join(conf_rep_plot.fitter.out_path, file_name), "w") as finp:
         finp.write("task_type:\t\t"   f"{conf_task.fitter.task_type}\n")
         finp.write("iter_max:\t\t"   f"{conf_task.fitter.iter_max}\n")
+        finp.write("iter_mid_1:\t\t"   f"{conf_task.fitter.iter_mid_1}\n")
+        finp.write("iter_mid_2:\t\t"   f"{conf_task.fitter.iter_mid_2}\n")
+        finp.write("q:\t\t\t"   f"{conf_task.fitter.q}\n")
         finp.write("epsilon:\t\t"   f"{conf_task.fitter.epsilon:.1E}\n")
 
         finp.write("nb:\t\t\t"   f"{conf_task.fitter.nb}\n")
@@ -604,15 +627,27 @@ def main(argv):
                     raise ValueError(
                         "The number of basis vectors of the Hilbert space, 'nb', has to be positive or 0")
 
-                if conf_task.fitter.Em < 0:
+                if conf_task.fitter.Em <= 0:
                     raise ValueError(
                         "The multiplier 'Em' used for evaluation of the laser field energy maximum value, "
                         "which can be reached during the controlling procedure, has to be positive")
 
-                if conf_task.fitter.iter_max < -1 and (conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
+                if conf_task.fitter.q < 0:
+                    raise ValueError(
+                        "The multiplier 'q', which is used to predict if the calculation converges or not, "
+                        "has to be positive or 0.0")
+
+                if (conf_task.fitter.iter_max < -1 or conf_task.fitter.iter_mid_1 < 0 or conf_task.fitter.iter_mid_2 < 0) \
+                        and (conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
                         conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_GRADIENT):
                     raise ValueError(
-                        "The maximum number of iterations in the optimal control task, 'iter_max', has to be positive, 0 or -1")
+                        "The maximum and two threshold numbers of iterations in the optimal control task, "
+                        "'iter_max', 'iter_mid_1' and 'iter_mid_2', "
+                        "have to be positive or 0; 'iter_max' can also be equal to -1")
+
+                if conf_task.fitter.iter_mid_2 <= conf_task.fitter.iter_mid_1:
+                    raise ValueError(
+                        "Parameter 'iter_mid_1' must be less than 'iter_mid_2'")
 
                 if conf_task.fitter.propagation.L <= 0.0 or conf_task.fitter.propagation.T <= 0.0:
                     raise ValueError(
