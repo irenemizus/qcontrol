@@ -1,6 +1,7 @@
 import collections
 import copy
 import os, csv
+import re
 import statistics
 import sys
 import reporter
@@ -71,6 +72,21 @@ root = work_dir
 run_dirs = [f.path for f in os.scandir(root) if f.is_dir()]
 print(run_dirs)
 
+prog_nb = re.compile("nb:\t+(\d+)$")
+prog_it = re.compile("iter_mid_2:\t+(\d+)$")
+prog_eps = re.compile("epsilon:\t+(.+)$")
+
+nb = 0
+iter_mid_2 = 0
+epsilon = 0.0
+
+iter_l = 0
+Fsm_l = 0.0
+gc_l = 0.0
+E_int_l = 0.0
+J_l = 0.0
+looking_for_min = True
+
 # Reading all the data from tab_iter.csv, together with run_id and T value
 runs = dict()
 for run_dir in run_dirs:
@@ -80,8 +96,20 @@ for run_dir in run_dirs:
     times = dict()
     for time_dir in time_dirs:
         time_val = float(os.path.split(time_dir)[-1].split('T=')[-1])
-
         print(time_dir)
+
+        # First, we need to get a few parameters from the file "table_inp_-1.txt"
+        with open(os.path.join(time_dir, "table_inp_-1.txt"), "r") as finp:
+            lines = finp.readlines()
+        for l in lines:
+            res_nb = prog_nb.match(l)
+            res_it = prog_it.match(l)
+            res_eps = prog_eps.match(l)
+
+            if res_nb: nb = int(res_nb.group(1))
+            if res_it: iter_mid_2 = int(res_it.group(1))
+            if res_eps: epsilon = float(res_eps.group(1))
+
         with open(os.path.join(time_dir, "tab_iter.csv"), "r") as f:
             reader = csv.reader(f, delimiter=' ')
             data = list(reader)
@@ -90,7 +118,22 @@ for run_dir in run_dirs:
                 data[i] = [x for x in data[i] if x != '']
                 data[i] = batch_result(int(data[i][0]), float(data[i][1]), float(data[i][2]), float(data[i][3]), float(data[i][4]))
 
-        times[time_val] = data
+        if nb and iter_mid_2 and epsilon:
+            iter_l = data[-1].iter
+            Fsm_l = data[-1].F_sm
+            gc_l = data[-1].goal_close
+            E_int_l = data[-1].E_int
+            J_l = data[-1].J
+            if (iter_l <= iter_mid_2) and (Fsm_l >= -nb * nb + epsilon):
+                continue
+            elif (iter_l <= iter_mid_2) and (Fsm_l < -nb * nb + epsilon):
+                looking_for_min = False
+                times[time_val] = (data, looking_for_min)
+            elif iter_l > iter_mid_2:
+                looking_for_min = True
+                times[time_val] = (data, looking_for_min)
+        else:
+            times[time_val] = (data, looking_for_min)
 
     runs[run_id] = times
 
@@ -104,15 +147,26 @@ for r in runs:
     for t in run:
         time_min = None
         F_sm_min = 0.0
-        time = run[t]
+        iter_min = 0
+        time = run[t][0]
+        looking_for_min_tr = run[t][1]
 
-        for tt in time:
-            if tt.F_sm < F_sm_min:
-                F_sm_min = tt.F_sm
-                time_min = copy.deepcopy(tt)
-        if time_min is None:
-            time_min = batch_result(0, 0.0, 0.0, 0.0, 0.0)
-        runs_min[r][t] = time_min
+        if looking_for_min_tr:
+            for tt in time:
+                if tt.F_sm < F_sm_min:
+                    F_sm_min = tt.F_sm
+                    iter_min = tt.iter
+                    time_min = copy.deepcopy(tt)
+            if iter_min <= iter_mid_2:
+                time_min = None
+                F_sm_min = 0.0
+        else:
+            F_sm_min = time[-1].F_sm
+            time_min = time[-1]
+        #print(r, F_sm_min)
+
+        if time_min is not None:
+            runs_min[r][t] = time_min
         pass
 
 # Writing the tables with minimum values of F_sm during the iterative procedures for each run_id and each T value into a set of txt files
@@ -130,7 +184,6 @@ for r in runs_min:
             F_sm = time.F_sm
             fout.write(f"{t}\t{it}\t{F_sm}\n")
             fout.flush()
-
 
 # Inverting the runs_min dictionary
 runs_inv = dict()
