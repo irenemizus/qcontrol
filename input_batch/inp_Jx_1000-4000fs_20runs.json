@@ -2,10 +2,13 @@
   "run_id": { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3", "ut/run4", "ut/run5", "ut/run6", "ut/run7", "ut/run8", "ut/run9", "ut/run10", "ut/run11", "ut/run12", "ut/run13", "ut/run14", "ut/run15", "ut/run16", "ut/run17", "ut/run18", "ut/run19", "ut/run20" ] },
   "fitter": {
     "task_type": "optimal_control_unit_transform",
-    "epsilon": 1e-4,
+    "epsilon": 1e-3,
     "impulses_number": 1,
     "nb": 2,
-    "iter_max": 1500,
+    "iter_max": 5000,
+    "iter_mid_1": 250,
+    "iter_mid_2": 300,
+    "q": 0.75,
     "h_lambda": 0.00005,
     "h_lambda_mode":"dynamical",
     "init_guess": "sqrsin",
@@ -27,7 +30,7 @@
       "nt": 3500,
       "T": { "@SUBST:LIST":
         [
-          11.5E-13,   13E-13,  14.5E-13,   16E-13,  17.5E-13,
+          9.6E-13, 11.5E-13,   13E-13,  14.5E-13,   16E-13,  17.5E-13,
           19E-13,   20.5E-13,  22E-13,   23.5E-13,  25E-13,
           26.5E-13,   28E-13,  29.5E-13,   31E-13,  32.5E-13,
           34E-13,   35.5E-13,  37E-13,   38.5E-13,  40E-13
