@@ -105,7 +105,7 @@ class fitter_Tests(unittest.TestCase):
                                              0.0001, 0.0001), delta=1.e-21)
 
         tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001, 0.000001, complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
-        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001), 0.0001, 0.00001), 1.e-21)
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
 
         for n in range(nlevs):
@@ -212,7 +212,7 @@ class fitter_Tests(unittest.TestCase):
 
         tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001, 0.0000001,
                                             complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
-        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001), 0.0001, 0.00001), 1.e-21)
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
 
         for n in range(nlevs):
@@ -316,7 +316,7 @@ class fitter_Tests(unittest.TestCase):
 
         tvals_fit_comparer = TableComparer((0.000001, 0.0001, 0.0001, 0.0000001,
                                             complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
-        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001), 0.0001, 0.00001), 1.e-21)
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
 
 
@@ -425,7 +425,7 @@ class fitter_Tests(unittest.TestCase):
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001,
                                             complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
-        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001), 0.0001, 0.00001), 1.e-21)
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
 
         for n in range(nlevs):
@@ -534,7 +534,7 @@ class fitter_Tests(unittest.TestCase):
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001,
                                             complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
-        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001), 0.0001, 0.00001), 1.e-21)
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
 
         for n in range(nlevs):
@@ -646,7 +646,7 @@ class fitter_Tests(unittest.TestCase):
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001,
                                             complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
-        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001), 0.0001, 0.00001), 1.e-21)
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
 
         for n in range(nlevs):
@@ -758,7 +758,7 @@ class fitter_Tests(unittest.TestCase):
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001,
                                             complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
-        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001), 0.0001, 0.00001), 1.e-21)
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
 
         for n in range(nlevs):
@@ -871,7 +871,7 @@ class fitter_Tests(unittest.TestCase):
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001,
                                             complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
-        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001), 0.0001, 0.00001), 1.e-21)
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
 
         for n in range(nlevs):
@@ -986,7 +986,7 @@ class fitter_Tests(unittest.TestCase):
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001,
                                             complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
-        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001), 0.0001, 0.00001), 1.e-21)
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
 
         for n in range(nlevs):

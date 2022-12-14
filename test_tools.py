@@ -244,9 +244,9 @@ class TestFitterReporter(FitterReporter):
     def close(self):
         pass
 
-    def plot_iter(self, iter, goal_close, Fsm):
+    def plot_iter(self, iter, goal_close, Fsm, E_int, J):
         self.iter_tab.append((
-            iter, goal_close, Fsm
+            iter, goal_close, Fsm, E_int, J
         ))
 
     def plot_i_E(self, E_tlist, iter, t_list, nt):
@@ -254,9 +254,9 @@ class TestFitterReporter(FitterReporter):
             iter, t_list, E_tlist
         ))
 
-    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, nt):
+    def print_iter_point_fitter(self, iter, goal_close, E_tlist, t_list, Fsm, E_int, J, nt):
         if iter % self.imod_fileout == 0 and iter >= self.imin:
-            self.plot_iter(iter, goal_close, Fsm)
+            self.plot_iter(iter, goal_close, Fsm, E_int, J)
             self.plot_i_E(E_tlist, iter, t_list, nt)
 
     def print_all(self, filename):
