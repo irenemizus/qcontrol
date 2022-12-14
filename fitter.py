@@ -190,7 +190,9 @@ class FittingSolver:
         chiT_omega = PsiBasis(self.basis_length, self.levels_number)
         self.dyn.chi_cur = None
         self.dyn.psi_cur = None
-        self.dyn.h_lambda = self.conf_fitter.h_lambda
+        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
+           self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+            self.dyn.h_lambda = self.conf_fitter.h_lambda
         if direct == PropagationSolver.Direction.FORWARD:
             ind_dir = "f"
             laser_field = self.LaserFieldEnvelope
@@ -310,8 +312,8 @@ class FittingSolver:
 
             self.dyn.E_int = 0.0
             for el in range(len(self.dyn.E_tlist) - 1):
-                E_cur = abs(self.dyn.E_tlist[el + 1])
-                self.dyn.E_int += E_cur * E_cur * (t_step * 1e15)
+                E_cur = self.dyn.E_tlist[el + 1]
+                self.dyn.E_int += E_cur * E_cur.conjugate() * (t_step * 1e15)
 
 #            with open("test_E_" + str(self.dyn.iter_step) + ".txt", "w") as f:
 #                f.write("TMP_delta_E = [\n")
@@ -485,10 +487,16 @@ class FittingSolver:
 
             E_int_init = 0.0
             for el in range(len(E_tlist_init) - 1):
-                E_cur_init = abs(E_tlist_init[el + 1])
-                E_int_init += E_cur_init * E_cur_init * (t_step * 1e15)
+                E_cur_init = E_tlist_init[el + 1]
+                E_int_init += E_cur_init * E_cur_init.conjugate() * (t_step * 1e15)
 
-            J_init = Fsm_init.real - self.conf_fitter.h_lambda * self.conf_fitter.h_lambda * E_int_init
+            if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
+               self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+                h_lambda_init = self.conf_fitter.h_lambda
+            else:
+                h_lambda_init = 0.0
+
+            J_init = Fsm_init.real - h_lambda_init * h_lambda_init * E_int_init
 
             self.reporter.print_iter_point_fitter(-1, goal_close_abs_init, E_tlist_init, t_list, Fsm_init,
                                                   E_int_init, J_init, self.conf_fitter.propagation.nt)
