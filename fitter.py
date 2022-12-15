@@ -190,9 +190,6 @@ class FittingSolver:
         chiT_omega = PsiBasis(self.basis_length, self.levels_number)
         self.dyn.chi_cur = None
         self.dyn.psi_cur = None
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
-           self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-            self.dyn.h_lambda = self.conf_fitter.h_lambda
         if direct == PropagationSolver.Direction.FORWARD:
             ind_dir = "f"
             laser_field = self.LaserFieldEnvelope
@@ -387,7 +384,14 @@ class FittingSolver:
 
         print("Fsm = ", self.dyn.Fsm.real)
 
-        self.dyn.J = self.dyn.Fsm.real - self.dyn.h_lambda * self.dyn.h_lambda * self.dyn.E_int
+        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
+            h_lambda = self.conf_fitter.h_lambda
+        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+            h_lambda = self.dyn.h_lambda
+        else:
+            h_lambda = 0.0
+
+        self.dyn.J = self.dyn.Fsm.real - h_lambda * h_lambda * self.dyn.E_int
 
         self.__finalize_propagation()
         return chiT
@@ -492,7 +496,10 @@ class FittingSolver:
 
             if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
                self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                h_lambda_init = self.conf_fitter.h_lambda
+                if self.ntriv == -1:
+                    h_lambda_init = self.conf_fitter.h_lambda * phys_base.Red_Planck_h / phys_base.cm_to_erg
+                else:
+                    h_lambda_init = self.conf_fitter.h_lambda
             else:
                 h_lambda_init = 0.0
 

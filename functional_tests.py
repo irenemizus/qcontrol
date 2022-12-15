@@ -999,6 +999,122 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_ut_HB_2lvls.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_ut_HB_2lvls.iter_tab_E))
 
+    def test_opt_ctrl_ut_HB_2lvls_Jx(self):
+        conf = TaskRootConfiguration.FitterConfiguration()
+
+        user_conf = {
+            "task_type": "optimal_control_unit_transform",
+            "epsilon": 1e-3,
+            "impulses_number": 1,
+            "nb": 2,
+            "iter_max": 50,
+            "iter_mid_1": 250,
+            "iter_mid_2": 300,
+            "q": 0.75,
+            "h_lambda": 0.00005,
+            "h_lambda_mode": "dynamical",
+            "init_guess": "sqrsin",
+            "init_guess_hf": "sin_set",
+            "lf_aug_type": "x",
+            "pcos": 2,
+            "w_list": [1.2000000000000002, -1.9, 0.7000000000000002],
+            "propagation": {
+                "pot_type": "none",
+                "wf_type": "const",
+                "hamil_type": "BH_model",
+                "U": 30,
+                "delta": 15,
+                "Du": 1,
+                "np": 1,
+                "L": 1.0,
+                "nch": 8,
+                "t0": 0.0,
+                "E0": 40.0,
+                "nt": 3500,
+                "T": 8.4E-13,
+                "sigma_auto": "True",
+                "nu_L_auto": "True"
+            },
+            "mod_log": 500
+        }
+
+        conf.load(user_conf)
+        print(conf)
+
+        mod_fileout = 100
+        lmin = 0
+        imod_fileout = 1
+        imin = -1
+
+        task_manager_imp = task_manager.create(conf)
+
+        # setup of the grid
+        grid = grid_setup.GridConstructor(conf.propagation)
+        dx, x = grid.grid_setup()
+
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        t_step, t_list = forw_time_grid.grid_setup()
+
+        # evaluating of initial wavefunction
+        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e,
+                                         conf.propagation.L, conf.nb)
+
+        # evaluating of the final goal
+        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
+                                         conf.propagation.p0, conf.propagation.x0p,
+                                         conf.propagation.m, conf.propagation.De,
+                                         conf.propagation.De_e, conf.propagation.Du,
+                                         conf.propagation.a, conf.propagation.a_e,
+                                         conf.propagation.L, conf.nb)
+
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
+        # checking of triviality of the system
+        ntriv = task_manager_imp.ntriv
+        # number of levels
+        nlevs = len(psi0.psis[0].f)
+
+        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
+        fit_reporter_imp.open()
+
+        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot, task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
+                                              None, None)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fit_reporter_imp.close()
+
+        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+
+        # Uncomment in case of emergency :)
+        #fit_reporter_imp.print_all("test_data/fit_iter_opt_ctrl_ut_HB_2lvls_Jx.py")
+        #prop_reporter.print_all("test_data/prop_opt_ctrl_ut_HB_2lvls_Jx.py", "test_data/fitter_opt_ctrl_ut_HB_2lvls_Jx.py")
+
+        psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
+        tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
+                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001),
+                                      0.0001, 0.0001), 1.e-21)
+
+        tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001,
+                                            complex(0.001, 0.001), complex(0.001, 0.001)), 1.e-21)
+        iter_fit_comparer = TableComparer((0, 0.0001, complex(0.00001, 0.00001), 0.0001, 0.00001), 1.e-21)
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), 1.e-21)
+
+        for n in range(nlevs):
+            self.assertTrue(
+                psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_opt_ctrl_ut_HB_2lvls_Jx.psi_tabs[n]))
+            self.assertTrue(
+                tvals_prop_comparer.compare(prop_reporter.prop_tab[n], test_data.prop_opt_ctrl_ut_HB_2lvls_Jx.prop_tabs[n]))
+
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_opt_ctrl_ut_HB_2lvls_Jx.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_ut_HB_2lvls_Jx.iter_tab))
+        self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_ut_HB_2lvls_Jx.iter_tab_E))
+
 
 if __name__ == '__main__':
     unittest.main()

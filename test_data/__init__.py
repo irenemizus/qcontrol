@@ -27,3 +27,6 @@ from test_data import prop_trans_woc_back
 from test_data import fit_iter_opt_ctrl_ut_HB_2lvls
 from test_data import fitter_opt_ctrl_ut_HB_2lvls
 from test_data import prop_opt_ctrl_ut_HB_2lvls
+from test_data import fit_iter_opt_ctrl_ut_HB_2lvls_Jx
+from test_data import fitter_opt_ctrl_ut_HB_2lvls_Jx
+from test_data import prop_opt_ctrl_ut_HB_2lvls_Jx
