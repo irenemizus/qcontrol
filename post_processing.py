@@ -110,30 +110,37 @@ for run_dir in run_dirs:
             if res_it: iter_mid_2 = int(res_it.group(1))
             if res_eps: epsilon = float(res_eps.group(1))
 
+        data = None
         with open(os.path.join(time_dir, "tab_iter.csv"), "r") as f:
-            reader = csv.reader(f, delimiter=' ')
-            data = list(reader)
+            try:
+                reader = csv.reader(f, delimiter=' ')
+                data = list(reader)
+            except csv.Error:
+                print (f"An error occured while reading the file 'tab_iter.csv' in folder {time_dir}")
 
-            for i in range(len(data)):
-                data[i] = [x for x in data[i] if x != '']
-                data[i] = batch_result(int(data[i][0]), float(data[i][1]), float(data[i][2]), float(data[i][3]), float(data[i][4]))
-
-        if nb and iter_mid_2 and epsilon:
-            iter_l = data[-1].iter
-            Fsm_l = data[-1].F_sm
-            gc_l = data[-1].goal_close
-            E_int_l = data[-1].E_int
-            J_l = data[-1].J
-            if (iter_l <= iter_mid_2) and (Fsm_l >= -nb * nb + epsilon):
-                continue
-            elif (iter_l <= iter_mid_2) and (Fsm_l < -nb * nb + epsilon):
-                looking_for_min = False
+            #import pdb; pdb.set_trace()
+            #print(data)
+            if data is not None:
+                for i in range(len(data)):
+                    data[i] = [x for x in data[i] if x != '']
+                    data[i] = batch_result(int(data[i][0]), float(data[i][1]), float(data[i][2]), float(data[i][3]), float(data[i][4]))
+        if data is not None:
+            if nb and iter_mid_2 and epsilon:
+                iter_l = data[-1].iter
+                Fsm_l = data[-1].F_sm
+                gc_l = data[-1].goal_close
+                E_int_l = data[-1].E_int
+                J_l = data[-1].J
+                if (iter_l <= iter_mid_2) and (Fsm_l >= -nb * nb + epsilon):
+                    continue
+                elif (iter_l <= iter_mid_2) and (Fsm_l < -nb * nb + epsilon):
+                    looking_for_min = False
+                    times[time_val] = (data, looking_for_min)
+                elif iter_l > iter_mid_2:
+                    looking_for_min = True
+                    times[time_val] = (data, looking_for_min)
+            else:
                 times[time_val] = (data, looking_for_min)
-            elif iter_l > iter_mid_2:
-                looking_for_min = True
-                times[time_val] = (data, looking_for_min)
-        else:
-            times[time_val] = (data, looking_for_min)
 
     runs[run_id] = times
 
