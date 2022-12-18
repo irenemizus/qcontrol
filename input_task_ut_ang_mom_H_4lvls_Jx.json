@@ -1,0 +1,36 @@
+{
+  "fitter": {
+    "task_type": "optimal_control_unit_transform",
+    "epsilon": 1e-2,
+    "impulses_number": 1,
+    "nb": 4,
+    "iter_max": -1,
+    "h_lambda": 0.00005,
+    "h_lambda_mode": "dynamical",
+    "init_guess": "sqrsin",
+    "init_guess_hf": "sin_set",
+    "w_list": [
+      1.00, 1.00, 1.00
+    ],
+    "lf_aug_type": "x",
+    "pcos": 2,
+    "propagation": {
+      "pot_type": "none",
+      "wf_type": "const",
+      "hamil_type": "BH_model",
+      "U": 30,
+      "delta": 15,
+      "Du": 1,
+      "np": 1,
+      "L": 1.0,
+      "nch": 8,
+      "t0": 0.0,
+      "E0": 40.0,
+      "nt": 3500,
+      "T": 3.3E-13,
+      "sigma_auto": "True",
+      "nu_L_auto": "True"
+    },
+    "mod_log": 500
+  }
+}
