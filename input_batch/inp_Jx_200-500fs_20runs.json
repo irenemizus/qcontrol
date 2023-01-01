@@ -1,20 +1,20 @@
 {
+  "run_id": { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3", "ut/run4", "ut/run5", "ut/run6", "ut/run7", "ut/run8", "ut/run9", "ut/run10", "ut/run11", "ut/run12", "ut/run13", "ut/run14", "ut/run15", "ut/run16", "ut/run17", "ut/run18", "ut/run19", "ut/run20" ] },
   "fitter": {
     "task_type": "optimal_control_unit_transform",
     "epsilon": 1e-3,
     "impulses_number": 1,
     "nb": 2,
-    "iter_max": -1,
+    "iter_max": 5000,
     "iter_mid_1": 250,
     "iter_mid_2": 300,
     "q": 0.75,
     "h_lambda": 0.00005,
-    "h_lambda_mode": "dynamical",
+    "h_lambda_mode":"dynamical",
     "init_guess": "sqrsin",
     "init_guess_hf": "sin_set",
     "lf_aug_type": "x",
     "pcos": 2,
-    "w_list": [-0.3999999999999999, 0.2999999999999998, -1.0],
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
@@ -28,10 +28,18 @@
       "t0": 0.0,
       "E0": 40.0,
       "nt": 3500,
-      "T": 9.6E-13,
+      "T": { "@SUBST:LIST":
+        [
+          2.0E-13,   2.25E-13,  2.5E-13,   2.75E-13,   3.0E-13,
+          3.25E-13,  3.5E-13,   3.75E-13,  4.0E-13,    4.25E-13,
+          4.5E-13,   4.75E-13,  5.0E-13,   5.1E-13,    5.2E-13,
+          5.35E-13,  5.4E-13,   5.45E-13,  5.5E-13,    5.6E-13,
+          5.65E-13
+        ] },
       "sigma_auto": "True",
       "nu_L_auto": "True"
     },
     "mod_log": 500
   }
 }
+
