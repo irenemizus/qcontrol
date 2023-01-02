@@ -112,9 +112,9 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
                 H.itemset((vi - 1, vi), P)
                 H.itemset((vi, vi - 1), R)
         elif ntriv == -2:
-            H.itemset((0, 0), 2.0 * l * U)# * (l + 1))
+            H.itemset((0, 0), 2.0 * l * U * (l + 1))
             for vi in range(1, nb):
-                Q = 2.0 * (l - vi) * U# * (l - vi + 1) # U ~ 1 / cm
+                Q = 2.0 * (l - vi) * U * (l - vi + 1) # U ~ 1 / cm
                 P = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
                 R = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
                 H.itemset((vi, vi), Q)
