@@ -4,7 +4,7 @@
     "epsilon": 1e-3,
     "impulses_number": 1,
     "nb": 2,
-    "iter_max": -1,
+    "iter_max": 750,
     "iter_mid_1": 250,
     "iter_mid_2": 300,
     "q": 0.75,
@@ -14,7 +14,7 @@
     "init_guess_hf": "sin_set",
     "lf_aug_type": "x",
     "pcos": 2,
-    "w_list": [-0.3999999999999999, 0.2999999999999998, -1.0],
+    "w_list": [-2.0, 0.3999999999999999, -0.6000000000000001],
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
