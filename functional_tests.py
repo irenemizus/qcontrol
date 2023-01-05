@@ -1023,6 +1023,7 @@ class fitter_Tests(unittest.TestCase):
                 "wf_type": "const",
                 "hamil_type": "BH_model",
                 "U": 30,
+                "W": 30,
                 "delta": 15,
                 "Du": 1,
                 "np": 1,

@@ -150,6 +150,7 @@ class PropagationSolver:
         self.sigma = conf_prop.sigma
         self.nu_L = conf_prop.nu_L
         self.U = conf_prop.U
+        self.W = conf_prop.W
         self.delta = conf_prop.delta
 
         self.stat = None
@@ -166,10 +167,11 @@ class PropagationSolver:
         return cnorm
 
     @staticmethod
-    def _ener_eval(psi: Psi, v, akx2, dx, np, E, eL, U, delta, ntriv, E_full, orig):
+    def _ener_eval(psi: Psi, v, akx2, dx, np, E, eL, U, W, delta, ntriv, E_full, orig):
         cener = []
 
-        phi = phys_base.hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=0.0, eL=eL, U=U, delta=delta, ntriv=ntriv, E_full=E_full, orig=orig)
+        phi = phys_base.hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=0.0, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv,
+                                    E_full=E_full, orig=orig)
         for n in range(len(psi.f)):
             cener.append(math_base.cprod(psi.f[n], phi.f[n], dx, np))
 
@@ -331,13 +333,15 @@ class PropagationSolver:
 
         # calculating of initial ground/excited energies
         eL = self.nu_L * phys_base.Hz_to_cm / 2.0
-        cener0 = self._ener_eval(psi=psi0, v=v, akx2=akx2, dx=dx, np=self.np, E=0.0, eL=eL, U=self.U, delta=self.delta, ntriv=self.ntriv, E_full=0.0, orig=True)
+        cener0 = self._ener_eval(psi=psi0, v=v, akx2=akx2, dx=dx, np=self.np, E=0.0, eL=eL, U=self.U, W=self.W,
+                                 delta=self.delta, ntriv=self.ntriv, E_full=0.0, orig=True)
 
         # final normalization check
         cnormf = self._norm_eval(psif, dx, self.np)
 
         # calculating of final excited/filtered energy
-        cenerf = self._ener_eval(psi=psif, v=v, akx2=akx2, dx=dx, np=self.np, E=0.0, eL=eL, U=self.U, delta=self.delta, ntriv=self.ntriv, E_full=0.0, orig=True)
+        cenerf = self._ener_eval(psi=psif, v=v, akx2=akx2, dx=dx, np=self.np, E=0.0, eL=eL, U=self.U, W=self.W,
+                                 delta=self.delta, ntriv=self.ntriv, E_full=0.0, orig=True)
 
         # time propagation
         dt = dir.value * t_step
@@ -417,8 +421,10 @@ class PropagationSolver:
         cnorm = []
         if self.ntriv == 1:
             E_full = self.dyn.E * exp_L * exp_L
-            self.dyn.psi_omega = phys_base.prop_cpu(psi=self.dyn.psi_omega, t_sc=t_sc, nch=self.nch, np=self.np, v=self.stat.v,
-                                     akx2=self.stat.akx2, emin=emin, emax=emax, E=self.dyn.E, eL=eL, U=self.U, delta=self.delta, ntriv=self.ntriv)
+            self.dyn.psi_omega = phys_base.prop_cpu(psi=self.dyn.psi_omega, t_sc=t_sc, nch=self.nch, np=self.np,
+                                                    v=self.stat.v, akx2=self.stat.akx2, emin=emin, emax=emax,
+                                                    E=self.dyn.E, eL=eL, U=self.U, W=self.W, delta=self.delta,
+                                                    ntriv=self.ntriv)
 
             cnorm_sum = 0.0
             for n in range(len(self.stat.psi0.f)):
@@ -432,7 +438,8 @@ class PropagationSolver:
                     self.dyn.psi_omega.f[n] /= math.sqrt(abs(cnorm_sum))
 
             psigc_psie = math_base.cprod(self.dyn.psi_omega.f[1], self.dyn.psi_omega.f[0], self.stat.dx, self.np)
-            psigc_dv_psie = math_base.cprod3(self.dyn.psi_omega.f[1], self.stat.v[0][1] - self.stat.v[1][1], self.dyn.psi_omega.f[0], self.stat.dx, self.np)
+            psigc_dv_psie = math_base.cprod3(self.dyn.psi_omega.f[1], self.stat.v[0][1] - self.stat.v[1][1],
+                                             self.dyn.psi_omega.f[0], self.stat.dx, self.np)
 
             # converting back to psi
             self.dyn.psi.f[0] = self.dyn.psi_omega.f[0] * exp_L
@@ -442,7 +449,8 @@ class PropagationSolver:
             E_full = self.dyn.E
 
             self.dyn.psi = phys_base.prop_cpu(psi=self.dyn.psi, t_sc=t_sc, nch=self.nch, np=self.np, v=self.stat.v,
-                                     akx2=self.stat.akx2, emin=emin, emax=emax, E=self.dyn.E, eL=eL, U=self.U, delta=self.delta, ntriv=self.ntriv, E_full=E_full)
+                                              akx2=self.stat.akx2, emin=emin, emax=emax, E=self.dyn.E, eL=eL,
+                                              U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv, E_full=E_full)
 
             #print(self.dyn.psi.f)
 
@@ -458,8 +466,9 @@ class PropagationSolver:
                     self.dyn.psi.f[n] /= math.sqrt(abs(cnorm_sum))
 
         # calculating of a current energy
-        cener = self._ener_eval(psi=self.dyn.psi, v=self.stat.v, akx2=self.stat.akx2, dx=self.stat.dx, np=self.np, E=self.dyn.E, eL=eL, U=self.U, delta=self.delta,
-                                 ntriv=self.ntriv, E_full=E_full, orig=True)
+        cener = self._ener_eval(psi=self.dyn.psi, v=self.stat.v, akx2=self.stat.akx2, dx=self.stat.dx, np=self.np,
+                                E=self.dyn.E, eL=eL, U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv,
+                                E_full=E_full, orig=True)
 
         overlp0 = self._pop_eval(self.stat.psi0, self.dyn.psi, self.stat.dx, self.np)
         overlpf = self._pop_eval(self.stat.psif, self.dyn.psi, self.stat.dx, self.np)

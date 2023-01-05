@@ -66,7 +66,7 @@ def hamil_cpu(psi, v, akx2, np, ntriv):
     return phi
 
 
-def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=False):
+def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, orig=False):
     """ Calculates two-dimensional Hamiltonian mapping of vector psi
         INPUT
         psi         list of complex vectors of length np
@@ -85,7 +85,7 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
         orig        a boolean parameter that depends
                     if an original form of the Hamiltonian should be used (orig = True) or
                     the shifted real version (orig = False -- by default)
-        U, delta    parameters of angular momentum-type Hamiltonian
+        U, W, delta parameters of angular momentum-type Hamiltonian
 
         OUTPUT
         phi = H psi list of complex vectors of length np """
@@ -112,9 +112,9 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
                 H.itemset((vi - 1, vi), P)
                 H.itemset((vi, vi - 1), R)
         elif ntriv == -2:
-            H.itemset((0, 0), 2.0 * l * U * (l + 1))
+            H.itemset((0, 0), 2.0 * l * U + 2.0 * l * l * W)
             for vi in range(1, nb):
-                Q = 2.0 * (l - vi) * U * (l - vi + 1) # U ~ 1 / cm
+                Q = 2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
                 P = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
                 R = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
                 H.itemset((vi, vi), Q)
@@ -129,9 +129,6 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
                 H_psi_el_mult = H.item(gl, il) * psi.f[il]
                 phi_gl = numpy.add(phi_gl, H_psi_el_mult)
             phi.f[gl] = phi_gl
-
-        #for n in range(nb):
-        #    numpy.add(phi.f[n], hamil_cpu(psi.f[n], v[n][1], akx2, np, ntriv), out=phi.f[n])
     else:
         if orig or ntriv == 0:
             # without laser field energy shift
@@ -168,7 +165,7 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, delta, ntriv, E_full=0.0, orig=
     return phi
 
 
-def residum_cpu(psi: Psi, v, akx2, xp, np, emin, emax, E, eL, U, delta, ntriv, E_full=0.0):
+def residum_cpu(psi: Psi, v, akx2, xp, np, emin, emax, E, eL, U, W, delta, ntriv, E_full=0.0):
     """ Scaled and normalized mapping phi = ( O - xp I ) phi
         INPUT
         psi         list of complex vectors of length np
@@ -185,7 +182,7 @@ def residum_cpu(psi: Psi, v, akx2, xp, np, emin, emax, E, eL, U, delta, ntriv, E
                                              with external laser field augmented inside a Jz term
                                        -2 -- a trivial n-level system with angular momentum Hamiltonian and
                                              with external laser field augmented inside a Jx term
-        U, delta    parameters of angular momentum-type Hamiltonian
+        U, W, delta    parameters of angular momentum-type Hamiltonian
 
         OUTPUT
         phi  list of complex vectors of length np
@@ -199,7 +196,7 @@ def residum_cpu(psi: Psi, v, akx2, xp, np, emin, emax, E, eL, U, delta, ntriv, E
 
     phi: Psi = Psi(lvls=len(psi.f))
 
-    hpsi = hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=E, eL=eL, U=U, delta=delta, ntriv=ntriv, E_full=E_full)
+    hpsi = hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=E, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv, E_full=E_full)
 
     # changing the range from -2 to 2
     for n in range(len(psi.f)):
@@ -229,7 +226,7 @@ def func(z, t):
     return cmath.exp(-1j * z * t)
 
 
-def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, delta, ntriv, E_full=0.0):
+def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, W, delta, ntriv, E_full=0.0):
     """ Propagation subroutine using Newton interpolation
         P(O) psi = dv(1) psi + dv2 (O - x1 I) psi + dv3 (O - x2)(O - x1 I) psi + ...
         INPUT
@@ -251,7 +248,7 @@ def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, delta, ntri
                                              with external laser field augmented inside a Jz term
                                        -2 -- a trivial n-level system with angular momentum Hamiltonian and
                                              with external laser field augmented inside a Jx term
-        U, delta    parameters of angular momentum-type Hamiltonian
+        U, W, delta    parameters of angular momentum-type Hamiltonian
 
         OUTPUT
         psi  list of complex vectors of length np
@@ -273,24 +270,19 @@ def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, delta, ntri
     for n in range(len(psi.f)):
         psi.f[n] *= dv[0]
 
-    #print("psi2 = ", psi)
     # recurrence loop
     for j in range(nch - 1):
         # mapping by scaled operator of phi
-        phi = residum_cpu(psi=phi, v=v, akx2=akx2, xp=xp[j], np=np, emin=emin, emax=emax, E=E, eL=eL, U=U, delta=delta, ntriv=ntriv, E_full=E_full)
+        phi = residum_cpu(psi=phi, v=v, akx2=akx2, xp=xp[j], np=np, emin=emin, emax=emax, E=E, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv, E_full=E_full)
 
         # accumulation of Newtonian's interpolation
         for n in range(len(psi.f)):
             phidv = phi.f[n] * dv[j + 1]
             numpy.add(psi.f[n], phidv, out=psi.f[n])
 
-    #print("psi3 = ", psi)
-
     coef = cmath.exp(-1j * 2.0 * t_sc * (emax + emin) / (emax - emin))
     for n in range(len(psi.f)):
         psi.f[n] *= coef
-
-    #print("psi4 = ", psi)
 
     return psi
 

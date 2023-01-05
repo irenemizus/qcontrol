@@ -634,11 +634,8 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v.append((D_u, v_u))
 
         elif self.ntriv < 0:
-            #h_cm = phys_base.Red_Planck_h / phys_base.cm_to_erg  # s * cm^-1
-            #delta_E = nu_L * phys_base.Hz_to_cm
-            #U = delta_E / l
-
             U = self.conf_fitter.propagation.U # U ~ 1 / cm
+            W = self.conf_fitter.propagation.W  # W ~ 1 / cm
             Emax = self.conf_fitter.propagation.E0 * self.conf_fitter.Em
             l = (self.conf_fitter.nb - 1) / 2.0
 
@@ -647,14 +644,15 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
                 vmax = 2.0 * U * l**2 + 2.0 * Emax * l
                 vmin = -2.0 * Emax * l
             elif self.ntriv == -2:
-                vmax = 2.0 * l * U * (l + 1)
-                vmin = -U / 2.0
+                vmax = 2.0 * l * (U + W * l)
+                if U <= W:
+                    vmin = -U * U / W / 2.0
+                else:
+                    vmin = 2.0 * l * (-U + W * l)
             else:
                 raise RuntimeError("Impossible case in the LfAugType class")
 
             for n in range(self.conf_fitter.nb):
-                #vn = -2.0 * Emax * (l - n)
-                #v_n = numpy.array([U * (l - n)**2] * np)
                 vmax_list = numpy.array([vmax] * np)
                 v.append((vmin, vmax_list))
         else:

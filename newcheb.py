@@ -35,7 +35,8 @@ Options:
             (for varying of fitter.propagation.T and fitter.w_list values).
             By default, is "output"
         table_glob_path
-            a path name for the file with global table, which contains the results in case of varying calculation parameters.
+            a path name for the file with global table, which contains the results in case of varying
+            calculation parameters.
             Shouldn't be specified otherwise.
             By default, is ""
         plotting_flag
@@ -251,7 +252,7 @@ Options:
         For all other variants of "hamil_type" variables is a dummy variable.
         Available options:
         "z" - H = -2 * delta * Jx + 2 * U * Jx**2 + 2 * E(t) * Jz (by default)
-        "x" - H = -2 * delta * Jx * E(t) + 2 * U * Jz
+        "x" - H = -2 * delta * Jx * E(t) + 2 * U * Jz + 2 * W * Jz^2
     nb
         number of basis vectors of the Hilbert space used in the calculation task.
         By default, is equal to 1
@@ -314,10 +315,13 @@ Options:
         hamil_type
             type of the Hamiltonian operator used ("ntriv", "two_levels" or "BH_model").
             By default, the "ntriv" type is used
-        U, delta
+        U, W, delta
             parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'BH_model' only),
-            U and delta are in units of 1 / cm.
-            By default, both are equal to 0.0
+            U, W and delta are in units of 1 / cm.
+            For lf_aug_type = "x" and nb = 2: W value should be equal to U.
+            For lf_aug_type = "x" and nb = 4: W value should be equal to 2 * U.
+            For lf_aug_type = "z": W is a dummy variable
+            By default, all are equal to 0.0
         x0
             coordinate initial condition.
             By default, is equal to 0.0
@@ -460,6 +464,7 @@ def print_input(conf_rep_plot, conf_task, file_name):
 
         finp.write("hamil_type:\t\t"   f"{conf_task.fitter.propagation.hamil_type}\n")
         finp.write("U:\t\t\t"   f"{conf_task.fitter.propagation.U}\n")
+        finp.write("W:\t\t\t"   f"{conf_task.fitter.propagation.W}\n")
         finp.write("delta:\t\t\t"   f"{conf_task.fitter.propagation.delta}\n")
 
         finp.write("pot_type:\t\t"   f"{conf_task.fitter.propagation.pot_type}\n")
