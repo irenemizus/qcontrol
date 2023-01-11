@@ -645,7 +645,7 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
                 vmin = -2.0 * Emax * l
             elif self.ntriv == -2:
                 vmax = 2.0 * l * (U + W * l)
-                if U <= W:
+                if W != 0.0 and self.conf_fitter.nb >= U / W + 1:
                     vmin = -U * U / W / 2.0
                 else:
                     vmin = 2.0 * l * (-U + W * l)
