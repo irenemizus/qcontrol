@@ -5,15 +5,15 @@
     "impulses_number": 1,
     "nb": 4,
     "iter_max": -1,
-    "iter_mid_1": 300,
-    "iter_mid_2": 350,
+    "iter_mid_1": 4500,
+    "iter_mid_2": 5000,
     "q": 0.75,
     "h_lambda": 0.0005,
     "h_lambda_mode": "dynamical",
     "init_guess": "sqrsin",
     "init_guess_hf": "sin_set",
     "w_list": [
-      0.3999999999999999, -0.8, -1.7
+      1.2000000000000002, 1.9, -1.2
     ],
     "lf_aug_type": "x",
     "pcos": 2,
@@ -31,7 +31,7 @@
       "t0": 0.0,
       "E0": 40.0,
       "nt": 3500,
-      "T": 4.0E-13,
+      "T": 5.0E-13,
       "sigma_auto": "True",
       "nu_L_auto": "True"
     },
