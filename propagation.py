@@ -20,7 +20,9 @@ class PropagationSolver:
         psi0: Psi
         psif: Psi
 
-        def __init__(self, psi0: Psi, psif: Psi, moms0: phys_base.ExpectationValues,
+        def __init__(self, psi0: Psi, psif: Psi,
+                     moms0: phys_base.ExpectationValues,
+                     smoms0: phys_base.SigmaExpectationValues,
                      cnorm0: List[complex],
                      cnormf: List[complex],
                      cener0: List[complex],
@@ -35,6 +37,7 @@ class PropagationSolver:
             self.psi0 = psi0
             self.psif = psif
             self.moms0 = moms0
+            self.smoms0 = smoms0
             self.cnorm0 = cnorm0
             self.cnormf = cnormf
             self.cener0 = cener0
@@ -71,9 +74,11 @@ class PropagationSolver:
     class InstrumentationOutputData:
         psigc_psie: complex
 
-        def __init__(self, moms: phys_base.ExpectationValues, cnorm, psigc_psie: complex, psigc_dv_psie: complex,
-                     cener: List[complex], E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after):
+        def __init__(self, moms: phys_base.ExpectationValues, smoms: phys_base.SigmaExpectationValues,
+                     cnorm, psigc_psie: complex, psigc_dv_psie: complex, cener: List[complex],
+                     E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after):
             self.moms = moms
+            self.smoms = smoms
             self.cnorm = cnorm
             self.psigc_psie = psigc_psie
             self.psigc_dv_psie = psigc_dv_psie
@@ -240,8 +245,9 @@ class PropagationSolver:
 
         # plotting initial values
         self.reporter.print_time_point_prop(self.dyn.l, self.stat.psi0, self.dyn.t, self.stat.x, self.np, self.nt,
-                                            self.stat.moms0, self.stat.cener0, self.stat.overlp00, self.stat.overlpf0,
-                                            overlp0_tot, cener0_tot, psi_max_abs, psi_max_real, self.dyn.E, fm_start)
+                                            self.stat.moms0, self.stat.smoms0, self.stat.cener0, self.stat.cnorm0,
+                                            self.stat.overlp00, self.stat.overlpf0, overlp0_tot, cener0_tot,
+                                            psi_max_abs, psi_max_real, self.dyn.E, fm_start)
 
         print("Initial emax = ", emax0)
         print("Initial emin = ", emin0)
@@ -293,8 +299,9 @@ class PropagationSolver:
             E = self.dyn.E.real
 
         self.reporter.print_time_point_prop(self.dyn.l, self.dyn.psi, self.dyn.t, self.stat.x, self.np, self.nt,
-                                            self.instr.moms, self.instr.cener, self.instr.overlp0, self.instr.overlpf,
-                                            overlp_tot, cener_tot, psi_max_abs, psi_max_real, E, self.dyn.freq_mult)
+                                            self.instr.moms, self.instr.smoms, self.instr.cener, self.instr.cnorm,
+                                            self.instr.overlp0, self.instr.overlpf, overlp_tot, cener_tot,
+                                            psi_max_abs, psi_max_real, E, self.dyn.freq_mult)
 
         if self.dyn.l % self.mod_log == 0:
             if self.np < np_min:
@@ -353,8 +360,9 @@ class PropagationSolver:
 
         # calculating of initial expectation values
         moms0 = phys_base.exp_vals_calc(psi, x, akx2, dx, self.np, self.m, self.ntriv)
+        smoms0 = phys_base.exp_sigma_vals_calc(psi, dx, self.np, self.ntriv)
 
-        self.stat = PropagationSolver.StaticState(psi0, psif, moms0, cnorm0, cnormf,
+        self.stat = PropagationSolver.StaticState(psi0, psif, moms0, smoms0, cnorm0, cnormf,
                      cener0, cenerf, overlp00, overlpf0, dt, dx, x, v, akx2)
 
         if dir == PropagationSolver.Direction.FORWARD:
@@ -475,10 +483,11 @@ class PropagationSolver:
 
         # calculating of expectation values
         moms = phys_base.exp_vals_calc(self.dyn.psi, self.stat.x, self.stat.akx2, self.stat.dx, self.np, self.m, self.ntriv)
+        smoms = phys_base.exp_sigma_vals_calc(self.dyn.psi, self.stat.dx, self.np, self.ntriv)
 
         time_after = datetime.datetime.now()
 
-        self.instr = PropagationSolver.InstrumentationOutputData(moms, cnorm, psigc_psie, psigc_dv_psie,
+        self.instr = PropagationSolver.InstrumentationOutputData(moms, smoms, cnorm, psigc_psie, psigc_dv_psie,
                      cener, E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after)
 
         self.report_dynamic()

@@ -370,10 +370,12 @@ class ReportRootConfiguration(ConfigurationBase):
                 self._data["gr_moms"] = "fig_moms{level}.html"
 
                 self._data["gr_ener"] = f"fig_ener{suffix}.html"
+                self._data["gr_norm"] = f"fig_norm{suffix}.html"
                 self._data["gr_overlp0"] = f"fig_overlp0{suffix}.html"
                 self._data["gr_overlpf"] = f"fig_overlpf{suffix}.html"
                 self._data["gr_abs_max"] = f"fig_abs_max{suffix}.html"
                 self._data["gr_real_max"] = f"fig_real_max{suffix}.html"
+                self._data["gr_smoms"] = f"fig_smoms{suffix}.html"
 
                 self._data["gr_ener_tot"] = f"fig_ener_tot{suffix}.html"
                 self._data["gr_overlp0_tot"] = f"fig_overlp0_tot{suffix}.html"

@@ -65,7 +65,7 @@ class PropagationReporter:
     def close(self):
         raise NotImplementedError()
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, smoms, ener, norm, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_rel, E, freq_mult):
         raise NotImplementedError()
 
@@ -117,31 +117,34 @@ class TablePropagationReporter(PropagationReporter):
             f_real.flush()
 
     @staticmethod
-    def __plot_t_file_prop(t, momx, momx2, momp, momp2, ener, overlp0, overlpf, psi_max_abs, psi_max_real, file_prop):
+    def __plot_t_file_prop(t, momx, momx2, momp, momp2, ener, norm, overlp0, overlpf, psi_max_abs, psi_max_real, file_prop):
         """ Plots expectation values of the current x, x*x, p and p*p, and other values,
         which are modified by propagation, as a function of time """
-        file_prop.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(
-            t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener.real, abs(overlp0), abs(overlpf), psi_max_abs,
-            psi_max_real))
+        file_prop.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(
+            t * 1e+15, momx.real, momx2.real, momp.real, momp2.real, ener.real, abs(norm), abs(overlp0),
+            abs(overlpf), psi_max_abs, psi_max_real))
         file_prop.flush()
 
     @staticmethod
-    def __plot_t_file_fitter(t, E, freq_mult, ener_tot, overlp_tot, file_fit):
+    def __plot_t_file_fitter(t, E, freq_mult, ener_tot, overlp_tot, smoms, file_fit):
         """ Plots the values, which are modified by fitter, as a function of time """
-        file_fit.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(t * 1e+15, abs(E), freq_mult, ener_tot.real, abs(overlp_tot[0]), abs(overlp_tot[1])))
+        file_fit.write("{:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f} {:.6f}\n".format(
+            t * 1e+15, abs(E), freq_mult, ener_tot.real, abs(overlp_tot[0]), abs(overlp_tot[1]),
+            smoms.x.real, smoms.y.real, smoms.z.real))
         file_fit.flush()
 
     def plot(self, psi: Psi, t, x, np):
         for n in range(self._nlvls):
             self.__plot_file(psi.f[n], t, x, np, self.f_abs[n], self.f_real[n])
 
-    def plot_prop(self, t, moms, ener, overlp0, overlpf, psi_max_abs, psi_max_real):
+    def plot_prop(self, t, moms, ener, norm, overlp0, overlpf, psi_max_abs, psi_max_real):
         for n in range(self._nlvls):
-            self.__plot_t_file_prop(t, moms.x[n], moms.x2[n], moms.p[n], moms.p2[n], ener[n], overlp0[n], overlpf[n],
-                             psi_max_abs[n], psi_max_real[n], self.f_prop[n])
+            self.__plot_t_file_prop(t, moms.x[n], moms.x2[n], moms.p[n], moms.p2[n],
+                                    ener[n], norm[n], overlp0[n], overlpf[n],
+                                    psi_max_abs[n], psi_max_real[n], self.f_prop[n])
 
-    def plot_fitter(self, t, E, freq_mult, ener_tot, overlp_tot):
-        self.__plot_t_file_fitter(t, E, freq_mult, ener_tot, overlp_tot, self.f_fit)
+    def plot_fitter(self, t, E, freq_mult, ener_tot, overlp_tot, smoms):
+        self.__plot_t_file_fitter(t, E, freq_mult, ener_tot, overlp_tot, smoms, self.f_fit)
 
     @staticmethod
     def __plot_test_file(l, phi_l, phi_u, f):
@@ -153,12 +156,12 @@ class TablePropagationReporter(PropagationReporter):
         for i in range(len(phi_u)):
             f.write("{0}\n".format(phi_u[i]))
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, smoms, ener, norm, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_real, E, freq_mult):
         if l % self.conf.mod_fileout == 0 and l >= self.conf.lmin:
             self.plot(psi, t, x, np)
-            self.plot_prop(t, moms, ener, overlp0, overlpf, psi_max_abs, psi_max_real)
-            self.plot_fitter(t, E, freq_mult, ener_tot, overlp_tot)
+            self.plot_prop(t, moms, ener, norm, overlp0, overlpf, psi_max_abs, psi_max_real)
+            self.plot_fitter(t, E, freq_mult, ener_tot, overlp_tot, smoms)
 
 
 class PlotPropagationReporter(PropagationReporter):
@@ -174,6 +177,7 @@ class PlotPropagationReporter(PropagationReporter):
         # Time
         self.t_list = []
         self.t_moms_list = [[] for i in range(self._nlvls)]
+        self.t_smoms_list = []
         self.t_fit_list = []
 
         # Coordinate
@@ -185,7 +189,12 @@ class PlotPropagationReporter(PropagationReporter):
         self.p_list = [list() for i in range(self._nlvls)]
         self.p2_list = [list() for i in range(self._nlvls)]
 
+        self.smomx_list = []
+        self.smomy_list = []
+        self.smomz_list = []
+
         self.ener_list = []
+        self.norm_list = []
         self.overlp0_list = []
         self.overlpf_list = []
         self.abs_psi_max_list = []
@@ -415,9 +424,25 @@ class PlotPropagationReporter(PropagationReporter):
                                           "Expectation values for the state #%d" % n, "",
                                           os.path.join(self._out_path, self.conf.gr_moms.replace("{level}", str(n))))
 
-    def plot_prop(self, t, ener, overlp0, overlpf, psi_max_abs, psi_max_real):
+    def plot_smoms_prop(self, t, smoms):
+        self.t_smoms_list.append(t)
+        self.smomx_list.append(smoms.x.real)
+        self.smomy_list.append(smoms.y.real)
+        self.smomz_list.append(smoms.z.real)
+
+        namem = ["<sigma_x>", "<sigma_y>", "<sigma_z>"]
+        smoms_list = [self.smomx_list, self.smomy_list, self.smomz_list]
+
+        if self.i % self.conf.mod_update == 0:
+            # Updating the graph for smoms
+            self.__plot_moms_update_graph(self.t_smoms_list, smoms_list, namem,
+                                          "Expectation values for sigma components", "",
+                                          os.path.join(self._out_path, self.conf.gr_smoms))
+
+    def plot_prop(self, t, ener, norm, overlp0, overlpf, psi_max_abs, psi_max_real):
         self.t_list.append(t)
         self.ener_list.append([el.real for el in ener])
+        self.norm_list.append([abs(el) for el in norm])
         self.overlp0_list.append([abs(el) for el in overlp0])
         self.overlpf_list.append([abs(el) for el in overlpf])
         self.abs_psi_max_list.append(psi_max_abs)
@@ -428,6 +453,11 @@ class PlotPropagationReporter(PropagationReporter):
             self.__plot_tvals_mult_update_graph(self.t_list, self.ener_list, self._nlvls,
                                                 "State energies", "Energy, 1 / cm",
                                                 os.path.join(self._out_path, self.conf.gr_ener))
+
+            # Updating the graph for norm
+            self.__plot_tvals_mult_update_graph(self.t_list, self.norm_list, self._nlvls,
+                                                "Normalisations", "",
+                                                os.path.join(self._out_path, self.conf.gr_norm))
 
             # Updating the graph for lower state population
             self.__plot_tvals_mult_update_graph(self.t_list, self.overlp0_list, self._nlvls,
@@ -481,7 +511,7 @@ class PlotPropagationReporter(PropagationReporter):
                                            "Closeness to the goal state", "(Ψ, Ψ_goal)",
                                            os.path.join(self._out_path, self.conf.gr_overlpf_tot))
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, smoms, ener, norm, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_real, E, freq_mult):
         try:
             if l % self.conf.mod_plotout == 0 and l >= self.conf.lmin:
@@ -489,7 +519,8 @@ class PlotPropagationReporter(PropagationReporter):
                     self.plot(psi, t, x, np, n)
                     self.plot_moms_prop(t, moms, n)
 
-                self.plot_prop(t, ener, overlp0, overlpf, psi_max_abs, psi_max_real)
+                self.plot_smoms_prop(t, smoms)
+                self.plot_prop(t, ener, norm, overlp0, overlpf, psi_max_abs, psi_max_real)
                 self.plot_fitter(t, E, freq_mult, ener_tot, overlp_tot)
                 self.i += 1
         except ValueError as err:
@@ -521,10 +552,10 @@ class MultiplePropagationReporter(PropagationReporter):
     def close(self):
         pass
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, smoms, ener, norm, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_real, E, freq_mult):
         for rep in self.reps:
-            rep.print_time_point_prop(l, psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+            rep.print_time_point_prop(l, psi, t, x, np, nt, moms, smoms, ener, norm, overlp0, overlpf, overlp_tot, ener_tot,
                                       psi_max_abs, psi_max_real, E, freq_mult)
 
 

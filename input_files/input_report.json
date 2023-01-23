@@ -8,7 +8,7 @@
     "table.tab_iter": "tab_iter.csv",
     "table.tab_iter_E": "tab_iter_E.csv",
 
-    "plot.imin": -1,
+    "plot.imin": 0,
     "plot.imod_plotout": 1,
     "plot.inumber_plotout": 15,
     "plot.gr_iter": "fig_iter_goal.html",
@@ -24,7 +24,7 @@
       "table.tab_tvals_fit": "tab_tvals_fit.csv",
 
       "plot.lmin": 0,
-      "plot.mod_plotout": 100,
+      "plot.mod_plotout": 8,
       "plot.mod_update": 1,
       "plot.number_plotout": 30
     }

@@ -295,6 +295,13 @@ class ExpectationValues:
         self.p2 = p2
 
 
+class SigmaExpectationValues:
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+
 def exp_vals_calc(psi: Psi, x, akx2, dx, np, m, ntriv):
     """ Calculation of expectation values <x>, <x^2>, <p>, <p^2>
         INPUT
@@ -355,3 +362,36 @@ def exp_vals_calc(psi: Psi, x, akx2, dx, np, m, ntriv):
             momx2[n] = math_base.cprod2(psi.f[n], x2, dx, np)
 
     return ExpectationValues(momx, momx2, momp, momp2)
+
+
+def exp_sigma_vals_calc(psi: Psi, dx, np, ntriv):
+    """ Calculation of expectation values <sigma_x>, <sigma_y>, <sigma_z> for a two-level system
+        INPUT
+        psi     list of complex vectors of length np describing wavefunctions
+        dx      coordinate step of the problem
+        np      number of grid points (must be a power of 2)
+        ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+                                        0 -- a trivial 2-level system
+                                       -1 -- a trivial n-level system with angular momentum Hamiltonian and
+                                             with external laser field augmented inside a Jz term
+                                       -2 -- a trivial n-level system with angular momentum Hamiltonian and
+                                             with external laser field augmented inside a Jx term
+        OUTPUT
+        smoms  list of complex vectors of length np """
+
+    for i in range(len(psi.f)):
+        assert psi.f[i].size == np
+
+    nlevs = len(psi.f)
+    assert nlevs == 2
+
+    smomx = 0.0
+    smomy = 0.0
+    smomz = 0.0
+
+    if ntriv != 1:
+        smomx = 2.0 * (math_base.cprod(psi.f[0], psi.f[1], dx, np)).real
+        smomy = 2.0 * (math_base.cprod(psi.f[0], psi.f[1], dx, np)).imag
+        smomz = math_base.cprod(psi.f[0], psi.f[0], dx, np) - math_base.cprod(psi.f[1], psi.f[1], dx, np)
+
+    return SigmaExpectationValues(smomx, smomy, smomz)
