@@ -199,9 +199,9 @@ def residum_cpu(psi: Psi, v, akx2, xp, np, emin, emax, E, eL, U, W, delta, ntriv
     hpsi = hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=E, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv, E_full=E_full)
 
     # changing the range from -2 to 2
+    coef1 = 4.0 / (emax - emin)
+    coef2 = 2.0 * (emax + emin) / (emax - emin)
     for n in range(len(psi.f)):
-        coef1 = 4.0 / (emax - emin)
-        coef2 = 2.0 * (emax + emin) / (emax - emin)
         hpsi.f[n] *= coef1
         tmp = psi.f[n] * coef2
         numpy.subtract(hpsi.f[n], tmp, out=hpsi.f[n])
@@ -228,7 +228,7 @@ def func(z, t):
 
 def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, W, delta, ntriv, E_full=0.0):
     """ Propagation subroutine using Newton interpolation
-        P(O) psi = dv(1) psi + dv2 (O - x1 I) psi + dv3 (O - x2)(O - x1 I) psi + ...
+        P(O) psi = dv0 psi + dv1 (O - x0 I) psi + dv2 (O - x1 I)(O - x0 I) psi + ...
         INPUT
         psi         list of complex vectors of length np describing wavefunctions
                     at the beginning of interval

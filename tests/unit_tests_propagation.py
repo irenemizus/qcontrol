@@ -6,7 +6,7 @@ import grid_setup
 import task_manager
 from config import TaskRootConfiguration
 from psi_basis import PsiBasis
-from test_tools import *
+from tests.test_tools import *
 
 
 class test_facilities_Tests(unittest.TestCase):
@@ -22,10 +22,11 @@ class test_facilities_Tests(unittest.TestCase):
         self.assertTrue(cmp.compare(tab1, tab2))
 
     def test_table_comparer(self):
-        psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
-        tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                        0.0000001, complex(0.001, 0.001), complex(0.001, 0.001),
-                                        0.0001, 0.0001), 1.e-21)
+        psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21) # psi, t, x
+        tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
+                                        0.0000001, complex(0.001, 0.001), # ener, norm,
+                                        complex(0.001, 0.001), complex(0.001, 0.001), # overlp0, overlpf,
+                                        0.0001, 0.0001), 1.e-21) # psi_max_abs, psi_max_real
 
         nlevs = 2
         for n in range(nlevs):
@@ -166,12 +167,13 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        #reporter_impl.print_all("test_data/prop_trans_woc_forw_.py", None)
+        reporter_impl.print_all("../test_data/prop_trans_woc_forw_.py", None)
 
-        psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
-        tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001),
-                                      0.0001, 0.0001), 1.e-21)
+        psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21) # psi, t, x
+        tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
+                                      0.0000001, complex(0.001, 0.001), # ener, norm,
+                                      complex(0.001, 0.001), complex(0.001, 0.001), # overlp0, overlpf,
+                                      0.0001, 0.0001), 1.e-21) # psi_max_abs, psi_max_real
 
         for n in range(nlevs):
             self.assertTrue(psi_prop_comparer.compare(reporter_impl.psi_tab[n], test_data.prop_trans_woc_forw.psi_tabs[n]))
@@ -239,12 +241,13 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        #reporter_impl.print_all("test_data/prop_trans_woc_back_.py", None)
+        reporter_impl.print_all("../test_data/prop_trans_woc_back_.py", None)
 
-        psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)
-        tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,
-                                      0.0000001, complex(0.001, 0.001), complex(0.001, 0.001),
-                                      0.0001, 0.0001), 1.e-21)
+        psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)  # psi, t, x
+        tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,  # t, moms.x, moms.x2, moms.p, moms.p2,
+                                      0.0000001, complex(0.001, 0.001), # ener, norm,
+                                      complex(0.001, 0.001), complex(0.001, 0.001), # overlp0, overlpf,
+                                      0.0001, 0.0001), 1.e-21) # psi_max_abs, psi_max_real
 
         for n in range(nlevs):
             self.assertTrue(

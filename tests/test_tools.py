@@ -148,25 +148,25 @@ class TestPropagationReporter(PropagationReporter):
             )
         pass
 
-    def plot_prop(self, t, moms, ener, overlp0, overlpf, psi_max_abs, psi_max_real):
+    def plot_prop(self, t, moms, ener, norm, overlp0, overlpf, psi_max_abs, psi_max_real):
         for n in range(self.nlevs):
             self.prop_tab[n].append(
                 (t,
                 moms.x[n].real, moms.x2[n].real, moms.p[n].real, moms.p2[n].real,
-                ener[n].real, overlp0[n], overlpf[n], psi_max_abs[n], psi_max_real[n])
+                ener[n].real, norm[n], overlp0[n], overlpf[n], psi_max_abs[n], psi_max_real[n])
         )
 
-    def plot_fitter(self, t, E, freq_mult, ener_tot, overlp_tot):
+    def plot_fitter(self, t, E, freq_mult, ener_tot, overlp_tot, smoms):
         self.fit_tab.append((
-            t, E, freq_mult, ener_tot.real, overlp_tot[0], overlp_tot[1]
+            t, E, freq_mult, ener_tot.real, overlp_tot[0], overlp_tot[1], smoms.x.real, smoms.y.real, smoms.z.real
         ))
 
-    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, ener, overlp0, overlpf, overlp_tot, ener_tot,
+    def print_time_point_prop(self, l, psi: Psi, t, x, np, nt, moms, smoms, ener, norm, overlp0, overlpf, overlp_tot, ener_tot,
                               psi_max_abs, psi_max_real, E, freq_mult):
         if l % self.mod_fileout == 0 and l >= self.lmin:
             self.plot(psi, t, x, np)
-            self.plot_prop(t, moms, ener, overlp0, overlpf, psi_max_abs, psi_max_real)
-            self.plot_fitter(t, E, freq_mult, ener_tot, overlp_tot)
+            self.plot_prop(t, moms, ener, norm, overlp0, overlpf, psi_max_abs, psi_max_real)
+            self.plot_fitter(t, E, freq_mult, ener_tot, overlp_tot, smoms)
 
     @staticmethod
     def __print_any_array(f, a, prefix = "    "):

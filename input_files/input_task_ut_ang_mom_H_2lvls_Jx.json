@@ -1,10 +1,10 @@
 {
   "fitter": {
     "task_type": "optimal_control_unit_transform",
-    "epsilon": 1e-5,
+    "epsilon": 1e-3,
     "impulses_number": 1,
     "nb": 2,
-    "iter_max": 750,
+    "iter_max": -1,
     "iter_mid_1": 250,
     "iter_mid_2": 300,
     "q": 0.75,
@@ -14,7 +14,7 @@
     "init_guess_hf": "sin_set",
     "lf_aug_type": "x",
     "pcos": 2,
-    "w_list": [1.0, 1.2999999999999998, -1.9],
+    "w_list": [-0.8, 0.0, -0.6000000000000001],
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
@@ -29,7 +29,7 @@
       "t0": 0.0,
       "E0": 40.0,
       "nt": 3500,
-      "T": 3.0E-12,
+      "T": 2.0E-13,
       "sigma_auto": "True",
       "nu_L_auto": "True"
     },
