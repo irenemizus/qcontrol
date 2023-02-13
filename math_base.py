@@ -182,18 +182,3 @@ def points(nch, t, func):
 
     return xp, dv
 
-
-
-np = 1024000000
-
-print("1")
-v1 = numpy.ones(np, numpy.float64)
-v2 = numpy.ones(np, numpy.float64)
-
-print("2")
-t1 = time.time()
-v3 = cprod(v1, v2, 0.1, np)
-t2 = time.time()
-print(t2 - t1)
-
-print(v3)
