@@ -1,6 +1,6 @@
 {
   "fitter": {
-    "out_path": "../output_325fs",
+    "out_path": "../output",
     "plotting_flag": "tables_iter",
 
     "table.imin": -1,

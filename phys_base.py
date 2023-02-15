@@ -383,13 +383,11 @@ def exp_sigma_vals_calc(psi: Psi, dx, np, ntriv):
         assert psi.f[i].size == np
 
     nlevs = len(psi.f)
-    assert nlevs == 2
-
     smomx = 0.0
     smomy = 0.0
     smomz = 0.0
 
-    if ntriv != 1:
+    if ntriv != 1 and nlevs == 2:
         smomx = 2.0 * (math_base.cprod(psi.f[0], psi.f[1], dx, np)).real
         smomy = 2.0 * (math_base.cprod(psi.f[0], psi.f[1], dx, np)).imag
         smomz = math_base.cprod(psi.f[0], psi.f[0], dx, np) - math_base.cprod(psi.f[1], psi.f[1], dx, np)
