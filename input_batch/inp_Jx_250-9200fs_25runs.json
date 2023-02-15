@@ -2,14 +2,14 @@
   "run_id": { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3", "ut/run4", "ut/run5", "ut/run6", "ut/run7", "ut/run8", "ut/run9", "ut/run10", "ut/run11", "ut/run12", "ut/run13", "ut/run14", "ut/run15", "ut/run16", "ut/run17", "ut/run18", "ut/run19", "ut/run20", "ut/run21", "ut/run22", "ut/run23", "ut/run24", "ut/run25" ] },
   "fitter": {
     "task_type": "optimal_control_unit_transform",
-    "epsilon": 1e-2,
+    "epsilon": 1e-3,
     "impulses_number": 1,
-    "nb": 4,
-    "iter_max": 10000,
-    "iter_mid_1": 3000,
-    "iter_mid_2": 5000,
-    "q": 0.6,
-    "h_lambda": 0.001,
+    "nb": 2,
+    "iter_max": 5000,
+    "iter_mid_1": 250,
+    "iter_mid_2": 300,
+    "q": 0.75,
+    "h_lambda": 0.00005,
     "h_lambda_mode":"dynamical",
     "init_guess": "sqrsin",
     "init_guess_hf": "sin_set",
@@ -20,7 +20,7 @@
       "wf_type": "const",
       "hamil_type": "BH_model",
       "U": 30,
-      "W": 60,
+      "W": 30,
       "delta": 15,
       "Du": 1,
       "np": 1,
@@ -31,10 +31,10 @@
       "nt": 3500,
       "T": { "@SUBST:LIST":
         [
-          2.0E-13,  5.0E-13,  1.0E-12,   1.5E-12, 
-          2.0E-12,  2.5E-12,  3.0E-12,   3.5E-12,   
-          4.0E-12,  4.5E-12,  5.0E-12,   5.5E-12,
-          6.0E-12,  6.5E-12,  7.0E-12,   7.5E-12
+          2.5E-13,  3.25E-13, 5.45E-13,  4.8E-12,   
+          6.4E-12,   6.6E-12, 6.8E-12,  7.6E-12,
+	  7.8E-12,   8.0E-12, 8.2E-12,  8.4E-12,
+	  8.6E-12,   8.8E-12, 9.0E-12,  9.2E-12
         ] },
       "sigma_auto": "True",
       "nu_L_auto": "True"
