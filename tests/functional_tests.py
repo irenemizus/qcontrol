@@ -4,9 +4,11 @@ import fitter
 import grid_setup
 import task_manager
 import test_data
+import os.path
 from config import TaskRootConfiguration
 from test_tools import *
 
+PATH_REP = os.path.join("iter_0f", "basis_0")
 
 class fitter_Tests(unittest.TestCase):
     def test_single_harm(self):
@@ -17,6 +19,7 @@ class fitter_Tests(unittest.TestCase):
             "impulses_number": 0,
             "init_guess": "zero",
             "nb": 1,
+            "nlevs": 2,
             "propagation": {
               "m": 0.5,
               "pot_type": "harmonic",
@@ -64,7 +67,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -72,7 +75,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -93,7 +96,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("../test_data/fit_iter_single_harm_.py")
@@ -128,6 +131,7 @@ class fitter_Tests(unittest.TestCase):
             "impulses_number": 0,
             "init_guess": "zero",
             "nb": 1,
+            "nlevs": 2,
             "propagation": {
               "m": 0.5,
               "pot_type": "morse",
@@ -176,7 +180,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -184,7 +188,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -203,7 +207,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("../test_data/fit_iter_single_morse_.py")
@@ -238,6 +242,7 @@ class fitter_Tests(unittest.TestCase):
             "impulses_number": 0,
             "init_guess": "zero",
             "nb": 1,
+            "nlevs": 2,
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -283,7 +288,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -291,7 +296,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -310,7 +315,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("../test_data/fit_iter_filter_.py")
@@ -347,6 +352,7 @@ class fitter_Tests(unittest.TestCase):
             "init_guess": "gauss",
             "init_guess_hf": "exp",
             "nb": 1,
+            "nlevs": 2,
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -395,7 +401,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -403,7 +409,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -422,7 +428,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("../test_data/fit_iter_trans_woc_.py")
@@ -459,6 +465,7 @@ class fitter_Tests(unittest.TestCase):
             "init_guess": "gauss",
             "init_guess_hf": "exp",
             "nb": 1,
+            "nlevs": 2,
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -507,7 +514,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -515,7 +522,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -534,7 +541,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("../test_data/fit_iter_int_ctrl_.py")
@@ -574,6 +581,7 @@ class fitter_Tests(unittest.TestCase):
             "init_guess": "gauss",
             "init_guess_hf": "exp",
             "nb": 1,
+            "nlevs": 2,
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -622,7 +630,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -630,7 +638,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -649,7 +657,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("../test_data/fit_iter_loc_ctrl_pop_.py")
@@ -689,6 +697,7 @@ class fitter_Tests(unittest.TestCase):
             "init_guess": "gauss",
             "init_guess_hf": "exp",
             "nb": 1,
+            "nlevs": 2,
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -737,7 +746,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -745,7 +754,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -764,7 +773,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("../test_data/fit_iter_loc_ctrl_proj_.py")
@@ -805,6 +814,7 @@ class fitter_Tests(unittest.TestCase):
             "init_guess": "gauss",
             "init_guess_hf": "exp",
             "nb": 1,
+            "nlevs": 2,
             "propagation": {
                 "m": 0.5,
                 "pot_type": "morse",
@@ -853,7 +863,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -861,7 +871,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -880,7 +890,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_krot_.py")
@@ -917,10 +927,12 @@ class fitter_Tests(unittest.TestCase):
             "epsilon": 1e-8,
             "impulses_number": 1,
             "nb": 2,
+            "nlevs": 2,
             "iter_max": 50,
             "h_lambda": 0.005,
             "init_guess": "sqrsin",
             "init_guess_hf": "cos_set",
+            "hf_hide": False,
             "w_list": [
                 0.88, 0.34, 0.92, 0.27, 0.39, 0.82, 0.68
             ],
@@ -971,7 +983,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -979,7 +991,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -998,7 +1010,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_ut_HB_2lvls_.py")
@@ -1035,6 +1047,7 @@ class fitter_Tests(unittest.TestCase):
             "epsilon": 1e-3,
             "impulses_number": 1,
             "nb": 2,
+            "nlevs": 2,
             "iter_max": 50,
             "iter_mid_1": 250,
             "iter_mid_2": 300,
@@ -1044,6 +1057,7 @@ class fitter_Tests(unittest.TestCase):
             "init_guess": "sqrsin",
             "init_guess_hf": "sin_set",
             "lf_aug_type": "x",
+            "hf_hide": False,
             "pcos": 2,
             "w_list": [1.2000000000000002, -1.9, 0.7000000000000002],
             "propagation": {
@@ -1061,8 +1075,8 @@ class fitter_Tests(unittest.TestCase):
                 "E0": 40.0,
                 "nt": 3500,
                 "T": 8.4E-13,
-                "sigma_auto": "True",
-                "nu_L_auto": "True"
+                "sigma_auto": True,
+                "nu_L_auto": True
             },
             "mod_log": 500
         }
@@ -1091,7 +1105,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # evaluating of the final goal
         psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
@@ -1099,7 +1113,7 @@ class fitter_Tests(unittest.TestCase):
                                          conf.propagation.m, conf.propagation.De,
                                          conf.propagation.De_e, conf.propagation.Du,
                                          conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb)
+                                         conf.propagation.L, conf.nb, conf.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -1118,7 +1132,7 @@ class fitter_Tests(unittest.TestCase):
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
-        prop_reporter = fit_reporter_imp.prop_reporters["iter_0f/basis_0"]
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
         #fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_ut_HB_2lvls_Jx_.py")

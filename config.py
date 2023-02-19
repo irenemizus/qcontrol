@@ -34,6 +34,8 @@ class ConfigurationBase:
                     self._data[key] = float(user_data[actual_key])
                 elif isinstance(self._data[key], int):
                     self._data[key] = int(user_data[actual_key])
+                elif isinstance(self._data[key], bool):
+                    self._data[key] = bool(user_data[actual_key])
                 elif isinstance(user_data[actual_key], str):
                     self._data[key] = type(self._data[key]).from_str(str(user_data[actual_key]))
                 elif isinstance(user_data[actual_key], int):
@@ -109,34 +111,6 @@ class TaskRootConfiguration(ConfigurationBase):
                     return TaskRootConfiguration.FitterConfiguration.\
                         PropagationConfiguration.PotentialType[s.upper()]
 
-            class nu_LType(Enum):
-                FALSE = 0
-                TRUE = 1
-
-                @staticmethod
-                def from_int(i):
-                    return TaskRootConfiguration.FitterConfiguration. \
-                        PropagationConfiguration.nu_LType(i)
-
-                @staticmethod
-                def from_str(s):
-                    return TaskRootConfiguration.FitterConfiguration. \
-                        PropagationConfiguration.nu_LType[s.upper()]
-
-            class sigmaType(Enum):
-                FALSE = 0
-                TRUE = 1
-
-                @staticmethod
-                def from_int(i):
-                    return TaskRootConfiguration.FitterConfiguration. \
-                        PropagationConfiguration.sigmaType(i)
-
-                @staticmethod
-                def from_str(s):
-                    return TaskRootConfiguration.FitterConfiguration. \
-                        PropagationConfiguration.sigmaType[s.upper()]
-
             def __init__(self):
                 super().__init__(key_prefix="")
                 # default input values
@@ -178,15 +152,15 @@ class TaskRootConfiguration(ConfigurationBase):
                 # 900000 -- for filtering on the ground PEC (99.16% quality)
                 self._data["E0"] = 71.54    # 1/cm
                 self._data["t0"] = 300e-15  # s
+                self._data["t0_auto"] = False
                 self._data["sigma"] = 50e-15    # s
-                self._data["sigma_auto"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.sigmaType.FALSE
+                self._data["sigma_auto"] = False
                 self._data["nu_L"] = 0.29297e15 # Hz
                 # 0.29297e15 -- for the working transition between PECs;
                 # 0.5879558e15 -- analytical difference b/w excited and ground energies;
                 # 0.5859603e15 -- calculated difference b/w excited and ground energies !!;
                 # 0.599586e15 = 20000 1/cm
-                self._data[
-                    "nu_L_auto"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.nu_LType.FALSE
+                self._data["nu_L_auto"] = False
 
 
         class TaskType(Enum):
@@ -298,7 +272,9 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["h_lambda"] = 0.0066
             self._data["h_lambda_mode"] = TaskRootConfiguration.FitterConfiguration.HlambdaModeType.CONST
             self._data["nb"] = 1
+            self._data["nlevs"] = 2
             self._data["pcos"] = 1.0
+            self._data["hf_hide"] = True
             self._data["Em"] = 1.5
 
 

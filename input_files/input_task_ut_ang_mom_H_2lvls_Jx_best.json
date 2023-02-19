@@ -4,7 +4,7 @@
     "epsilon": 1e-5,
     "impulses_number": 1,
     "nb": 2,
-    "iter_max": -1,
+    "iter_max": 3,
     "iter_mid_1": 250,
     "iter_mid_2": 300,
     "q": 0.75,
@@ -14,8 +14,8 @@
     "init_guess_hf": "sin_set",
     "lf_aug_type": "x",
     "pcos": 2,
-    "~w_list": [1.5, -1.0, 0.7999999999999998],
-    "w_list": [1.7999999999999998, -1.6, -0.6000000000000001],
+    "hf_hide": false,
+    "w_list": [1.5, -1.0, 0.7999999999999998],
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
@@ -30,10 +30,9 @@
       "t0": 0.0,
       "E0": 40.0,
       "nt": 3500,
-      "~T": 5.4E-13,
-      "T": 3.25E-13,
-      "sigma_auto": "True",
-      "nu_L_auto": "True"
+      "T": 5.4E-13,
+      "sigma_auto": true,
+      "nu_L_auto": true
     },
     "mod_log": 500
   }

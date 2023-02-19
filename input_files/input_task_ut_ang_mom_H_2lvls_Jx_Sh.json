@@ -14,6 +14,7 @@
     "init_guess_hf": "sin_set",
     "lf_aug_type": "z",
     "pcos": 3,
+    "hf_hide": false,
     "w_list": [ 0.012209722980561, -0.000848642582542, -0.023313721386604, -0.006607471418983],
     "propagation": {
       "pot_type": "none",
@@ -31,7 +32,7 @@
       "nt": 10000,
       "T": 833.333E-15,
       "sigma": 294.628E-15,
-      "nu_L_auto": "True"
+      "nu_L_auto": true
     },
     "mod_log": 500
   }

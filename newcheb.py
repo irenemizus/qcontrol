@@ -256,6 +256,12 @@ Options:
     nb
         number of basis vectors of the Hilbert space used in the calculation task.
         By default, is equal to 1
+    nlevs
+        number of levels in basis vectors of the Hilbert space used in the calculation task.
+        By default, is equal to 2
+    hf_hide
+        parameter that specifies if we should get rid of the high-frequency part of laser field during the propagation part.
+        By default, is "True"
     pcos
         maximum frequency multiplier for a sum [w_0 * cos(omega_L t) + sum(w_i * cos(omega_L t * k) + w_j * cos(omega_L t / k))]
         or [w_0 * sin(omega_L t) + w_1 * sin(omega_L t * 3) + w_2 * sin(omega_L t * 5) + ... + w_(2 * pcos - 2) * sin(omega_L t * (4 * pcos - 3)))]
@@ -318,7 +324,7 @@ Options:
         U, W, delta
             parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'BH_model' only),
             U, W and delta are in units of 1 / cm.
-            For lf_aug_type = "x" and nb = 2: W value should be equal to U.
+            For lf_aug_type = "x" and nb <= 2: W value should be equal to U.
             For lf_aug_type = "x" and nb = 4: W value should be equal to 2 * U.
             For lf_aug_type = "z": W is a dummy variable
             By default, all are equal to 0.0
@@ -351,6 +357,14 @@ Options:
             initial time, when the laser field reaches its maximum value, in sec.
             Is a dummy variable for filtering / single morse / single harmonic tasks.
             By default, is equal to 300e-15 s
+        t0_auto
+            parameter that controls the way of using t0 parameter.
+            If specified as "True", is calculated automatically as a function of T as follows:
+                for  init_guess = "sqrsin"  -- t0 = 0.0 s
+                for  init_guess = "maxwell" -- t0 = 0.0 s
+                for  init_guess = "gauss"   -- t0 = T / 2 s
+            Must be explicitly set to "True" if a batch calculation with init_guess = "gauss" is running!
+            By default, is "False"
         sigma
             scaling parameter of the laser field envelope in sec.
             Is a dummy variable for filtering / single morse / single harmonic tasks.
@@ -444,12 +458,14 @@ def print_input(conf_rep_plot, conf_task, file_name):
         finp.write("epsilon:\t\t"   f"{conf_task.fitter.epsilon:.1E}\n")
 
         finp.write("nb:\t\t\t"   f"{conf_task.fitter.nb}\n")
+        finp.write("nlevs:\t\t\t"   f"{conf_task.fitter.nlevs}\n")
         finp.write("wf_type:\t\t"   f"{conf_task.fitter.propagation.wf_type}\n")
 
         finp.write("impulses_number:\t"   f"{conf_task.fitter.impulses_number}\n")
         finp.write("Em:\t\t\t"   f"{conf_task.fitter.Em}\n")
         finp.write("E0:\t\t\t"   f"{conf_task.fitter.propagation.E0}\n")
         finp.write("t0:\t\t\t"   f"{conf_task.fitter.propagation.t0}\n")
+        finp.write("t0_auto:\t\t"   f"{conf_task.fitter.propagation.t0_auto}\n")
         finp.write("sigma:\t\t\t"   f"{conf_task.fitter.propagation.sigma:.6E}\n")
         finp.write("sigma_auto:\t\t"   f"{conf_task.fitter.propagation.sigma_auto}\n")
         finp.write("nu_L:\t\t\t"   f"{conf_task.fitter.propagation.nu_L:.6E}\n")
@@ -459,6 +475,7 @@ def print_input(conf_rep_plot, conf_task, file_name):
         finp.write("init_guess:\t\t"   f"{conf_task.fitter.init_guess}\n")
         finp.write("init_guess_hf:\t\t"   f"{conf_task.fitter.init_guess_hf}\n")
         finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos}\n")
+        finp.write("hf_hide:\t\t"   f"{conf_task.fitter.hf_hide}\n")
         finp.write("w_list:\t\t\t"   f"{conf_task.fitter.w_list}\n")
         finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
 
@@ -628,9 +645,18 @@ def main(argv):
                     raise ValueError(
                         "The number of laser pulses, 'impulses_number', has to be positive or 0")
 
-                if conf_task.fitter.nb < 0:
+                if conf_task.fitter.nb < 1:
                     raise ValueError(
-                        "The number of basis vectors of the Hilbert space, 'nb', has to be positive or 0")
+                        "The number of basis vectors of the Hilbert space, 'nb', has to be positive")
+
+                if conf_task.fitter.nlevs < 2:
+                    raise ValueError(
+                        "The number of levels in basis vectors of the Hilbert space, 'nlevs', has to be larger than 1")
+
+                if conf_task.fitter.nlevs < conf_task.fitter.nb:
+                    raise ValueError(
+                        "The number of levels in basis vectors of the Hilbert space, 'nlevs', must be larger or equal to "
+                        "the number of basis vectors themselves, 'nb'")
 
                 if conf_task.fitter.Em <= 0:
                     raise ValueError(
@@ -668,8 +694,13 @@ def main(argv):
                         "of a scaling parameter of the laser field envelope, 'sigma',"
                         "and of a basic frequency of the laser field, 'nu_L', have to be positive")
 
-                if conf_task.run_id != "no_id" and conf_task.fitter.propagation.sigma_auto != TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.sigmaType.TRUE:
+                if conf_task.run_id != "no_id" and conf_task.fitter.propagation.sigma_auto != True:
                     raise ValueError("A batch calculation is running. 'sigma_auto' parameter must be set to 'True'!")
+
+                if conf_task.run_id != "no_id" and \
+                   conf_task.fitter.propagation.t0_auto != True and \
+                   conf_task.fitter.propagation.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+                    raise ValueError("A batch calculation with init_guess = 'gauss' is running. 't0_auto' parameter must be set to 'True'!")
 
                 if conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.FILTERING or \
                         conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.SINGLE_POT:
@@ -795,7 +826,7 @@ def main(argv):
                                                  conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
                                                  conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
                                                  conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
-                                                 conf_task.fitter.propagation.L, conf_task.fitter.nb)
+                                                 conf_task.fitter.propagation.L, conf_task.fitter.nb, conf_task.fitter.nlevs)
 
                 # evaluating of the final goal (of type PsiBasis)
                 psif = task_manager_imp.psi_goal(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
@@ -803,7 +834,7 @@ def main(argv):
                                                  conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
                                                  conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
                                                  conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
-                                                 conf_task.fitter.propagation.L, conf_task.fitter.nb)
+                                                 conf_task.fitter.propagation.L, conf_task.fitter.nb, conf_task.fitter.nlevs)
 
                 # initial propagation direction
                 init_dir = task_manager_imp.init_dir
@@ -814,13 +845,23 @@ def main(argv):
                 if not os.path.exists(conf_rep_plot.fitter.out_path):
                     os.makedirs(conf_rep_plot.fitter.out_path, exist_ok=True)
 
-                if conf_task.fitter.propagation.sigma_auto == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.sigmaType.TRUE:
+                if conf_task.fitter.propagation.sigma_auto == True:
                     if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
                         conf_task.fitter.propagation.sigma = 2.0 * conf_task.fitter.propagation.T #TODO: to add a possibility to vary groups of parameters
                     elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
                         conf_task.fitter.propagation.sigma = conf_task.fitter.propagation.T / 5.0
                     elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
                         conf_task.fitter.propagation.sigma = conf_task.fitter.propagation.T / 8.0
+                    else:
+                        pass
+
+                if conf_task.fitter.propagation.t0_auto == True:
+                    if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
+                        conf_task.fitter.propagation.t0 = 0.0 #TODO: to add a possibility to vary groups of parameters
+                    elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
+                        conf_task.fitter.propagation.t0 = 0.0
+                    elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+                        conf_task.fitter.propagation.t0 = conf_task.fitter.propagation.T / 2.0
                     else:
                         pass
 

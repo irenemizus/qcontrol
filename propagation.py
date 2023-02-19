@@ -121,6 +121,7 @@ class PropagationSolver:
             w_list,
             mod_log,
             ntriv,
+            hf_hide,
             conf_prop):
         self.milliseconds_full = 0.0
         self.pot = pot
@@ -133,6 +134,7 @@ class PropagationSolver:
         self.dynamic_state_factory = dynamic_state_factory
         self.mod_log = mod_log
         self.ntriv = ntriv
+        self.hf_hide = hf_hide
         self.pcos = pcos
         self.w_list = w_list
 
@@ -392,7 +394,7 @@ class PropagationSolver:
         exp_L = 1.0
 
         # Here we're transforming the problem to the one for psi_omega -- if needed
-        if self.ntriv == 1:
+        if self.hf_hide:
             self.dyn.freq_mult = self.freq_multiplier(self.dyn, self.stat)
             exp_L = cmath.sqrt(self.laser_field_hf(self.dyn.freq_mult, self.dyn.t, self.pcos, self.w_list))
 
@@ -427,7 +429,7 @@ class PropagationSolver:
         psigc_dv_psie = 0.0
 
         cnorm = []
-        if self.ntriv == 1:
+        if self.hf_hide:
             E_full = self.dyn.E * exp_L * exp_L
             self.dyn.psi_omega = phys_base.prop_cpu(psi=self.dyn.psi_omega, t_sc=t_sc, nch=self.nch, np=self.np,
                                                     v=self.stat.v, akx2=self.stat.akx2, emin=emin, emax=emax,

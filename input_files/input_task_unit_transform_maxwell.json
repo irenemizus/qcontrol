@@ -8,6 +8,7 @@
     "init_guess": "maxwell",
     "init_guess_hf": "cos",
     "pcos": 1,
+    "hf_hide": false,
     "nb": 2,
     "propagation": {
       "pot_type": "none",

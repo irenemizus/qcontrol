@@ -98,13 +98,13 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, or
     phi: Psi = Psi(lvls=len(psi.f))
 
     if ntriv < 0:
-        nb = len(psi.f)
-        l = (nb - 1) / 2.0
-        H = numpy.zeros((nb, nb))
+        nlvls = len(psi.f)
+        l = (nlvls - 1) / 2.0
+        H = numpy.zeros((nlvls, nlvls), dtype=numpy.complex128)
 
         if ntriv == -1:
             H.itemset((0, 0), 2.0 * l**2 * U + 2.0 * l * E)
-            for vi in range(1, nb):
+            for vi in range(1, nlvls):
                 Q = 2.0 * (l - vi)**2 * U + 2.0 * (l - vi) * E # U ~ 1 / cm
                 P = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
                 R = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
@@ -113,7 +113,7 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, or
                 H.itemset((vi, vi - 1), R)
         elif ntriv == -2:
             H.itemset((0, 0), 2.0 * l * U + 2.0 * l * l * W)
-            for vi in range(1, nb):
+            for vi in range(1, nlvls):
                 Q = 2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
                 P = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
                 R = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
@@ -123,9 +123,9 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, or
         else:
             raise RuntimeError("Impossible case in the LfAugType class")
 
-        for gl in range(nb):
+        for gl in range(nlvls):
             phi_gl = numpy.array([complex(0.0, 0.0)] * np)
-            for il in range(nb):
+            for il in range(nlvls):
                 H_psi_el_mult = H.item(gl, il) * psi.f[il]
                 phi_gl = numpy.add(phi_gl, H_psi_el_mult)
             phi.f[gl] = phi_gl

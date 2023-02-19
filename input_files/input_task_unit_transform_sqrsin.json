@@ -8,6 +8,7 @@
     "init_guess": "sqrsin",
     "init_guess_hf": "cos",
     "pcos": 1.00,
+    "hf_hide": false,
     "nb": 2,
     "propagation": {
       "pot_type": "none",

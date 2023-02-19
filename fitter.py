@@ -134,6 +134,7 @@ class FittingSolver:
                 w_list=self.conf_fitter.w_list,
                 mod_log=self.conf_fitter.mod_log,
                 ntriv=ntriv,
+                hf_hide=self.conf_fitter.hf_hide,
                 conf_prop=self.conf_fitter.propagation))
 
     def __finalize_propagation(self):
