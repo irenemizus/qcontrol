@@ -156,6 +156,7 @@ class propagation_Tests(unittest.TestCase):
             w_list=conf.w_list,
             mod_log=conf.mod_log,
             ntriv=ntriv,
+            hf_hide=conf.hf_hide,
             conf_prop=conf.propagation)
 
         solver.start(dx, x, t_step, psi0.psis[0], psif.psis[0], PropagationSolver.Direction.FORWARD)
@@ -167,7 +168,7 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        reporter_impl.print_all("../test_data/prop_trans_woc_forw_.py", None)
+        #reporter_impl.print_all("../test_data/prop_trans_woc_forw_.py", None)
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
@@ -230,6 +231,7 @@ class propagation_Tests(unittest.TestCase):
             w_list=conf.w_list,
             mod_log=conf.mod_log,
             ntriv=ntriv,
+            hf_hide=conf.hf_hide,
             conf_prop=conf.propagation)
 
         solver.start(dx, x, t_step, psif.psis[0], psi0.psis[0], PropagationSolver.Direction.BACKWARD)
@@ -241,7 +243,7 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        reporter_impl.print_all("../test_data/prop_trans_woc_back_.py", None)
+        #reporter_impl.print_all("../test_data/prop_trans_woc_back_.py", None)
 
         psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)  # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,  # t, moms.x, moms.x2, moms.p, moms.p2,

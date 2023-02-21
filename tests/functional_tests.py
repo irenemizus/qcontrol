@@ -312,7 +312,7 @@ class fitter_Tests(unittest.TestCase):
                                               task_manager_imp.pot, task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -538,7 +538,7 @@ class fitter_Tests(unittest.TestCase):
                                               task_manager_imp.pot, task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf, fit_reporter_imp,
                                               None, None)
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]

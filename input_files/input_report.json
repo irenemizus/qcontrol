@@ -1,6 +1,6 @@
 {
   "fitter": {
-    "out_path": "../output",
+    "out_path": "../output_state2state_nuL_c+figs",
     "plotting_flag": "all",
 
     "table.imin": -1,

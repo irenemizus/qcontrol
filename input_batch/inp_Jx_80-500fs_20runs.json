@@ -15,6 +15,7 @@
     "init_guess_hf": "sin_set",
     "lf_aug_type": "x",
     "pcos": 2,
+    "hf_hide": false,
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
@@ -37,8 +38,8 @@
           3.25E-13,  3.5E-13,   3.75E-13,  4.25E-13,
           4.5E-13,   4.75E-13,  5.4E-13,   5.45E-13,   5.65E-13
         ] },
-      "sigma_auto": "True",
-      "nu_L_auto": "True"
+      "sigma_auto": true,
+      "nu_L_auto": true
     },
     "mod_log": 500
   }

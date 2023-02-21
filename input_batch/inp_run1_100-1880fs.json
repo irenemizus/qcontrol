@@ -11,6 +11,7 @@
     "init_guess_hf": "cos_set",
     "lf_aug_type": "z",
     "pcos": 4,
+    "hf_hide": false,
     "Em": 5,
     "propagation": {
       "pot_type": "none",
@@ -47,8 +48,8 @@
           18.0E-13, 18.3E-13, 18.5E-13, 18.8E-13
         ]
       },
-      "sigma": 6.671270E-13,
-      "nu_L": 0.299793E14
+      "sigma_auto": true,
+      "nu_L_auto": true
     },
     "mod_log": 500
   }

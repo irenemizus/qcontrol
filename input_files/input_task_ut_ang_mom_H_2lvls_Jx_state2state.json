@@ -10,10 +10,11 @@
     "iter_mid_2": 30,
     "q": 0.75,
     "h_lambda": 0.00005,
-    "h_lambda_mode": "const",
+    "h_lambda_mode": "dynamical",
     "init_guess": "gauss",
     "init_guess_hf": "exp",
     "lf_aug_type": "x",
+    "hf_hide": false,
     "pcos": 1,
     "propagation": {
       "pot_type": "none",
@@ -28,7 +29,7 @@
       "nch": 8,
       "E0": 40.0,
       "nt": 3500,
-      "T": 3.25E-13,
+      "T": 2.7797E-13,
       "sigma_auto": true,
       "nu_L_auto": true,
       "t0_auto": true

@@ -19,6 +19,7 @@
     },
     "lf_aug_type": "z",
     "pcos": 4,
+    "hf_hide": false,
     "Em": 5,
     "propagation": {
       "pot_type": "none",
