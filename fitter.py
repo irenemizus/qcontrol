@@ -403,7 +403,7 @@ class FittingSolver:
 
         E_list = []
         for E in self.dyn.E_tlist:
-            if self.ntriv == 1:
+            if E.imag:
                 E_list.append(abs(E))
             else:
                 E_list.append(E.real)
@@ -454,7 +454,7 @@ class FittingSolver:
             if direct == PropagationSolver.Direction.FORWARD:
                 E_list = []
                 for E in self.dyn.E_tlist:
-                    if self.ntriv == 1:
+                    if E.imag:
                         E_list.append(abs(E))
                     else:
                         E_list.append(E.real)
