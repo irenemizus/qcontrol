@@ -162,11 +162,11 @@ are probably wrong :)
 class _PsiFunctions:
     @staticmethod
     def zero(np):
-        return numpy.array([0.0] * np).astype(complex)
+        return numpy.zeros(np, dtype=numpy.complex128)
 
     @staticmethod
     def one(x, np, x0, p0, m, De, a, L):
-        return numpy.array([1.0 / math.sqrt(L)] * np).astype(complex)
+        return numpy.array([1.0 / math.sqrt(L)] * np).astype(numpy.complex128)
 
     @staticmethod
     def harmonic(x, np, x0, p0, m, De, a, L):
@@ -186,7 +186,7 @@ class _PsiFunctions:
 
         psi = numpy.array(
             [cmath.exp(-(xi - x0) * (xi - x0) / 2.0 / a / a + 1j * p0 * xi) / pow(math.pi, 0.25) / math.sqrt(a) for xi
-             in x]).astype(complex)
+             in x]).astype(numpy.complex128)
 
         return psi
 
@@ -215,7 +215,7 @@ class _PsiFunctions:
         y = [math.exp(-a * (xi - x0)) / xe for xi in x]
         arg = 1.0 / xe - 1.0
         psi = numpy.array(
-            [math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, float(arg / 2.0)) for yi in y]).astype(complex)
+            [math.sqrt(a / math.gamma(arg)) * math.exp(-yi / 2.0) * pow(yi, numpy.float64(arg / 2.0)) for yi in y]).astype(numpy.complex128)
 
         return psi
 
@@ -563,7 +563,7 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
     @staticmethod
     def _quant_fourier_transform(nb):
         omega = cmath.exp(1j * 2.0 * math.pi / nb)
-        F = numpy.zeros((nb, nb)).astype(complex)
+        F = numpy.zeros((nb, nb), dtype=numpy.complex128)
         for v1 in range(nb):
             for v2 in range(nb):
                 F.itemset((v1, v2), omega**(v1 * v2) / math.sqrt(nb))
@@ -575,7 +575,7 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
         phi: PsiBasis = PsiBasis(nb, nb)
         for bv in range(nb):
             for gl in range(nb):
-                phi_gl = numpy.array([complex(0.0, 0.0)] * np)
+                phi_gl = numpy.zeros(np, dtype=numpy.complex128)
                 for il in range(nb):
                     F_psi_el_mult = F.item(gl, il) * psi.psis[bv].f[il]
                     phi_gl = numpy.add(phi_gl, F_psi_el_mult)

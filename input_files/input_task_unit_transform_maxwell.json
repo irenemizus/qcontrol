@@ -7,7 +7,7 @@
     "h_lambda": 0.5,
     "init_guess": "maxwell",
     "init_guess_hf": "cos",
-    "pcos": 1,
+    "pcos": 1.0,
     "hf_hide": false,
     "nb": 2,
     "propagation": {
@@ -17,7 +17,7 @@
       "np": 1,
       "L": 1.0,
       "nch": 64,
-      "Du": 100,
+      "Du": 100.0,
       "t0": 0.0,
       "E0": 18.0,
       "nt": 1800,

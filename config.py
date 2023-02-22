@@ -3,6 +3,8 @@ import typing
 from enum import Enum
 from typing import Dict
 
+import numpy
+
 
 class ConfigurationBase:
     _data: Dict[str, typing.Any]
@@ -31,7 +33,7 @@ class ConfigurationBase:
                 if isinstance(self._data[key], str):
                     self._data[key] = str(user_data[actual_key])
                 elif isinstance(self._data[key], float):
-                    self._data[key] = float(user_data[actual_key])
+                    self._data[key] = numpy.float64(user_data[actual_key])
                 elif isinstance(self._data[key], int):
                     self._data[key] = int(user_data[actual_key])
                 elif isinstance(self._data[key], bool):
@@ -41,7 +43,7 @@ class ConfigurationBase:
                 elif isinstance(user_data[actual_key], int):
                     self._data[key] = type(self._data[key]).from_int(int(user_data[actual_key]))
                 elif isinstance(user_data[actual_key], float):
-                    self._data[key] = type(self._data[key]).from_float(float(user_data[actual_key]))
+                    self._data[key] = type(self._data[key]).from_float(numpy.float64(user_data[actual_key]))
                 elif isinstance(self._data[key], list):
                     assert isinstance(user_data[actual_key], list), f"The value for {actual_key} has to be of type 'list'"
                     self._data[key] = user_data[actual_key]
@@ -52,7 +54,7 @@ class ConfigurationBase:
             else:
                 print(
                     "Parameter '%s' hasn't been provided in the input json file. "
-                    "The default value will be used: %s" % (key, str(self._data[key]))
+                    "It will be calculated automatically or the default value will be used: %s" % (key, str(self._data[key]))
                 )
 
     # redefinition of the dot operator for a field

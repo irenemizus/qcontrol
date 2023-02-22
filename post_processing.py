@@ -4,6 +4,9 @@ import os, csv
 import re
 import statistics
 import sys
+
+import numpy
+
 import reporter
 
 
@@ -16,7 +19,7 @@ def num(s):
     try:
         return int(s)
     except ValueError:
-        return float(s)
+        return numpy.float64(s)
 
 def plot_vals_update_graph(t_list, vals_list, namem, title_plot, title_y, plot_name):
     template: str
@@ -51,10 +54,10 @@ def plot_vals_update_graph(t_list, vals_list, namem, title_plot, title_y, plot_n
 
 class batch_result:
     iter: int
-    goal_close: float
-    F_sm: float
-    E_int: float
-    J: float
+    goal_close: numpy.float64
+    F_sm: numpy.float64
+    E_int: numpy.float64
+    J: numpy.float64
 
     def __init__(self, iter, goal_close, F_sm, E_int, J):
         self.iter = iter
@@ -95,7 +98,7 @@ for run_dir in run_dirs:
 
     times = dict()
     for time_dir in time_dirs:
-        time_val = float(os.path.split(time_dir)[-1].split('T=')[-1])
+        time_val = numpy.float64(os.path.split(time_dir)[-1].split('T=')[-1])
         print(time_dir)
 
         # First, we need to get a few parameters from the file "table_inp_-1.txt"
@@ -108,7 +111,7 @@ for run_dir in run_dirs:
 
             if res_nb: nb = int(res_nb.group(1))
             if res_it: iter_mid_2 = int(res_it.group(1))
-            if res_eps: epsilon = float(res_eps.group(1))
+            if res_eps: epsilon = numpy.float64(res_eps.group(1))
 
         data = None
         with open(os.path.join(time_dir, "tab_iter.csv"), "r") as f:
@@ -123,7 +126,7 @@ for run_dir in run_dirs:
             if data is not None:
                 for i in range(len(data)):
                     data[i] = [x for x in data[i] if x != '']
-                    data[i] = batch_result(int(data[i][0]), float(data[i][1]), float(data[i][2]), float(data[i][3]), float(data[i][4]))
+                    data[i] = batch_result(int(data[i][0]), numpy.float64(data[i][1]), numpy.float64(data[i][2]), numpy.float64(data[i][3]), numpy.float64(data[i][4]))
         if data is not None:
             if nb and iter_mid_2 and epsilon:
                 iter_l = data[-1].iter
@@ -262,7 +265,7 @@ with open(os.path.join(out_dir, "glob.txt"), "w") as f_gl:
 # Writing the table with minimum values of F_sm among all the runs as a function of T value
 with open(os.path.join(out_dir, "glob_F_graph.txt"), "w") as f_fgr:
     for t in runs_inv_sort:
-        tfs = float(t) * 1e+15
+        tfs = numpy.float64(t) * 1e+15
         min = runs_min_min[t]
         avg = runs_min_avg[t]
         med = runs_min_med[t]
@@ -274,7 +277,7 @@ with open(os.path.join(out_dir, "glob_F_graph.txt"), "w") as f_fgr:
 E_int_dict = dict()
 with open(os.path.join(out_dir, "glob_E_int_graph.txt"), "w") as f_eigr:
     for t in F_sm_min_full_data:
-        tfs = float(t) * 1e+15
+        tfs = numpy.float64(t) * 1e+15
         time = F_sm_min_full_data[t]
         E2_int = time[1].E_int
         E_int_dict[t] = E2_int

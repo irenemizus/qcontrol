@@ -20,8 +20,8 @@ class GridConstructor:
             dx = self.L / (self.np - 1)
 
             # setting the coordinate grid
-            shift = float(self.np - 1) * dx / 2.0
-            x_list = [float(i) * dx - shift for i in range(self.np)]
+            shift = numpy.float64(self.np - 1) * dx / 2.0
+            x_list = [numpy.float64(i) * dx - shift for i in range(self.np)]
             x = numpy.array(x_list)
         elif self.np == 1:
             dx = 1.0

@@ -6,6 +6,7 @@ import datetime
 from typing import Callable, List, Optional
 
 import numpy
+from numpy.typing import NDArray
 
 import math_base
 import phys_base
@@ -23,14 +24,14 @@ class PropagationSolver:
         def __init__(self, psi0: Psi, psif: Psi,
                      moms0: phys_base.ExpectationValues,
                      smoms0: phys_base.SigmaExpectationValues,
-                     cnorm0: List[complex],
-                     cnormf: List[complex],
-                     cener0: List[complex],
-                     cenerf: List[complex],
-                     overlp00: List[complex],
-                     overlpf0: List[complex],
-                     dt: float = 0.0, dx: float = 0.0,
-                     x: numpy.ndarray = numpy.array(0), v=None, akx2=None):
+                     cnorm0: NDArray[numpy.complex128],
+                     cnormf: NDArray[numpy.complex128],
+                     cener0: NDArray[numpy.complex128],
+                     cenerf: NDArray[numpy.complex128],
+                     overlp00: NDArray[numpy.complex128],
+                     overlpf0: NDArray[numpy.complex128],
+                     dt: numpy.float64 = 0.0, dx: numpy.float64 = 0.0,
+                     x: NDArray[numpy.float64] = numpy.empty(shape=0, dtype=numpy.float64), v=None, akx2=None):
             assert (psi0 is None and psif is None) or (psi0.f[0] is not psif.f[0] and psi0.f[1] is not psif.f[1]), \
                 "A single array is passed twice (as psi0 and psif). Clone it!"
 
@@ -72,10 +73,10 @@ class PropagationSolver:
     # These parameters are recalculated from scratch on each step,
     # and then follows an output of them to the user
     class InstrumentationOutputData:
-        psigc_psie: complex
+        psigc_psie: numpy.complex128
 
         def __init__(self, moms: phys_base.ExpectationValues, smoms: phys_base.SigmaExpectationValues,
-                     cnorm, psigc_psie: complex, psigc_dv_psie: complex, cener: List[complex],
+                     cnorm, psigc_psie: numpy.complex128, psigc_dv_psie: numpy.complex128, cener: NDArray[numpy.complex128],
                      E_full, overlp0, overlpf, emax, emin, t_sc, time_before, time_after):
             self.moms = moms
             self.smoms = smoms
@@ -105,7 +106,7 @@ class PropagationSolver:
     stat: Optional[StaticState]
     dyn: Optional[DynamicState]
     instr: Optional[InstrumentationOutputData]
-    freq_multiplier: Optional[Callable[[DynamicState, StaticState], float]]
+    freq_multiplier: Optional[Callable[[DynamicState, StaticState], numpy.float64]]
 
     def __init__(
             self,
@@ -115,7 +116,7 @@ class PropagationSolver:
             reporter: PropagationReporter,
             laser_field_envelope,
             laser_field_hf,
-            freq_multiplier: Callable[[DynamicState, StaticState], float],
+            freq_multiplier: Callable[[DynamicState, StaticState], numpy.float64],
             dynamic_state_factory,
             pcos,
             w_list,

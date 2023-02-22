@@ -9,7 +9,7 @@
       "pot_type": "morse",
       "hamil_type": "ntriv",
       "a": 1.0,
-      "De": 20000,
+      "De": 20000.0,
       "x0p": 0.0,
       "a_e": 0.0,
       "De_e": 0.0,

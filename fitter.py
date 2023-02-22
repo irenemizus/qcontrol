@@ -2,6 +2,8 @@ import collections.abc
 import os.path
 import json
 
+from numpy.typing import NDArray
+
 import reporter
 from config import TaskRootConfiguration
 from propagation import *
@@ -12,10 +14,10 @@ class FittingSolver:
     class FitterDynamicState:
         chi_tlist: List[PsiBasis]
         psi_tlist: List[PsiBasis]
-        E_tlist: List[complex]
+        E_tlist: List[numpy.complex128]
         chi_cur: PsiBasis
         psi_cur: PsiBasis
-        goal_close_vec: List[complex]
+        goal_close_vec: NDArray[numpy.complex128]
 
         def __init__(self, basis_length, levels_number, E_vel=0.0, freq_mult_vel=0.0, iter_step=0, dir=PropagationSolver.Direction.FORWARD):
             self.E_vel = E_vel
@@ -26,7 +28,7 @@ class FittingSolver:
             self.E_patched = 0.0
             self.freq_mult_patched = 1.0
             self.dAdt_happy = 0.0
-            self.Fsm = complex(0.0, 0.0)
+            self.Fsm = numpy.complex128(0)
             self.E_int = 0.0
             self.J = 0.0
             self.h_lambda = 0.0
@@ -41,7 +43,7 @@ class FittingSolver:
 
             self.goal_close_abs = 0.0
             self.goal_close_scal = 0.0
-            self.goal_close_vec = [complex(0.0)] * basis_length
+            self.goal_close_vec = numpy.zeros(basis_length, numpy.complex128)
             self.E_tlist = []
 
             self.res = PropagationSolver.StepReaction.OK
@@ -53,7 +55,7 @@ class FittingSolver:
                 for time_point in dct['chi_tlist']:
                     new_time_point = []
                     for level in time_point:
-                        new_level = numpy.array(level).astype(complex)
+                        new_level = numpy.array(level).astype(numpy.complex128)
                         new_time_point.append(new_level)
                     new_chi_tlist.append(new_time_point)
                 dct['chi_tlist'] = new_chi_tlist
@@ -62,15 +64,15 @@ class FittingSolver:
                 for time_point in dct['psi_tlist']:
                     new_time_point = []
                     for level in time_point:
-                        new_level = numpy.array(level).astype(complex)
+                        new_level = numpy.array(level).astype(numpy.complex128)
                         new_time_point.append(new_level)
                     new_psi_tlist.append(new_time_point)
                 dct['psi_tlist'] = new_psi_tlist
 
-                new_E_tlist = numpy.array(dct['E_tlist']).astype(complex)
+                new_E_tlist = numpy.array(dct['E_tlist']).astype(numpy.complex128)
                 dct['E_tlist'] = new_E_tlist
 
-                dct['goal_close'] = complex(dct['goal_close'])
+                dct['goal_close'] = (dct['goal_close']).astype(numpy.complex128)
 
                 new_dir = PropagationSolver.Direction[dct['dir']]
                 dct['dir'] = new_dir
@@ -90,7 +92,7 @@ class FittingSolver:
             def default(obj):
                 nonlocal array_index, arrays
 
-                if isinstance(obj, complex):
+                if isinstance(obj, numpy.complex128):
                     return str(obj)
                 elif isinstance(obj, numpy.ndarray):
                     res = str(array_index)
@@ -177,7 +179,7 @@ class FittingSolver:
 
         self.basis_length = len(psi_init_basis)
         self.levels_number = len(psi_init_basis.psis[0].f)
-        self.a0 = complex(0.0, 0.0)
+        self.a0 = numpy.complex128(0)
 
         self.dyn = None
 
@@ -238,7 +240,7 @@ class FittingSolver:
             if abs(E_checked - self.solvers[vect].dyn.E) > 0.001:
                 raise AssertionError("Different energies in different solvers")
 
-        E_tlist_new: List[complex] = []
+        E_tlist_new: List[numpy.complex128] = []
         # Working with solvers
         if direct == PropagationSolver.Direction.FORWARD:
             # with open("test_chi_" + str(self.dyn.iter_step) + ".txt", "w") as f:
@@ -325,8 +327,8 @@ class FittingSolver:
 #                    f.write("    " + str(l) + ",\n")
 #                f.write("]\n\n")
 
-        self.dyn.goal_close_vec = [complex(0.0, 0.0)] * self.basis_length
-        self.dyn.Fsm = complex(0.0, 0.0)
+        self.dyn.goal_close_vec = numpy.zeros(self.basis_length, dtype=numpy.complex128)
+        self.dyn.Fsm = numpy.complex128(0)
         for vect in range(self.basis_length):
             solver = self.solvers[vect]
 
@@ -348,7 +350,7 @@ class FittingSolver:
                                                                      solver.stat.dx, self.conf_fitter.propagation.np)
 
                 if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
-                    chiT_part.f[0] = numpy.array([0.0] * self.conf_fitter.propagation.np).astype(complex)
+                    chiT_part.f[0] = numpy.zeros(self.conf_fitter.propagation.np, dtype=numpy.complex128)
                     chiT_part.f[1] = self.dyn.goal_close_vec[vect] * solver.stat.psif.f[1]
 
                     # renormalization
@@ -469,7 +471,7 @@ class FittingSolver:
                                                     iter_step=0, dir=self.init_dir)
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             E_tlist_init = []
-            goal_close_init = [complex(0.0, 0.0)] * self.basis_length
+            goal_close_init = numpy.zeros(self.basis_length, dtype=numpy.complex128)
             goal_close_scal_init = 0.0
             for vect in range(self.basis_length):
                 for n in range(self.levels_number):
@@ -479,7 +481,7 @@ class FittingSolver:
 
             goal_close_abs_init = abs(goal_close_scal_init)
 
-            Fsm_init = complex(0.0, 0.0)
+            Fsm_init = numpy.complex128(0)
             for vect in range(self.basis_length):
                 for vect1 in range(self.basis_length):
                     Fsm_init -= goal_close_init[vect] * goal_close_init[vect1].conjugate()

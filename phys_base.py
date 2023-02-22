@@ -124,7 +124,7 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, or
             raise RuntimeError("Impossible case in the LfAugType class")
 
         for gl in range(nlvls):
-            phi_gl = numpy.array([complex(0.0, 0.0)] * np)
+            phi_gl = numpy.zeros(np, dtype=numpy.complex128)
             for il in range(nlvls):
                 H_psi_el_mult = H.item(gl, il) * psi.f[il]
                 phi_gl = numpy.add(phi_gl, H_psi_el_mult)

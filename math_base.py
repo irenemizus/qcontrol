@@ -82,7 +82,7 @@ def initak(n, dx, iorder, ntriv):
         dk = 2.0 * math.pi / (n - 1) / dx
 
         for i in range(int(n / 2)):
-            ak[i + 1] = pow(1j * dk * float(i + 1), iorder)
+            ak[i + 1] = pow(1j * dk * numpy.float64(i + 1), iorder)
             ak[n - i - 1] = pow(-1, iorder) * ak[i + 1]
 
     return ak
@@ -162,7 +162,7 @@ def points(nch, t, func):
     # calculating of the Chebyshev interpolation points
     xp = numpy.zeros(nch, numpy.float64)
     for i in range(nch):
-        phase = float(2 * jj[i] + 1) / float(2 * nch) * math.pi
+        phase = numpy.float64(2 * jj[i] + 1) / numpy.float64(2 * nch) * math.pi
         xp[i] = 2.0 * math.cos(phase)
 
     dv = numpy.zeros(nch, numpy.complex128)
@@ -173,7 +173,7 @@ def points(nch, t, func):
     # recursion for the divided difference
     for i in range(2, nch):
         res = 1.0
-        sum = complex(0.0, 0.0)
+        sum = numpy.complex128(0)
         for j in range(i - 1):
             res *= (xp[i] - xp[j])
             sum += dv[j + 1] * res
