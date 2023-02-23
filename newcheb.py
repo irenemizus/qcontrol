@@ -444,7 +444,7 @@ def _warning_time_steps(nt, nt_min):
 
 def print_json_input_task(conf_task, run_id,  id):
     file_name = f"input_task_ut_ang_mom_H_{run_id}_var{id}.json"
-    pretty_print_json = pformat(conf_task).replace("'", '"')
+    pretty_print_json = pformat(conf_task).replace("'", '"').replace("True", "true").replace("False", "false")
     with open(file_name, "w") as finp:
         finp.write(pretty_print_json)
 
@@ -699,7 +699,7 @@ def main(argv):
 
                 if conf_task.run_id != "no_id" and \
                    conf_task.fitter.propagation.t0_auto != True and \
-                   conf_task.fitter.propagation.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+                   conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
                     raise ValueError("A batch calculation with init_guess = 'gauss' is running. 't0_auto' parameter must be set to 'True'!")
 
                 if conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.FILTERING or \
