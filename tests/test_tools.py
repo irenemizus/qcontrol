@@ -5,7 +5,7 @@ from reporter import *
 
 
 class TableComparer:
-    def __init__(self, epsilon, delta: float):
+    def __init__(self, epsilon, delta: np.float64):
         self.epsilon = epsilon
         self.delta = delta
 
@@ -16,6 +16,10 @@ class TableComparer:
     @staticmethod
     def is_complex(el):
         return isinstance(el, np.complex128) or isinstance(el, complex)
+
+    @staticmethod
+    def is_float(el):
+        return isinstance(el, np.float64) or isinstance(el, float)
 
     def compare_floats(self, el1, el2, eps):
         # Trivially comparing two floats
@@ -57,7 +61,7 @@ class TableComparer:
             # Trivially comparing two ints
             if el1 != el2:
                 return False
-        elif isinstance(el1, float) and isinstance(el2, float) and isinstance(eps, float):
+        elif self.is_float(el1) and self.is_float(el2) and self.is_float(eps):
             # Trivially comparing two floats
             if not self.compare_floats(el1, el2, eps):
                 return False
@@ -73,7 +77,7 @@ class TableComparer:
             for l in range(len(el1)):
                 if not self.compare_complex(el1[l], el2[l], eps):
                     return False
-        elif self.is_array(el1) and self.is_array(el2) and isinstance(eps, float):
+        elif self.is_array(el1) and self.is_array(el2) and self.is_float(eps):
             # Comparing each element of two real arrays
             if len(el1) != len(el2):
                 raise RuntimeError("Real arrays have different lengths")

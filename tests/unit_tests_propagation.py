@@ -11,22 +11,22 @@ from tests.test_tools import *
 
 class test_facilities_Tests(unittest.TestCase):
     def test_table_comparer_trivial(self):
-        cmp = TableComparer((3.5, 0.2, np.complex(5.0, 1.0)), 1.e-20)
+        cmp = TableComparer((3.5, 0.2, np.complex128(5.0 + 1.0j)), np.float64(1.e-20))
         tab1 = [
-            (3.01, 5.0, np.array([np.complex(1.0, 1.0), np.complex(2.01, 2.001)]))
+            (3.01, 5.0, np.array([np.complex128(1.0 + 1.0j), np.complex128(2.01 + 2.001j)]))
         ]
         tab2 = [
-            (3.0, 5.0, np.array([np.complex(1.0, 1.0), np.complex(2.0, 2.0)]))
+            (3.0, 5.0, np.array([np.complex128(1.0 + 1.0j), np.complex128(2.0 + 2.0j)]))
         ]
 
         self.assertTrue(cmp.compare(tab1, tab2))
 
     def test_table_comparer(self):
-        psi_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21) # psi, t, x
+        psi_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
         tvals_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
-                                        0.0000001, complex(0.001, 0.001), # ener, norm,
-                                        complex(0.001, 0.001), complex(0.001, 0.001), # overlp0, overlpf,
-                                        0.0001, 0.0001), 1.e-21) # psi_max_abs, psi_max_real
+                                        0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
+                                        np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
+                                        0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
 
         nlevs = 2
         for n in range(nlevs):
@@ -50,11 +50,11 @@ class propagation_Tests(unittest.TestCase):
                 "pot_type": "morse",
                 "hamil_type": "ntriv",
                 "a": 1.0,
-                "De": 20000,
+                "De": 20000.0,
                 "x0p": -0.17,
                 "a_e": 1.0,
-                "De_e": 10000,
-                "Du": 20000,
+                "De_e": 10000.0,
+                "Du": 20000.0,
                 "wf_type": "morse",
                 "L": 5.0,
                 "T": 330e-15,
@@ -119,7 +119,7 @@ class propagation_Tests(unittest.TestCase):
             pass
 
         def freq_multiplier(dyn: PropagationSolver.DynamicState, stat: PropagationSolver.StaticState):
-            return 1.0
+            return np.float64(1.0)
 
         def laser_field_envelope(prop: PropagationSolver, stat: PropagationSolver.StaticState,
                                dyn: PropagationSolver.DynamicState):
@@ -170,11 +170,11 @@ class propagation_Tests(unittest.TestCase):
         # Uncomment in case of emergency :)
         #reporter_impl.print_all("../test_data/prop_trans_woc_forw_.py", None)
 
-        psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21) # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
-                                      0.0000001, complex(0.001, 0.001), # ener, norm,
-                                      complex(0.001, 0.001), complex(0.001, 0.001), # overlp0, overlpf,
-                                      0.0001, 0.0001), 1.e-21) # psi_max_abs, psi_max_real
+                                      0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
+                                      np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
+                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
 
         for n in range(nlevs):
             self.assertTrue(psi_prop_comparer.compare(reporter_impl.psi_tab[n], test_data.prop_trans_woc_forw.psi_tabs[n]))
@@ -194,7 +194,7 @@ class propagation_Tests(unittest.TestCase):
             pass
 
         def freq_multiplier(dyn: PropagationSolver.DynamicState, stat: PropagationSolver.StaticState):
-            return 1.0
+            return np.float64(1.0)
 
         def laser_field_envelope(prop: PropagationSolver, stat: PropagationSolver.StaticState,
                                dyn: PropagationSolver.DynamicState):
@@ -245,11 +245,11 @@ class propagation_Tests(unittest.TestCase):
         # Uncomment in case of emergency :)
         #reporter_impl.print_all("../test_data/prop_trans_woc_back_.py", None)
 
-        psi_prop_comparer = TableComparer((complex(0.0001, 0.0001), 0.000001, 0.0001), 1.e-21)  # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21))  # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,  # t, moms.x, moms.x2, moms.p, moms.p2,
-                                      0.0000001, complex(0.001, 0.001), # ener, norm,
-                                      complex(0.001, 0.001), complex(0.001, 0.001), # overlp0, overlpf,
-                                      0.0001, 0.0001), 1.e-21) # psi_max_abs, psi_max_real
+                                      0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
+                                      np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
+                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
 
         for n in range(nlevs):
             self.assertTrue(

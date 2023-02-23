@@ -606,7 +606,7 @@ class MyTestCase(unittest.TestCase):
 
         phi_res = diff_cpu(psi, akx2, np)
 
-        cmpr = TableComparer(complex(1.e-5, 1.e-5), 1.e-15)
+        cmpr = TableComparer(numpy.complex128(1.e-5 + 1.e-5j), numpy.float64(1.e-15))
 
         self.assertTrue(cmpr.compare(phi, phi_res))
 

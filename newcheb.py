@@ -810,7 +810,7 @@ def main(argv):
                 #nw = int(conf_task.fitter.pcos + 1)    #Tmp!
                 if not conf_task.fitter.w_list:
                     # conf_task.fitter.w_list = [numpy.float64(x) / 100.0 for x in random.sample(range(1, 101), nw)]
-                    conf_task.fitter.w_list = [numpy.float64(x) / 10.0 - 2.0 for x in random.sample(range(0, 40), nw)] # TODO: to add the input parameters for random
+                    conf_task.fitter.w_list = [x for x in numpy.random.default_rng().uniform(-2, 2, nw)] # TODO: to add the input parameters for random
                 else:
                     assert len(conf_task.fitter.w_list) == nw
 

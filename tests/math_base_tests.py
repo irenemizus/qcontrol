@@ -19,7 +19,7 @@ class cprod2_Tests(unittest.TestCase):
 class initak_Tests(unittest.TestCase):
     def test_4(self):
         dk = 10.0 * math.pi / 3.0
-        dk2 = complex(dk * dk, 0)
+        dk2 = numpy.complex128(dk * dk + 0j)
         self.assertTrue(numpy.allclose(initak(4, 0.2, 2, 1), numpy.array([0, -dk2, -4.0 * dk2, -dk2])))
 
 
@@ -45,10 +45,10 @@ class points_Tests(unittest.TestCase):
                                        numpy.array([1.8477590650225735, -0.7653668647301795,
                                                     0.7653668647301797, -1.8477590650225735])))
         self.assertTrue(numpy.allclose(points(4, 1, func)[1],
-                                       numpy.array([complex(-0.2734354014243603, -0.9618903686220686),
-                                                    complex(-0.38060302857900286, -0.6332232027087304),
-                                                    complex(-0.3516313481159491, 0.25126355493174846),
-                                                    complex(-2.1243197887715325e-17, 0.135982856037932)])))
+                                       numpy.array([numpy.complex128(-0.2734354014243603 - 0.9618903686220686j),
+                                                    numpy.complex128(-0.38060302857900286 - 0.6332232027087304j),
+                                                    numpy.complex128(-0.3516313481159491 + 0.25126355493174846j),
+                                                    numpy.complex128(-2.1243197887715325e-17 + 0.135982856037932j)])))
 
 
 class fft_Tests(unittest.TestCase):

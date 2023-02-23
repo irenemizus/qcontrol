@@ -1,7 +1,7 @@
 {
   "fitter": {
-    "out_path": "../output_state2state_nuL_c+figs",
-    "plotting_flag": "all",
+    "out_path": "../output_ut_newrand_200fs",
+    "plotting_flag": "tables_iter",
 
     "table.imin": -1,
     "table.imod_fileout": 1,
