@@ -243,10 +243,17 @@ Options:
                      (should be used together with a sqrsin- or gauss-type envelope if a symmetric initial guess is needed,
                      for example, for an Hadamard-like Hamiltonian in a unitary transformation task)
     w_list
-        a list of 2 * pcos - 1 amplitudes for separate harmonics of the laser field high-frequency part of type "cos_set".
+        a list of 2 * pcos - 1 amplitudes for separate harmonics of the laser field high-frequency part of type "cos_set"
+        or "sin_set".
         Is a dummy variable for all other types of "init_guess_hf".
         If not specified or is empty, the amplitude values are generated randomly.
         By default, is equal to []
+    w_min
+        a minimum value of an element from w_list, which can be randomly generated.
+        By default, is equal to -2.0.
+    w_max
+        a maximum value of an element from w_list, which can be randomly generated.
+        By default, is equal to 2.0.
     lf_aug_type
         a way of adding the controlling laser field to "BH_model"-type Hamiltonian.
         For all other variants of "hamil_type" variables is a dummy variable.
@@ -477,6 +484,8 @@ def print_input(conf_rep_plot, conf_task, file_name):
         finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos}\n")
         finp.write("hf_hide:\t\t"   f"{conf_task.fitter.hf_hide}\n")
         finp.write("w_list:\t\t\t"   f"{conf_task.fitter.w_list}\n")
+        finp.write("w_min:\t\t\t"   f"{conf_task.fitter.w_min}\n")
+        finp.write("w_max:\t\t\t"   f"{conf_task.fitter.w_max}\n")
         finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
 
         finp.write("hamil_type:\t\t"   f"{conf_task.fitter.propagation.hamil_type}\n")
@@ -809,8 +818,9 @@ def main(argv):
                 nw = int(2 * conf_task.fitter.pcos - 1)
                 #nw = int(conf_task.fitter.pcos + 1)    #Tmp!
                 if not conf_task.fitter.w_list:
-                    # conf_task.fitter.w_list = [numpy.float64(x) / 100.0 for x in random.sample(range(1, 101), nw)]
-                    conf_task.fitter.w_list = [x for x in numpy.random.default_rng().uniform(-2, 2, nw)] # TODO: to add the input parameters for random
+                    conf_task.fitter.w_list = [x for x in numpy.random.default_rng().uniform(conf_task.fitter.w_min,
+                                                                                             conf_task.fitter.w_max,
+                                                                                             nw)]
                 else:
                     assert len(conf_task.fitter.w_list) == nw
 

@@ -258,6 +258,8 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["init_guess"] = TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO
             self._data["init_guess_hf"] = TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP
             self._data["w_list"] = []
+            self._data["w_min"] = -2.0
+            self._data["w_max"] = 2.0
             self._data["lf_aug_type"] = TaskRootConfiguration.FitterConfiguration.LfAugType.Z
             self._data["propagation"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration()
             self._data["k_E"] = 1e29    # 1 / (s*s)
