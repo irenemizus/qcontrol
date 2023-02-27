@@ -2,7 +2,9 @@ import cmath
 import math
 
 import numpy
+from numpy.typing import NDArray
 
+import math_base
 from config import TaskRootConfiguration
 from propagation import PropagationSolver
 from psi_basis import PsiBasis
@@ -148,6 +150,46 @@ class _LaserFieldsHighFrequencyPart:
             #E_omega += w_list[p] * math.sin(2.0 * math.pi * nu * freq_mult * t * (p + 1))   #Tmp!
 
         return E_omega
+
+
+class _F_type:
+    @staticmethod
+    def F_sm(gc_vec, nb):
+        """ Calculates the corresponding functional for the unitary transformation task
+            INPUT
+            nb      number of basis vectors used
+            gc_vect list of the distances from the goal at the end of propagation for each basis vector
+            OUTPUT
+            F       complex value of the corresponding functional  """
+
+        F = numpy.complex128(0)
+        for vect in range(nb):
+            for vect1 in range(nb):
+                F -= gc_vec[vect] * gc_vec[vect1].conjugate()
+
+        return F
+
+
+class _aF_type:
+    @staticmethod
+    def a_sm(psi_init, chi_init, dx, nb, nlevs, np):
+        """ Calculates 'a' coefficient, which corresponds to the given functional for the unitary transformation task
+            INPUT
+            nb          number of basis vectors used
+            nlevs       number of levels used
+            np          number of grid points
+            dx          coordinate grid step
+            psi_init    initial wavefunctions
+            chi_init    wavefunctions from the previous backward propagation at the initial time point t = 0
+            OUTPUT
+            a           list of complex values of the corresponding 'a' coefficients  """
+
+        a = numpy.zeros(nb, dtype=numpy.complex128)
+        for vect in range(nb):
+            for n in range(nlevs):
+                a[0] += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], dx, np)
+
+        return a
 
 
 """
@@ -313,6 +355,17 @@ class TaskManager:
         else:
             raise RuntimeError("Impossible case in the HamilType class")
 
+        if conf_fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.SM:
+            print("The 'squared module' type of the functional (F_sm) is used")
+            self.F_type = _F_type.F_sm
+            self.aF_type = _aF_type.a_sm
+        elif conf_fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.RE:
+            print("The 'real' type of the functional (F_re) is used")
+        elif conf_fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.SS:
+            print("The 'state-to-state' type of the functional (F_ss) is used")
+        else:
+            raise RuntimeError("Impossible FType for the unitary transformation task")
+
         print(f"Number of %d-level basis vectors 'nb' = %d is used" % (conf_fitter.nlevs, conf_fitter.nb))
 
         self.conf_fitter = conf_fitter
@@ -337,6 +390,12 @@ class TaskManager:
 
     def laser_field_hf(self, freq_mult, t, pcos, w_list):
         return self.lf_init_guess_hf(self.nu, freq_mult, t, pcos, w_list)
+
+    def F_type(self, gc_vec, nb):
+        return self.F_type(gc_vec, nb)
+
+    def aF_type(self, psi_init, chi_init, dx, nb, nlevs, np):
+        return self.aF_type(psi_init, chi_init, dx, nb, nlevs, np)
 
 
 class HarmonicSingleStateTaskManager(TaskManager):

@@ -251,12 +251,26 @@ class TaskRootConfiguration(ConfigurationBase):
             def from_str(s):
                 return TaskRootConfiguration.FitterConfiguration.InitGuessHf[s.upper()]
 
+        class FType(Enum):
+            SM = 0
+            RE = 1
+            SS = 2
+
+            @staticmethod
+            def from_int(i):
+                return TaskRootConfiguration.FitterConfiguration.FType(i)
+
+            @staticmethod
+            def from_str(s):
+                return TaskRootConfiguration.FitterConfiguration.FType[s.upper()]
+
         def __init__(self):
             super().__init__(key_prefix="")
             # default input values
             self._data["task_type"] = TaskRootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL
             self._data["init_guess"] = TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO
             self._data["init_guess_hf"] = TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP
+            self._data["F_type"] = TaskRootConfiguration.FitterConfiguration.FType.SM
             self._data["w_list"] = []
             self._data["w_min"] = -2.0
             self._data["w_max"] = 2.0

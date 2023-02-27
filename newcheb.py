@@ -284,6 +284,14 @@ Options:
         (for the "BH_model"-type Hamiltonian with lf_aug_type = "z", only).
         For all other variants of Hamiltonian is a dummy variable.
         By default, is equal to 1.5
+    F_type
+        a type of the F functional, which is used to evaluate closeness to the goal states in the unitary transformation
+        algorithm (task_type = "optimal_control_unit_transform") as in the article
+        [J.P. Palao, R. Kosloff, Phys. Rev. A, 68, 062308 (2003)]. Is a dummy variable for all other task_type cases.
+         Available options:
+         "sm" - "squared module" type of the functional (F_sm) (by default)
+         "re" - "real" type of the functional (F_re)
+         "ss" - "state-to-state" type of the functional (F_ss)
     mod_log
         step of output to stdout (to write to stdout each <val>-th time step).
         By default, is equal to 500
@@ -481,17 +489,18 @@ def print_input(conf_rep_plot, conf_task, file_name):
         finp.write("h_lambda_mode:\t\t"   f"{conf_task.fitter.h_lambda_mode}\n")
         finp.write("init_guess:\t\t"   f"{conf_task.fitter.init_guess}\n")
         finp.write("init_guess_hf:\t\t"   f"{conf_task.fitter.init_guess_hf}\n")
+        finp.write("F_type:\t\t"   f"{conf_task.fitter.F_type}\n")
         finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos}\n")
         finp.write("hf_hide:\t\t"   f"{conf_task.fitter.hf_hide}\n")
         finp.write("w_list:\t\t\t"   f"{conf_task.fitter.w_list}\n")
         finp.write("w_min:\t\t\t"   f"{conf_task.fitter.w_min}\n")
         finp.write("w_max:\t\t\t"   f"{conf_task.fitter.w_max}\n")
-        finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
 
         finp.write("hamil_type:\t\t"   f"{conf_task.fitter.propagation.hamil_type}\n")
         finp.write("U:\t\t\t"   f"{conf_task.fitter.propagation.U}\n")
         finp.write("W:\t\t\t"   f"{conf_task.fitter.propagation.W}\n")
         finp.write("delta:\t\t\t"   f"{conf_task.fitter.propagation.delta}\n")
+        finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
 
         finp.write("pot_type:\t\t"   f"{conf_task.fitter.propagation.pot_type}\n")
         finp.write("Du:\t\t\t"   f"{conf_task.fitter.propagation.Du}\n")
@@ -885,7 +894,9 @@ def main(argv):
                 fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
                 fit_reporter_imp.open()
 
-                fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif, task_manager_imp.pot, task_manager_imp.laser_field, task_manager_imp.laser_field_hf, fit_reporter_imp,
+                fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif, task_manager_imp.pot,
+                                                      task_manager_imp.laser_field, task_manager_imp.laser_field_hf,
+                                                      task_manager_imp.F_type, task_manager_imp.aF_type, fit_reporter_imp,
                                                       _warning_collocation_points,
                                                       _warning_time_steps
                                                       )

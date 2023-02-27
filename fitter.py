@@ -159,6 +159,8 @@ class FittingSolver:
             pot_func,
             laser_field,
             laser_field_hf,
+            F_type,
+            aF_type,
             reporter: reporter.FitterReporter,
             _warning_collocation_points,
             _warning_time_steps
@@ -168,6 +170,8 @@ class FittingSolver:
         self.pot_func = pot_func
         self.laser_field = laser_field
         self.laser_field_hf = laser_field_hf
+        self.F_type = F_type
+        self.aF_type = aF_type
 
         self.reporter = reporter
 
@@ -328,7 +332,6 @@ class FittingSolver:
 #                f.write("]\n\n")
 
         self.dyn.goal_close_vec = numpy.zeros(self.basis_length, dtype=numpy.complex128)
-        self.dyn.Fsm = numpy.complex128(0)
         for vect in range(self.basis_length):
             solver = self.solvers[vect]
 
@@ -372,7 +375,7 @@ class FittingSolver:
                 else:
                     pass
 
-            self.dyn.goal_close_scal += self.dyn.goal_close_vec[vect]
+            self.dyn.goal_close_scal += self.dyn.goal_close_vec[vect] # tau
 
         if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV and \
                 direct == PropagationSolver.Direction.FORWARD:
@@ -381,9 +384,11 @@ class FittingSolver:
         if direct == PropagationSolver.Direction.FORWARD:
             self.dyn.goal_close_abs = abs(self.dyn.goal_close_scal)
 
-        for vect in range(self.basis_length):
-            for vect1 in range(self.basis_length):
-                self.dyn.Fsm -= self.dyn.goal_close_vec[vect] * self.dyn.goal_close_vec[vect1].conjugate()
+#        for vect in range(self.basis_length):
+#            for vect1 in range(self.basis_length):
+#                self.dyn.Fsm -= self.dyn.goal_close_vec[vect] * self.dyn.goal_close_vec[vect1].conjugate()
+
+        self.dyn.Fsm = self.F_type(self.dyn.goal_close_vec, self.basis_length)
 
         print("Fsm = ", self.dyn.Fsm.real)
 
@@ -481,11 +486,12 @@ class FittingSolver:
 
             goal_close_abs_init = abs(goal_close_scal_init)
 
-            Fsm_init = numpy.complex128(0)
-            for vect in range(self.basis_length):
-                for vect1 in range(self.basis_length):
-                    Fsm_init -= goal_close_init[vect] * goal_close_init[vect1].conjugate()
+#            Fsm_init = numpy.complex128(0)
+#            for vect in range(self.basis_length):
+#                for vect1 in range(self.basis_length):
+#                    Fsm_init -= goal_close_init[vect] * goal_close_init[vect1].conjugate()
 
+            Fsm_init = self.F_type(goal_close_init, self.basis_length)
             for t in t_list:
                 hf_part = self.laser_field_hf(1.0, t, self.conf_fitter.pcos, self.conf_fitter.w_list)
                 E = self.laser_field(self.conf_fitter.propagation.E0, t, self.conf_fitter.propagation.t0,
@@ -684,7 +690,7 @@ class FittingSolver:
                 E = self.dyn.E_patched
                 chi_init = self.dyn.chi_tlist[-1]
                 psi_init = self.psi_init_basis
-                self.a0 = 0.0
+                #self.a0 = 0.0
                 print("Current goal_close_abs:\t\t"   f"{self.dyn.goal_close_abs}\n")
 
                 if self.ntriv == -1:
@@ -694,7 +700,7 @@ class FittingSolver:
 
                 if self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.DYNAMICAL:
                     if self.dyn.goal_close_abs:
-                        self.dyn.h_lambda = h_lambda_0 * self.basis_length / math.sqrt(self.dyn.goal_close_abs)
+                        self.dyn.h_lambda = h_lambda_0 * math.sqrt(self.basis_length / self.dyn.goal_close_abs)
                        #self.conf_fitter.h_lambda *= pow(5, 1.0 / 200)
                     else:
                         self.dyn.h_lambda = h_lambda_0
@@ -703,9 +709,11 @@ class FittingSolver:
                 else:
                     raise RuntimeError("Impossible case in the HlambdaModeType class")
 
-                for vect in range(self.basis_length):
-                    for n in range(self.levels_number):
-                        self.a0 += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], stat.dx, conf_prop.np)
+#                for vect in range(self.basis_length):
+#                    for n in range(self.levels_number):
+#                        self.a0 += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], stat.dx, conf_prop.np)
+                aF = self.aF_type(psi_init, chi_init, stat.dx, self.basis_length, self.levels_number, conf_prop.np)
+                self.a0 = aF[0]
             else:
                 chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
                 psi_basis = self.dyn.psi_cur
