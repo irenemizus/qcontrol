@@ -894,7 +894,8 @@ def main(argv):
                 fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
                 fit_reporter_imp.open()
 
-                fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif, task_manager_imp.pot,
+                fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif,
+                                                      task_manager_imp.pot, task_manager_imp.F_goal,
                                                       task_manager_imp.laser_field, task_manager_imp.laser_field_hf,
                                                       task_manager_imp.F_type, task_manager_imp.aF_type, fit_reporter_imp,
                                                       _warning_collocation_points,

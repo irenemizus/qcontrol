@@ -157,6 +157,7 @@ class FittingSolver:
             psi_init_basis: PsiBasis,
             psi_goal_basis: PsiBasis,
             pot_func,
+            Fgoal,
             laser_field,
             laser_field_hf,
             F_type,
@@ -178,6 +179,7 @@ class FittingSolver:
         self.conf_fitter = conf_fitter
         self.init_dir = init_dir
         self.ntriv = ntriv
+        self.Fgoal = Fgoal
         self.psi_init_basis = psi_init_basis
         self.psi_goal_basis = psi_goal_basis
 
@@ -384,10 +386,6 @@ class FittingSolver:
         if direct == PropagationSolver.Direction.FORWARD:
             self.dyn.goal_close_abs = abs(self.dyn.goal_close_scal)
 
-#        for vect in range(self.basis_length):
-#            for vect1 in range(self.basis_length):
-#                self.dyn.Fsm -= self.dyn.goal_close_vec[vect] * self.dyn.goal_close_vec[vect1].conjugate()
-
         self.dyn.Fsm = self.F_type(self.dyn.goal_close_vec, self.basis_length)
 
         print("Fsm = ", self.dyn.Fsm.real)
@@ -453,7 +451,7 @@ class FittingSolver:
 #            np.savez_compressed(os.path.join(path, "fitter_state_bins.npz"), arrays)
 
             if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-                if abs(self.dyn.Fsm.real + self.basis_length * self.basis_length) <= self.conf_fitter.epsilon and self.dyn.iter_step == 0:
+                if abs(self.dyn.Fsm.real - self.Fgoal) <= self.conf_fitter.epsilon and self.dyn.iter_step == 0:
                     print("The goal has been reached on the very first iteration. You don't need the control!")
                     self.dyn.res = PropagationSolver.StepReaction.OK
                     break
@@ -525,7 +523,7 @@ class FittingSolver:
 #                print(self.dyn)
 
             # iterative procedure
-            while abs(self.dyn.Fsm.real + self.basis_length * self.basis_length) > self.conf_fitter.epsilon and \
+            while abs(self.dyn.Fsm.real - self.Fgoal) > self.conf_fitter.epsilon and \
                     (self.dyn.iter_step < self.conf_fitter.iter_max or self.conf_fitter.iter_max == -1):
                 self.dyn.iter_step += 1
                 self.__single_iteration_optimal(dx, x, t_step, t_list)
@@ -544,7 +542,7 @@ class FittingSolver:
                     else:
                         pass
 
-            if abs(self.dyn.Fsm.real + self.basis_length * self.basis_length) <= self.conf_fitter.epsilon:
+            if abs(self.dyn.Fsm.real - self.Fgoal) <= self.conf_fitter.epsilon:
                 print("The goal has been successfully reached on the " + str(self.dyn.iter_step) + " iteration.")
             else:
                 print("The goal has not been reached during the calculation.")
@@ -690,7 +688,6 @@ class FittingSolver:
                 E = self.dyn.E_patched
                 chi_init = self.dyn.chi_tlist[-1]
                 psi_init = self.psi_init_basis
-                #self.a0 = 0.0
                 print("Current goal_close_abs:\t\t"   f"{self.dyn.goal_close_abs}\n")
 
                 if self.ntriv == -1:
@@ -700,7 +697,7 @@ class FittingSolver:
 
                 if self.conf_fitter.h_lambda_mode == TaskRootConfiguration.FitterConfiguration.HlambdaModeType.DYNAMICAL:
                     if self.dyn.goal_close_abs:
-                        self.dyn.h_lambda = h_lambda_0 * math.sqrt(self.basis_length / self.dyn.goal_close_abs)
+                        self.dyn.h_lambda = h_lambda_0 * self.basis_length / math.sqrt(self.dyn.goal_close_abs)
                        #self.conf_fitter.h_lambda *= pow(5, 1.0 / 200)
                     else:
                         self.dyn.h_lambda = h_lambda_0
@@ -709,25 +706,27 @@ class FittingSolver:
                 else:
                     raise RuntimeError("Impossible case in the HlambdaModeType class")
 
-#                for vect in range(self.basis_length):
-#                    for n in range(self.levels_number):
-#                        self.a0 += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], stat.dx, conf_prop.np)
-                aF = self.aF_type(psi_init, chi_init, stat.dx, self.basis_length, self.levels_number, conf_prop.np)
-                self.a0 = aF[0]
+                self.a0 = self.aF_type(psi_init, chi_init, stat.dx, self.basis_length, self.levels_number, conf_prop.np)
             else:
                 chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
                 psi_basis = self.dyn.psi_cur
                 sum = 0.0
+                sum1 = 0.0
 
                 for vect in range(self.basis_length):
                     for n in range(self.levels_number):
-                        sum += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
-
+                        sum += self.a0[vect] * math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
+                        sum1 += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
                 hf_part = self.laser_field_hf(dyn.freq_mult, dyn.t - (abs(stat.dt) / 2.0), self.conf_fitter.pcos, self.conf_fitter.w_list)
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 E_init = s * conf_prop.E0 * hf_part
 
-                delta_E = - s * (self.a0 * sum).imag / self.dyn.h_lambda
+                if prop.dyn.l <= 5:
+                    print("sum:\t\t"   f"{sum}\n")
+                    print("sum1 * a0[0]:\t\t"   f"{sum1 * self.a0[0]}\n")
+
+                delta_E = - s * sum.imag / self.dyn.h_lambda
+#                delta_E = - s * (self.a0[0] * sum1).imag / self.dyn.h_lambda
 
 #                print(f"===== Got {delta_E}")
 #                if abs(self.TMP_delta_E) > abs(delta_E):

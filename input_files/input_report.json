@@ -1,6 +1,6 @@
 {
   "fitter": {
-    "out_path": "../output_ut_newrand_200fs",
+    "out_path": "../output_ut_s2s_tst",
     "plotting_flag": "tables_iter",
 
     "table.imin": -1,

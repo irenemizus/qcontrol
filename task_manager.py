@@ -169,6 +169,35 @@ class _F_type:
 
         return F
 
+    @staticmethod
+    def F_re(gc_vec, nb):
+        """ Calculates the corresponding functional for the unitary transformation task
+            INPUT
+            nb      number of basis vectors used
+            gc_vect list of the distances from the goal at the end of propagation for each basis vector
+            OUTPUT
+            F       complex value of the corresponding functional  """
+
+        F = numpy.complex128(0)
+        for vect in range(nb):
+            F -= gc_vec[vect].real
+
+        return F
+
+    @staticmethod
+    def F_ss(gc_vec, nb):
+        """ Calculates the corresponding functional for the unitary transformation task
+            INPUT
+            nb      number of basis vectors used
+            gc_vect list of the distances from the goal at the end of propagation for each basis vector
+            OUTPUT
+            F       complex value of the corresponding functional  """
+
+        F = numpy.complex128(0)
+        for vect in range(nb):
+            F -= gc_vec[vect] * gc_vec[vect].conjugate()
+
+        return F
 
 class _aF_type:
     @staticmethod
@@ -185,12 +214,51 @@ class _aF_type:
             a           list of complex values of the corresponding 'a' coefficients  """
 
         a = numpy.zeros(nb, dtype=numpy.complex128)
-        for vect in range(nb):
-            for n in range(nlevs):
-                a[0] += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], dx, np)
+        for veca in range(nb):
+            for vect in range(nb):
+                for n in range(nlevs):
+                    a[veca] += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], dx, np)
 
         return a
 
+    @staticmethod
+    def a_re(psi_init, chi_init, dx, nb, nlevs, np):
+        """ Calculates 'a' coefficient, which corresponds to the given functional for the unitary transformation task
+            INPUT
+            nb          number of basis vectors used
+            nlevs       number of levels used
+            np          number of grid points
+            dx          coordinate grid step
+            psi_init    initial wavefunctions
+            chi_init    wavefunctions from the previous backward propagation at the initial time point t = 0
+            OUTPUT
+            a           list of complex values of the corresponding 'a' coefficients  """
+
+        a = numpy.zeros(nb, dtype=numpy.complex128)
+        for veca in range(nb):
+            a[veca] = numpy.complex128(0.5)
+
+        return a
+
+    @staticmethod
+    def a_ss(psi_init, chi_init, dx, nb, nlevs, np):
+        """ Calculates 'a' coefficient, which corresponds to the given functional for the unitary transformation task
+            INPUT
+            nb          number of basis vectors used
+            nlevs       number of levels used
+            np          number of grid points
+            dx          coordinate grid step
+            psi_init    initial wavefunctions
+            chi_init    wavefunctions from the previous backward propagation at the initial time point t = 0
+            OUTPUT
+            a           list of complex values of the corresponding 'a' coefficients  """
+
+        a = numpy.zeros(nb, dtype=numpy.complex128)
+        for vect in range(nb):
+            for n in range(nlevs):
+                a[vect] += math_base.cprod(psi_init.psis[vect].f[n], chi_init.psis[vect].f[n], dx, np)
+
+        return a
 
 """
 This class contains all the possible wavefunction types
@@ -359,10 +427,17 @@ class TaskManager:
             print("The 'squared module' type of the functional (F_sm) is used")
             self.F_type = _F_type.F_sm
             self.aF_type = _aF_type.a_sm
+            self.F_goal = -conf_fitter.nb * conf_fitter.nb
         elif conf_fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.RE:
             print("The 'real' type of the functional (F_re) is used")
+            self.F_type = _F_type.F_re
+            self.aF_type = _aF_type.a_re
+            self.F_goal = -conf_fitter.nb
         elif conf_fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.SS:
             print("The 'state-to-state' type of the functional (F_ss) is used")
+            self.F_type = _F_type.F_ss
+            self.aF_type = _aF_type.a_ss
+            self.F_goal = -conf_fitter.nb
         else:
             raise RuntimeError("Impossible FType for the unitary transformation task")
 
