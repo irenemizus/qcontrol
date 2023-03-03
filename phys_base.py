@@ -4,14 +4,16 @@ import math
 import numpy
 import copy
 
+from numpy.typing import NDArray
+
 import math_base
 from psi_basis import Psi
 
-hart_to_cm = 219474.6313708 # 1 / cm / hartree
-cm_to_erg = 1.98644568e-16 # erg * cm
-dalt_to_au = 1822.888486 # a.u. / D
-Red_Planck_h = 1.054572e-27 # erg * s
-Hz_to_cm = 3.33564095e-11 # s / cm
+hart_to_cm = numpy.float64(219474.6313708) # 1 / cm / hartree
+cm_to_erg = numpy.float64(1.98644568e-16) # erg * cm
+dalt_to_au = numpy.float64(1822.888486) # a.u. / D
+Red_Planck_h = numpy.float64(1.054572e-27) # erg * s
+Hz_to_cm = numpy.float64(3.33564095e-11) # s / cm
 
 def diff_cpu(psi, akx2, np):
     """ Calculates kinetic energy mapping carried out in momentum space
@@ -321,10 +323,10 @@ def exp_vals_calc(psi: Psi, x, akx2, dx, np, m, ntriv):
         moms  list of complex vectors of length np """
 
     nlevs = len(psi.f)
-    momx = [0.0] * nlevs
-    momx2 = [0.0] * nlevs
-    momp = [0.0] * nlevs
-    momp2 = [0.0] * nlevs
+    momx: NDArray[numpy.complex128] = numpy.zeros(nlevs, dtype=numpy.complex128)
+    momx2: NDArray[numpy.complex128] = numpy.zeros(nlevs, dtype=numpy.complex128)
+    momp: NDArray[numpy.complex128] = numpy.zeros(nlevs, dtype=numpy.complex128)
+    momp2: NDArray[numpy.complex128] = numpy.zeros(nlevs, dtype=numpy.complex128)
 
     if ntriv == 1:
         # for x
@@ -383,9 +385,9 @@ def exp_sigma_vals_calc(psi: Psi, dx, np, ntriv):
         assert psi.f[i].size == np
 
     nlevs = len(psi.f)
-    smomx = 0.0
-    smomy = 0.0
-    smomz = 0.0
+    smomx = numpy.float64(0.0)
+    smomy = numpy.float64(0.0)
+    smomz = numpy.float64(0.0)
 
     if ntriv != 1 and nlevs == 2:
         smomx = 2.0 * (math_base.cprod(psi.f[0], psi.f[1], dx, np)).real

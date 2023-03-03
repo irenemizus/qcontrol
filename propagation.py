@@ -3,7 +3,7 @@ import math
 import copy
 from enum import Enum
 import datetime
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 import numpy
 from numpy.typing import NDArray
@@ -167,30 +167,30 @@ class PropagationSolver:
 
     @staticmethod
     def _norm_eval(psi: Psi, dx, np):
-        cnorm = []
+        cnorm: NDArray[numpy.complex128] = numpy.zeros(len(psi.f), numpy.complex128)
 
         for n in range(len(psi.f)):
-            cnorm.append(math_base.cprod(psi.f[n], psi.f[n], dx, np))
+            cnorm[n] = math_base.cprod(psi.f[n], psi.f[n], dx, np)
 
         return cnorm
 
     @staticmethod
     def _ener_eval(psi: Psi, v, akx2, dx, np, E, eL, U, W, delta, ntriv, E_full, orig):
-        cener = []
+        cener: NDArray[numpy.complex128] = numpy.zeros(len(psi.f), numpy.complex128)
 
         phi = phys_base.hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=0.0, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv,
                                     E_full=E_full, orig=orig)
         for n in range(len(psi.f)):
-            cener.append(math_base.cprod(psi.f[n], phi.f[n], dx, np))
+            cener[n] = math_base.cprod(psi.f[n], phi.f[n], dx, np)
 
         return cener
 
     @staticmethod
     def _pop_eval(psi_goal: Psi, psi: Psi, dx, np):
-        overlp = []
+        overlp: NDArray[numpy.complex128] = numpy.zeros(len(psi.f), numpy.complex128)
 
         for n in range(len(psi.f)):
-            overlp.append(math_base.cprod(psi_goal.f[n], psi.f[n], dx, np))
+            overlp[n] = math_base.cprod(psi_goal.f[n], psi.f[n], dx, np)
 
         return overlp
 
@@ -246,11 +246,16 @@ class PropagationSolver:
 
         fm_start = 1.0
 
+        if self.ntriv == 1:
+            E = abs(self.dyn.E)
+        else:
+            E = self.dyn.E.real
+
         # plotting initial values
         self.reporter.print_time_point_prop(self.dyn.l, self.stat.psi0, self.dyn.t, self.stat.x, self.np, self.nt,
                                             self.stat.moms0, self.stat.smoms0, self.stat.cener0, self.stat.cnorm0,
                                             self.stat.overlp00, self.stat.overlpf0, overlp0_tot, cener0_tot,
-                                            psi_max_abs, psi_max_real, self.dyn.E, fm_start)
+                                            psi_max_abs, psi_max_real, E, fm_start)
 
         print("Initial emax = ", emax0)
         print("Initial emin = ", emin0)
