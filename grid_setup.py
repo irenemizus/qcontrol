@@ -33,9 +33,9 @@ class GridConstructor:
 
 
 class ForwardTimeGridConstructor:
-    def __init__(self, conf_prop):
-        self.T = conf_prop.T
-        self.nt = conf_prop.nt
+    def __init__(self, conf_task):
+        self.T = conf_task.T
+        self.nt = conf_task.fitter.propagation.nt
     def grid_setup(self):
         # calculating time step of the problem
         dt = self.T / self.nt

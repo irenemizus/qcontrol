@@ -1,83 +1,48 @@
 import unittest
 
-import numpy
-
 import fitter
 import grid_setup
 import task_manager
 import test_data
-import os.path
 from config import TaskRootConfiguration
 from test_tools import *
 
 PATH_REP = os.path.join("iter_0f", "basis_0")
 
+
 class fitter_Tests(unittest.TestCase):
-    def test_single_harm(self):
-        conf = TaskRootConfiguration.FitterConfiguration()
-
-        user_conf = {
-            "task_type": "single_pot",
-            "impulses_number": 0,
-            "init_guess": "zero",
-            "nb": 1,
-            "nlevs": 2,
-            "propagation": {
-              "m": 0.5,
-              "pot_type": "harmonic",
-              "hamil_type": "ntriv",
-              "a": 1.0,
-              "x0p": 0.0,
-              "a_e": 0.0,
-              "De_e": 0.0,
-              "Du": 0.0,
-              "wf_type": "harmonic",
-              "x0": 1.0,
-              "p0": 0.0,
-              "L": 10.0,
-              "T": 280e-15,
-              "np": 512,
-              "nch": 64,
-              "nt": 200000,
-              "E0": 0.0,
-              "nu_L": 0.0
-            },
-            "mod_log": 500
-        }
-
+    @staticmethod
+    def _test_setup(user_conf):
+        conf = TaskRootConfiguration()
         conf.load(user_conf)
         print(conf)
-
-        mod_fileout = 1000
-        lmin = 0
-        imod_fileout = 1
-        imin = 0
+        conf_prop = conf.fitter.propagation
 
         task_manager_imp = task_manager.create(conf)
 
         # setup of the grid
-        grid = grid_setup.GridConstructor(conf.propagation)
+        grid = grid_setup.GridConstructor(conf_prop)
         dx, x = grid.grid_setup()
 
         # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_task=conf)
         t_step, t_list = forw_time_grid.grid_setup()
 
         # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
+        psi0 = task_manager_imp.psi_init(x, conf_prop.np, conf_prop.x0,
+                                         conf_prop.p0, conf_prop.x0p,
+                                         conf_prop.m, conf_prop.De,
+                                         conf_prop.De_e, conf_prop.Du,
+                                         conf_prop.a, conf_prop.a_e,
+                                         conf_prop.L, conf.fitter.nb, conf.fitter.nlevs)
 
         # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
+        psif = task_manager_imp.psi_goal(x, conf_prop.np, conf_prop.x0,
+                                         conf_prop.p0, conf_prop.x0p,
+                                         conf_prop.m, conf_prop.De,
+                                         conf_prop.De_e, conf_prop.Du,
+                                         conf_prop.a, conf_prop.a_e,
+                                         conf_prop.L, conf.fitter.nb, conf.fitter.nlevs)
 
         # initial propagation direction
         init_dir = task_manager_imp.init_dir
@@ -86,15 +51,60 @@ class fitter_Tests(unittest.TestCase):
         # number of levels
         nlevs = len(psi0.psis[0].f)
 
+        return conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif
+
+    def test_single_harm(self):
+        user_conf = {
+            "task_type": "single_pot",
+            "pot_type": "harmonic",
+            "wf_type": "harmonic",
+            "hamil_type": "ntriv",
+            "T": 280e-15,
+            "fitter": {
+                "impulses_number": 0,
+                "init_guess": "zero",
+                "nb": 1,
+                "nlevs": 2,
+                "propagation": {
+                  "m": 0.5,
+                  "a": 1.0,
+                  "x0p": 0.0,
+                  "a_e": 0.0,
+                  "De_e": 0.0,
+                  "Du": 0.0,
+                  "x0": 1.0,
+                  "p0": 0.0,
+                  "L": 10.0,
+                  "np": 512,
+                  "nch": 64,
+                  "nt": 200000,
+                  "E0": 0.0,
+                  "nu_L": 0.0
+                },
+                "mod_log": 500
+            }
+        }
+        mod_fileout = 1000
+        lmin = 0
+        imod_fileout = 1
+        imin = 0
+
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif,
                                               task_manager_imp.pot,
+                                              task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
                                               fit_reporter_imp,
                                               None, None)
+
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
@@ -126,86 +136,58 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_single_harm.iter_tab_E))
 
     def test_single_morse(self):
-        conf = TaskRootConfiguration.FitterConfiguration()
-
         user_conf = {
             "task_type": "single_pot",
-            "impulses_number": 0,
-            "init_guess": "zero",
-            "nb": 1,
-            "nlevs": 2,
-            "propagation": {
-              "m": 0.5,
-              "pot_type": "morse",
-              "hamil_type": "ntriv",
-              "a": 1.0,
-              "De": 20000.0,
-              "x0p": 0.0,
-              "a_e": 0.0,
-              "De_e": 0.0,
-              "Du": 0.0,
-              "wf_type": "morse",
-              "x0": 0.0,
-              "p0": 0.0,
-              "L": 4.0,
-              "T": 280e-16,
-              "np": 2048,
-              "nch": 64,
-              "nt": 20000,
-              "E0": 0.0,
-              "nu_L": 0.0
-            },
-            "mod_log": 500
+            "pot_type": "morse",
+            "wf_type": "morse",
+            "hamil_type": "ntriv",
+            "T": 280e-16,
+            "fitter": {
+                "impulses_number": 0,
+                "init_guess": "zero",
+                "nb": 1,
+                "nlevs": 2,
+                "propagation": {
+                  "m": 0.5,
+                  "a": 1.0,
+                  "De": 20000.0,
+                  "x0p": 0.0,
+                  "a_e": 0.0,
+                  "De_e": 0.0,
+                  "Du": 0.0,
+                  "x0": 0.0,
+                  "p0": 0.0,
+                  "L": 4.0,
+                  "np": 2048,
+                  "nch": 64,
+                  "nt": 20000,
+                  "E0": 0.0,
+                  "nu_L": 0.0
+                },
+                "mod_log": 500
+            }
         }
-
-        conf.load(user_conf)
-        print(conf)
-
         mod_fileout = 1000
         lmin = 0
         imod_fileout = 1
         imin = 0
 
-        task_manager_imp = task_manager.create(conf)
-
-        # setup of the grid
-        grid = grid_setup.GridConstructor(conf.propagation)
-        dx, x = grid.grid_setup()
-
-        # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
-        t_step, t_list = forw_time_grid.grid_setup()
-
-        # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
-        # checking of triviality of the system
-        ntriv = task_manager_imp.ntriv
-        # number of levels
-        nlevs = len(psi0.psis[0].f)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot, task_manager_imp.laser_field,
-                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot,
+                                              task_manager_imp.F_goal,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
+                                              fit_reporter_imp,
                                               None, None)
+
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
@@ -237,83 +219,56 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_single_morse.iter_tab_E))
 
     def test_filter(self):
-        conf = TaskRootConfiguration.FitterConfiguration()
-
         user_conf = {
             "task_type": "filtering",
-            "impulses_number": 0,
-            "init_guess": "zero",
-            "nb": 1,
-            "nlevs": 2,
-            "propagation": {
-                "m": 0.5,
-                "pot_type": "morse",
-                "hamil_type": "ntriv",
-                "a": 1.0,
-                "De": 20000.0,
-                "x0p": 0.0,
-                "a_e": 0.0,
-                "De_e": 0.0,
-                "Du": 0.0,
-                "wf_type": "harmonic",
-                "L": 5.0,
-                "T": 1980e-15,
-                "np": 2048,
-                "nch": 64,
-                "nt": 800000,
-                "E0": 0.0,
-                "nu_L": 0.0
-            },
-            "mod_log": 1000
+            "pot_type": "morse",
+            "wf_type": "harmonic",
+            "hamil_type": "ntriv",
+            "T": 1980e-15,
+            "fitter": {
+                "impulses_number": 0,
+                "init_guess": "zero",
+                "nb": 1,
+                "nlevs": 2,
+                "propagation": {
+                    "m": 0.5,
+                    "a": 1.0,
+                    "De": 20000.0,
+                    "x0p": 0.0,
+                    "a_e": 0.0,
+                    "De_e": 0.0,
+                    "Du": 0.0,
+                    "L": 5.0,
+                    "np": 2048,
+                    "nch": 64,
+                    "nt": 800000,
+                    "E0": 0.0,
+                    "nu_L": 0.0
+                },
+                "mod_log": 1000
+            }
         }
-        conf.load(user_conf)
-        print(conf)
-
         mod_fileout = 20000
         lmin = 0
         imod_fileout = 1
         imin = 0
 
-        task_manager_imp = task_manager.create(conf)
-
-        # setup of the grid
-        grid = grid_setup.GridConstructor(conf.propagation)
-        dx, x = grid.grid_setup()
-
-        # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
-        t_step, t_list = forw_time_grid.grid_setup()
-
-        # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
-        # checking of triviality of the system
-        ntriv = task_manager_imp.ntriv
-        # number of levels
-        nlevs = len(psi0.psis[0].f)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot, task_manager_imp.laser_field,
-                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot,
+                                              task_manager_imp.F_goal,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
+                                              fit_reporter_imp,
                                               None, None)
+
         #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
@@ -346,87 +301,59 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_filter.iter_tab_E))
 
     def test_trans_woc(self):
-        conf = TaskRootConfiguration.FitterConfiguration()
-
         user_conf = {
             "task_type": "trans_wo_control",
-            "impulses_number": 1,
-            "init_guess": "gauss",
-            "init_guess_hf": "exp",
-            "nb": 1,
-            "nlevs": 2,
-            "propagation": {
-                "m": 0.5,
-                "pot_type": "morse",
-                "hamil_type": "ntriv",
-                "a": 1.0,
-                "De": 20000.0,
-                "x0p": -0.17,
-                "a_e": 1.0,
-                "De_e": 10000.0,
-                "Du": 20000.0,
-                "wf_type": "morse",
-                "L": 5.0,
-                "T": 330e-15,
-                "np": 1024,
-                "nch": 64,
-                "nt": 230000,
-                "E0": 71.54,
-                "t0": 200e-15,
-                "sigma": 50e-15,
-                "nu_L": 0.29297e15
-            },
-            "mod_log": 500
+            "pot_type": "morse",
+            "wf_type": "morse",
+            "hamil_type": "ntriv",
+            "T": 330e-15,
+            "fitter": {
+                "impulses_number": 1,
+                "init_guess": "gauss",
+                "init_guess_hf": "exp",
+                "nb": 1,
+                "nlevs": 2,
+                "propagation": {
+                    "m": 0.5,
+                    "a": 1.0,
+                    "De": 20000.0,
+                    "x0p": -0.17,
+                    "a_e": 1.0,
+                    "De_e": 10000.0,
+                    "Du": 20000.0,
+                    "L": 5.0,
+                    "np": 1024,
+                    "nch": 64,
+                    "nt": 230000,
+                    "E0": 71.54,
+                    "t0": 200e-15,
+                    "sigma": 50e-15,
+                    "nu_L": 0.29297e15
+                },
+                "mod_log": 500
+            }
         }
-
-        conf.load(user_conf)
-        print(conf)
-
         mod_fileout = 10000
         lmin = 0
         imod_fileout = 1
         imin = 0
 
-        task_manager_imp = task_manager.create(conf)
-
-        # setup of the grid
-        grid = grid_setup.GridConstructor(conf.propagation)
-        dx, x = grid.grid_setup()
-
-        # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
-        t_step, t_list = forw_time_grid.grid_setup()
-
-        # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
-        # checking of triviality of the system
-        ntriv = task_manager_imp.ntriv
-        # number of levels
-        nlevs = len(psi0.psis[0].f)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot, task_manager_imp.laser_field,
-                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot,
+                                              task_manager_imp.F_goal,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
+                                              fit_reporter_imp,
                                               None, None)
+
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
@@ -458,88 +385,60 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_trans_woc.iter_tab_E))
 
     def test_int_ctrl(self):
-        conf = TaskRootConfiguration.FitterConfiguration()
-
         user_conf = {
             "task_type": "intuitive_control",
-            "impulses_number": 2,
-            "delay": 300e-15,
-            "init_guess": "gauss",
-            "init_guess_hf": "exp",
-            "nb": 1,
-            "nlevs": 2,
-            "propagation": {
-                "m": 0.5,
-                "pot_type": "morse",
-                "hamil_type": "ntriv",
-                "a": 1.0,
-                "De": 20000.0,
-                "x0p": -0.17,
-                "a_e": 1.0,
-                "De_e": 10000.0,
-                "Du": 20000.0,
-                "wf_type": "morse",
-                "L": 5.0,
-                "T": 700e-15,
-                "np": 1024,
-                "nch": 64,
-                "nt": 490000,
-                "E0": 71.54,
-                "t0": 200e-15,
-                "sigma": 50e-15,
-                "nu_L": 0.29297e15
-            },
-            "mod_log": 500
+            "pot_type": "morse",
+            "wf_type": "morse",
+            "hamil_type": "ntriv",
+            "T": 700e-15,
+            "fitter": {
+                "impulses_number": 2,
+                "delay": 300e-15,
+                "init_guess": "gauss",
+                "init_guess_hf": "exp",
+                "nb": 1,
+                "nlevs": 2,
+                "propagation": {
+                    "m": 0.5,
+                    "a": 1.0,
+                    "De": 20000.0,
+                    "x0p": -0.17,
+                    "a_e": 1.0,
+                    "De_e": 10000.0,
+                    "Du": 20000.0,
+                    "L": 5.0,
+                    "np": 1024,
+                    "nch": 64,
+                    "nt": 490000,
+                    "E0": 71.54,
+                    "t0": 200e-15,
+                    "sigma": 50e-15,
+                    "nu_L": 0.29297e15
+                },
+                "mod_log": 500
+            }
         }
-
-        conf.load(user_conf)
-        print(conf)
-
         mod_fileout = 20000
         lmin = 0
         imod_fileout = 1
         imin = 0
 
-        task_manager_imp = task_manager.create(conf)
-
-        # setup of the grid
-        grid = grid_setup.GridConstructor(conf.propagation)
-        dx, x = grid.grid_setup()
-
-        # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
-        t_step, t_list = forw_time_grid.grid_setup()
-
-        # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
-        # checking of triviality of the system
-        ntriv = task_manager_imp.ntriv
-        # number of levels
-        nlevs = len(psi0.psis[0].f)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot, task_manager_imp.laser_field,
-                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot,
+                                              task_manager_imp.F_goal,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
+                                              fit_reporter_imp,
                                               None, None)
+
         #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
@@ -571,91 +470,63 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_int_ctrl.iter_tab_E))
 
     def test_loc_ctrl_pop(self):
-        conf = TaskRootConfiguration.FitterConfiguration()
-
         user_conf = {
             "task_type": "local_control_population",
-            "k_E": 1e29,
-            "lamb": 4e14,
-            "pow": 0.8,
-            "epsilon": 1e-15,
-            "impulses_number": 1,
-            "init_guess": "gauss",
-            "init_guess_hf": "exp",
-            "nb": 1,
-            "nlevs": 2,
-            "propagation": {
-                "m": 0.5,
-                "pot_type": "morse",
-                "hamil_type": "ntriv",
-                "a": 1.0,
-                "De": 20000.0,
-                "x0p": -0.17,
-                "a_e": 1.0,
-                "De_e": 10000.0,
-                "Du": 20000.0,
-                "wf_type": "morse",
-                "L": 5.0,
-                "T": 400e-15,
-                "np": 1024,
-                "nch": 64,
-                "nt": 280000,
-                "E0": 71.54,
-                "t0": 200e-15,
-                "sigma": 50e-15,
-                "nu_L": 0.29297e15
-            },
-            "mod_log": 500
+            "pot_type": "morse",
+            "wf_type": "morse",
+            "hamil_type": "ntriv",
+            "T": 400e-15,
+            "fitter": {
+                "k_E": 1e29,
+                "lamb": 4e14,
+                "pow": 0.8,
+                "epsilon": 1e-15,
+                "impulses_number": 1,
+                "init_guess": "gauss",
+                "init_guess_hf": "exp",
+                "nb": 1,
+                "nlevs": 2,
+                "propagation": {
+                    "m": 0.5,
+                    "a": 1.0,
+                    "De": 20000.0,
+                    "x0p": -0.17,
+                    "a_e": 1.0,
+                    "De_e": 10000.0,
+                    "Du": 20000.0,
+                    "L": 5.0,
+                    "np": 1024,
+                    "nch": 64,
+                    "nt": 280000,
+                    "E0": 71.54,
+                    "t0": 200e-15,
+                    "sigma": 50e-15,
+                    "nu_L": 0.29297e15
+                },
+                "mod_log": 500
+            }
         }
-
-        conf.load(user_conf)
-        print(conf)
-
         mod_fileout = 10000
         lmin = 0
         imod_fileout = 1
         imin = 0
 
-        task_manager_imp = task_manager.create(conf)
-
-        # setup of the grid
-        grid = grid_setup.GridConstructor(conf.propagation)
-        dx, x = grid.grid_setup()
-
-        # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
-        t_step, t_list = forw_time_grid.grid_setup()
-
-        # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
-        # checking of triviality of the system
-        ntriv = task_manager_imp.ntriv
-        # number of levels
-        nlevs = len(psi0.psis[0].f)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot, task_manager_imp.laser_field,
-                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot,
+                                              task_manager_imp.F_goal,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
+                                              fit_reporter_imp,
                                               None, None)
+
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
@@ -687,91 +558,63 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_loc_ctrl_pop.iter_tab_E))
 
     def test_loc_ctrl_proj(self):
-        conf = TaskRootConfiguration.FitterConfiguration()
-
         user_conf = {
             "task_type": "local_control_projection",
-            "k_E": 1e29,
-            "lamb": 8e14,
-            "pow": 0.65,
-            "epsilon": 1e-15,
-            "impulses_number": 1,
-            "init_guess": "gauss",
-            "init_guess_hf": "exp",
-            "nb": 1,
-            "nlevs": 2,
-            "propagation": {
-                "m": 0.5,
-                "pot_type": "morse",
-                "hamil_type": "ntriv",
-                "a": 1.0,
-                "De": 20000.0,
-                "x0p": -0.17,
-                "a_e": 1.0,
-                "De_e": 10000.0,
-                "Du": 20000.0,
-                "wf_type": "morse",
-                "L": 5.0,
-                "T": 450e-15,
-                "np": 1024,
-                "nch": 64,
-                "nt": 315000,
-                "E0": 71.54,
-                "t0": 200e-15,
-                "sigma": 50e-15,
-                "nu_L": 0.29297e15
-            },
-            "mod_log": 500
+            "pot_type": "morse",
+            "wf_type": "morse",
+            "hamil_type": "ntriv",
+            "T": 450e-15,
+            "fitter": {
+                "k_E": 1e29,
+                "lamb": 8e14,
+                "pow": 0.65,
+                "epsilon": 1e-15,
+                "impulses_number": 1,
+                "init_guess": "gauss",
+                "init_guess_hf": "exp",
+                "nb": 1,
+                "nlevs": 2,
+                "propagation": {
+                    "m": 0.5,
+                    "a": 1.0,
+                    "De": 20000.0,
+                    "x0p": -0.17,
+                    "a_e": 1.0,
+                    "De_e": 10000.0,
+                    "Du": 20000.0,
+                    "L": 5.0,
+                    "np": 1024,
+                    "nch": 64,
+                    "nt": 315000,
+                    "E0": 71.54,
+                    "t0": 200e-15,
+                    "sigma": 50e-15,
+                    "nu_L": 0.29297e15
+                },
+                "mod_log": 500
+            }
         }
-
-        conf.load(user_conf)
-        print(conf)
-
         mod_fileout = 10000
         lmin = 0
         imod_fileout = 1
         imin = 0
 
-        task_manager_imp = task_manager.create(conf)
-
-        # setup of the grid
-        grid = grid_setup.GridConstructor(conf.propagation)
-        dx, x = grid.grid_setup()
-
-        # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
-        t_step, t_list = forw_time_grid.grid_setup()
-
-        # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
-        # checking of triviality of the system
-        ntriv = task_manager_imp.ntriv
-        # number of levels
-        nlevs = len(psi0.psis[0].f)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot, task_manager_imp.laser_field,
-                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot,
+                                              task_manager_imp.F_goal,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
+                                              fit_reporter_imp,
                                               None, None)
+
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
@@ -805,90 +648,62 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_loc_ctrl_proj.iter_tab_E))
 
     def test_opt_ctrl_krot(self):
-        conf = TaskRootConfiguration.FitterConfiguration()
-
         user_conf = {
             "task_type": "optimal_control_krotov",
-            "epsilon": 1e-8,
-            "impulses_number": 1,
-            "iter_max": 1,
-            "h_lambda": 0.0066,
-            "init_guess": "gauss",
-            "init_guess_hf": "exp",
-            "nb": 1,
-            "nlevs": 2,
-            "propagation": {
-                "m": 0.5,
-                "pot_type": "morse",
-                "hamil_type": "ntriv",
-                "a": 1.0,
-                "De": 20000.0,
-                "x0p": -0.17,
-                "a_e": 1.0,
-                "De_e": 10000.0,
-                "Du": 20000.0,
-                "wf_type": "morse",
-                "L": 5.0,
-                "T": 350e-15,
-                "np": 1024,
-                "nch": 64,
-                "nt": 230000,
-                "E0": 71.54,
-                "t0": 200e-15,
-                "sigma": 50e-15,
-                "nu_L": 0.29297e15
-            },
-            "mod_log": 500
+            "pot_type": "morse",
+            "wf_type": "morse",
+            "hamil_type": "ntriv",
+            "T": 350e-15,
+            "fitter": {
+                "epsilon": 1e-8,
+                "impulses_number": 1,
+                "iter_max": 1,
+                "h_lambda": 0.0066,
+                "init_guess": "gauss",
+                "init_guess_hf": "exp",
+                "nb": 1,
+                "nlevs": 2,
+                "propagation": {
+                    "m": 0.5,
+                    "a": 1.0,
+                    "De": 20000.0,
+                    "x0p": -0.17,
+                    "a_e": 1.0,
+                    "De_e": 10000.0,
+                    "Du": 20000.0,
+                    "L": 5.0,
+                    "np": 1024,
+                    "nch": 64,
+                    "nt": 230000,
+                    "E0": 71.54,
+                    "t0": 200e-15,
+                    "sigma": 50e-15,
+                    "nu_L": 0.29297e15
+                },
+                "mod_log": 500
+            }
         }
-
-        conf.load(user_conf)
-        print(conf)
-
         mod_fileout = 10000
         lmin = 0
         imod_fileout = 1
         imin = 0
 
-        task_manager_imp = task_manager.create(conf)
-
-        # setup of the grid
-        grid = grid_setup.GridConstructor(conf.propagation)
-        dx, x = grid.grid_setup()
-
-        # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
-        t_step, t_list = forw_time_grid.grid_setup()
-
-        # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
-        # checking of triviality of the system
-        ntriv = task_manager_imp.ntriv
-        # number of levels
-        nlevs = len(psi0.psis[0].f)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot, task_manager_imp.laser_field,
-                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot,
+                                              task_manager_imp.F_goal,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
+                                              fit_reporter_imp,
                                               None, None)
+
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
@@ -922,93 +737,65 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_krot.iter_tab_E))
 
     def test_opt_ctrl_ut_HB_2lvls(self):
-        conf = TaskRootConfiguration.FitterConfiguration()
-
         user_conf = {
             "task_type": "optimal_control_unit_transform",
-            "epsilon": 1e-8,
-            "impulses_number": 1,
-            "nb": 2,
-            "nlevs": 2,
-            "iter_max": 50,
-            "h_lambda": 0.005,
-            "init_guess": "sqrsin",
-            "init_guess_hf": "cos_set",
-            "hf_hide": False,
-            "w_list": [
-                0.88, 0.34, 0.92, 0.27, 0.39, 0.82, 0.68
-            ],
-            "lf_aug_type": "z",
-            "pcos": 4.0,
-            "Em": 5.0,
-            "propagation": {
-                "pot_type": "none",
-                "wf_type": "const",
-                "hamil_type": "BH_model",
-                "U": 5.0,
-                "delta": 25.0,
-                "Du": 1.0,
-                "np": 1,
-                "L": 1.0,
-                "nch": 8,
-                "t0": 0.0,
-                "E0": 40.0,
-                "nt": 3500,
-                "T": 3.306555E-13,
-                "sigma": 6.671270E-13,
-                "nu_L": 0.299793E14
-            },
-            "mod_log": 500
+            "pot_type": "none",
+            "wf_type": "const",
+            "hamil_type": "BH_model",
+            "T": 3.306555E-13,
+            "fitter": {
+                "epsilon": 1e-8,
+                "impulses_number": 1,
+                "nb": 2,
+                "nlevs": 2,
+                "iter_max": 50,
+                "h_lambda": 0.005,
+                "init_guess": "sqrsin",
+                "init_guess_hf": "cos_set",
+                "hf_hide": False,
+                "w_list": [
+                    0.88, 0.34, 0.92, 0.27, 0.39, 0.82, 0.68
+                ],
+                "lf_aug_type": "z",
+                "pcos": 4.0,
+                "Em": 5.0,
+                "propagation": {
+                    "U": 5.0,
+                    "delta": 25.0,
+                    "Du": 1.0,
+                    "np": 1,
+                    "L": 1.0,
+                    "nch": 8,
+                    "t0": 0.0,
+                    "E0": 40.0,
+                    "nt": 3500,
+                    "sigma": 6.671270E-13,
+                    "nu_L": 0.299793E14
+                },
+                "mod_log": 500
+            }
         }
-
-        conf.load(user_conf)
-        print(conf)
-
         mod_fileout = 100
         lmin = 0
         imod_fileout = 1
         imin = -1
 
-        task_manager_imp = task_manager.create(conf)
-
-        # setup of the grid
-        grid = grid_setup.GridConstructor(conf.propagation)
-        dx, x = grid.grid_setup()
-
-        # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
-        t_step, t_list = forw_time_grid.grid_setup()
-
-        # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
-        # checking of triviality of the system
-        ntriv = task_manager_imp.ntriv
-        # number of levels
-        nlevs = len(psi0.psis[0].f)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot, task_manager_imp.laser_field,
-                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot,
+                                              task_manager_imp.F_goal,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
+                                              fit_reporter_imp,
                                               None, None)
+
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
@@ -1042,95 +829,67 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_ut_HB_2lvls.iter_tab_E))
 
     def test_opt_ctrl_ut_HB_2lvls_Jx(self):
-        conf = TaskRootConfiguration.FitterConfiguration()
-
         user_conf = {
             "task_type": "optimal_control_unit_transform",
-            "epsilon": numpy.float64(1.0e-3),
-            "impulses_number": 1,
-            "nb": 2,
-            "nlevs": 2,
-            "iter_max": 50,
-            "iter_mid_1": 250,
-            "iter_mid_2": 300,
-            "q": numpy.float64(0.75),
-            "h_lambda": numpy.float64(0.00005),
-            "h_lambda_mode": "dynamical",
-            "init_guess": "sqrsin",
-            "init_guess_hf": "sin_set",
-            "lf_aug_type": "x",
-            "hf_hide": False,
-            "pcos": numpy.float64(2.0),
-            "w_list": [numpy.float64(1.2000000000000002), numpy.float64(-1.9), numpy.float64(0.7000000000000002)],
-            "propagation": {
-                "pot_type": "none",
-                "wf_type": "const",
-                "hamil_type": "BH_model",
-                "U": numpy.float64(30.0),
-                "W": numpy.float64(30.0),
-                "delta": numpy.float64(15.0),
-                "Du": numpy.float64(1.0),
-                "np": 1,
-                "L": numpy.float64(1.0),
-                "nch": 8,
-                "t0": numpy.float64(0.0),
-                "E0": numpy.float64(40.0),
-                "nt": 3500,
-                "T": numpy.float64(8.4E-13),
-                "sigma_auto": True,
-                "nu_L_auto": True
-            },
-            "mod_log": 500
+            "pot_type": "none",
+            "wf_type": "const",
+            "hamil_type": "BH_model",
+            "T": 8.4E-13,
+            "fitter": {
+                "epsilon": 1.0e-3,
+                "impulses_number": 1,
+                "nb": 2,
+                "nlevs": 2,
+                "iter_max": 50,
+                "iter_mid_1": 250,
+                "iter_mid_2": 300,
+                "q": 0.75,
+                "h_lambda": 0.00005,
+                "h_lambda_mode": "dynamical",
+                "init_guess": "sqrsin",
+                "init_guess_hf": "sin_set",
+                "lf_aug_type": "x",
+                "hf_hide": False,
+                "pcos": 2.0,
+                "w_list": [1.2000000000000002, -1.9, 0.7000000000000002],
+                "propagation": {
+                    "U": 30.0,
+                    "W": 30.0,
+                    "delta": 15.0,
+                    "Du": 1.0,
+                    "np": 1,
+                    "L": 1.0,
+                    "nch": 8,
+                    "t0": 0.0,
+                    "E0": 40.0,
+                    "nt": 3500,
+                    "sigma_auto": True,
+                    "nu_L_auto": True
+                },
+                "mod_log": 500
+            }
         }
-
-        conf.load(user_conf)
-        print(conf)
-
         mod_fileout = 100
         lmin = 0
         imod_fileout = 1
         imin = -1
 
-        task_manager_imp = task_manager.create(conf)
-
-        # setup of the grid
-        grid = grid_setup.GridConstructor(conf.propagation)
-        dx, x = grid.grid_setup()
-
-        # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf.propagation)
-        t_step, t_list = forw_time_grid.grid_setup()
-
-        # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf.propagation.np, conf.propagation.x0,
-                                         conf.propagation.p0, conf.propagation.x0p,
-                                         conf.propagation.m, conf.propagation.De,
-                                         conf.propagation.De_e, conf.propagation.Du,
-                                         conf.propagation.a, conf.propagation.a_e,
-                                         conf.propagation.L, conf.nb, conf.nlevs)
-
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
-        # checking of triviality of the system
-        ntriv = task_manager_imp.ntriv
-        # number of levels
-        nlevs = len(psi0.psis[0].f)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf, init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot, task_manager_imp.laser_field,
-                                              task_manager_imp.laser_field_hf, fit_reporter_imp,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif,
+                                              task_manager_imp.pot,
+                                              task_manager_imp.F_goal,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
+                                              fit_reporter_imp,
                                               None, None)
+
         fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
