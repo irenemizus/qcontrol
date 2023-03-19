@@ -77,50 +77,83 @@ class ConfigurationBase:
 class TaskRootConfiguration(ConfigurationBase):
     def __init__(self):
         super().__init__(key_prefix="")
+        self._data["task_type"] = TaskRootConfiguration.TaskType.TRANS_WO_CONTROL
+        self._data["pot_type"] = TaskRootConfiguration.PotentialType.MORSE
+        self._data["wf_type"] = TaskRootConfiguration.WaveFuncType.MORSE
+        self._data["hamil_type"] = TaskRootConfiguration.HamilType.NTRIV
         self._data["fitter"] = TaskRootConfiguration.FitterConfiguration()
         self._data["run_id"] = "no_id"
 
+        self._data["T"] = 600e-15  # s
+        # 1200 fs -- for two laser pulses;
+        # 280 (600) fs -- for the working transition between PECs and LC;
+        # 2240 fs -- for filtering on the ground PEC (99.16% quality)
+        # 0.1 pi (half period units) -- for a model harmonic oscillator
+
+    class TaskType(Enum):
+        SINGLE_POT = 0
+        FILTERING = 1
+        TRANS_WO_CONTROL = 2
+        INTUITIVE_CONTROL = 3
+        LOCAL_CONTROL_POPULATION = 4
+        LOCAL_CONTROL_PROJECTION = 5
+        OPTIMAL_CONTROL_KROTOV = 6
+        OPTIMAL_CONTROL_UNIT_TRANSFORM = 7
+
+        @staticmethod
+        def from_int(i):
+            return TaskRootConfiguration.TaskType(i)
+
+        @staticmethod
+        def from_str(s):
+            return TaskRootConfiguration.TaskType[s.upper()]
+
+    class PotentialType(Enum):
+        MORSE = 0
+        HARMONIC = 1
+        NONE = 2
+
+        @staticmethod
+        def from_int(i):
+            return TaskRootConfiguration.PotentialType(i)
+
+        @staticmethod
+        def from_str(s):
+            return TaskRootConfiguration.PotentialType[s.upper()]
+
+    class WaveFuncType(Enum):
+        MORSE = 0
+        HARMONIC = 1
+        CONST = 2
+
+        @staticmethod
+        def from_int(i):
+            return TaskRootConfiguration.WaveFuncType(i)
+
+        @staticmethod
+        def from_str(s):
+            return TaskRootConfiguration.WaveFuncType[s.upper()]
+
+    class HamilType(Enum):
+        NTRIV = 0
+        TWO_LEVELS = 1
+        BH_MODEL = 2
+
+        @staticmethod
+        def from_int(i):
+            return TaskRootConfiguration.HamilType(i)
+
+        @staticmethod
+        def from_str(s):
+            return TaskRootConfiguration.HamilType[s.upper()]
+
     class FitterConfiguration(ConfigurationBase):
         class PropagationConfiguration(ConfigurationBase):
-            class WaveFuncType(Enum):
-                MORSE = 0
-                HARMONIC = 1
-                CONST = 2
-
-                @staticmethod
-                def from_int(i):
-                    return TaskRootConfiguration.FitterConfiguration.\
-                        PropagationConfiguration.WaveFuncType(i)
-
-                @staticmethod
-                def from_str(s):
-                    return TaskRootConfiguration.FitterConfiguration.\
-                        PropagationConfiguration.WaveFuncType[s.upper()]
-
-
-            class PotentialType(Enum):
-                MORSE = 0
-                HARMONIC = 1
-                NONE = 2
-
-                @staticmethod
-                def from_int(i):
-                    return TaskRootConfiguration.FitterConfiguration.\
-                        PropagationConfiguration.PotentialType(i)
-
-                @staticmethod
-                def from_str(s):
-                    return TaskRootConfiguration.FitterConfiguration.\
-                        PropagationConfiguration.PotentialType[s.upper()]
-
             def __init__(self):
                 super().__init__(key_prefix="")
                 # default input values
                 self._data["m"] = 0.5   # Dalton
                 # 1.0 -- for a model harmonic oscillator
-                self._data["wf_type"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE
-                self._data["pot_type"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE
-                self._data["hamil_type"] = TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV
                 self._data["U"] = 0.0 # 1 / cm
                 self._data["W"] = 0.0  # 1 / cm
                 self._data["delta"] = 0.0 # 1 / cm
@@ -137,11 +170,6 @@ class TaskRootConfiguration(ConfigurationBase):
                 # 0.2 -- for a model harmonic oscillator with a = 1.0;
                 # 4.0 a_0 -- for morse oscillator;
                 # 10.0 a_0 -- for dimensional harmonic oscillator
-                self._data["T"] = 600e-15   # s
-                # 1200 fs -- for two laser pulses;
-                # 280 (600) fs -- for the working transition between PECs and LC;
-                # 2240 fs -- for filtering on the ground PEC (99.16% quality)
-                # 0.1 pi (half period units) -- for a model harmonic oscillator
                 self._data["np"] = 1024
                 # 1024 -- for the working transition between PECs and controls;
                 # 128 -- for a model harmonic oscillator with a = 1.0;
@@ -152,6 +180,7 @@ class TaskRootConfiguration(ConfigurationBase):
                 # 840000 -- for two laser pulses;
                 # 200000 (420000) -- for the working transition between PECs and LC;
                 # 900000 -- for filtering on the ground PEC (99.16% quality)
+                self._data["nt_auto"] = False
                 self._data["E0"] = 71.54    # 1/cm
                 self._data["t0"] = 300e-15  # s
                 self._data["t0_auto"] = False
@@ -163,26 +192,6 @@ class TaskRootConfiguration(ConfigurationBase):
                 # 0.5859603e15 -- calculated difference b/w excited and ground energies !!;
                 # 0.599586e15 = 20000 1/cm
                 self._data["nu_L_auto"] = False
-
-
-        class TaskType(Enum):
-            SINGLE_POT = 0
-            FILTERING = 1
-            TRANS_WO_CONTROL = 2
-            INTUITIVE_CONTROL = 3
-            LOCAL_CONTROL_POPULATION = 4
-            LOCAL_CONTROL_PROJECTION = 5
-            OPTIMAL_CONTROL_KROTOV = 6
-            OPTIMAL_CONTROL_UNIT_TRANSFORM = 7
-
-            @staticmethod
-            def from_int(i):
-                return TaskRootConfiguration.FitterConfiguration.TaskType(i)
-
-            @staticmethod
-            def from_str(s):
-                return TaskRootConfiguration.FitterConfiguration.TaskType[s.upper()]
-
 
         class InitGuess(Enum):
             ZERO = 0
@@ -197,20 +206,6 @@ class TaskRootConfiguration(ConfigurationBase):
             @staticmethod
             def from_str(s):
                 return TaskRootConfiguration.FitterConfiguration.InitGuess[s.upper()]
-
-
-        class HamilType(Enum):
-            NTRIV = 0
-            TWO_LEVELS = 1
-            BH_MODEL = 2
-
-            @staticmethod
-            def from_int(i):
-                return TaskRootConfiguration.FitterConfiguration.HamilType(i)
-
-            @staticmethod
-            def from_str(s):
-                return TaskRootConfiguration.FitterConfiguration.HamilType[s.upper()]
 
         class LfAugType(Enum):
             Z = 0
@@ -267,7 +262,6 @@ class TaskRootConfiguration(ConfigurationBase):
         def __init__(self):
             super().__init__(key_prefix="")
             # default input values
-            self._data["task_type"] = TaskRootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL
             self._data["init_guess"] = TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO
             self._data["init_guess_hf"] = TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP
             self._data["F_type"] = TaskRootConfiguration.FitterConfiguration.FType.SM

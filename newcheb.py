@@ -126,7 +126,6 @@ Options:
 
     Content of the json_task file
 
-    In key "fitter":
     task_type
         type of the calculation task:
         "trans_wo_control"               - calculation of transition from the ground state
@@ -160,6 +159,20 @@ Options:
                                            under the influence of a Hadamard H1 unitary transformation
                                            using a controlled external laser field with an iterative Krotov algorithm
                                            and the squared modulus functional Fsm
+    pot_type
+        type of the potentials ("morse" or "harmonic").
+        By default, the "morse" type is used
+    wf_type
+        type of the wavefunctions ("morse" or "harmonic").
+        By default, the "morse" type is used
+    hamil_type
+        type of the Hamiltonian operator used ("ntriv", "two_levels" or "BH_model").
+        By default, the "ntriv" type is used
+    T
+        time range of the problem in sec.
+        By default, is equal to 600e15 s
+
+    In key "fitter":
     k_E
         aspect ratio for the inertial "force" in equation for the laser field energy in sec^(-2).
         Applicable for the task_type = "local_control", only. For all other cases is a dummy variable.
@@ -301,9 +314,6 @@ Options:
         m
             reduced mass value of the considered system.
             By default, is equal to 0.5 Dalton
-        pot_type
-            type of the potentials ("morse" or "harmonic").
-            By default, the "morse" type is used
         a
             ground state scaling coefficient.
             By default, is equal to 1.0 1/a_0 -- for "morse" potential,
@@ -330,12 +340,6 @@ Options:
             energy shift between the minima of the upper potential and the ground one.
             By default, is equal to 20000.0 1/cm for double potentials,
                         is identically equated to zero for filtering / single morse / single harmonic tasks
-        wf_type
-            type of the wavefunctions ("morse" or "harmonic").
-            By default, the "morse" type is used
-        hamil_type
-            type of the Hamiltonian operator used ("ntriv", "two_levels" or "BH_model").
-            By default, the "ntriv" type is used
         U, W, delta
             parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'BH_model' only),
             U, W and delta are in units of 1 / cm.
@@ -352,9 +356,6 @@ Options:
         L
             spatial range of the problem in a_0.
             By default, is equal to 5.0 a_0
-        T
-            time range of the problem in sec.
-            By default, is equal to 600e15 s
         np
             number of collocation points; must be a power of 2.
             By default, is equal to 1024
@@ -364,6 +365,11 @@ Options:
         nt
             number of time grid points.
             By default, is equal to 420000
+        nt_auto
+            parameter that controls the way of using nt parameter.
+            If specified as "True", is calculated automatically as a function of T:
+                nt = floor(T / 2.0)
+            By default, is "False"
         E0
             amplitude value of the laser field energy envelope in 1 / cm.
             By default, is equal to 71.54 1 / cm,
@@ -417,7 +423,6 @@ Examples:
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
 __license__ = "Python"
 
-import random
 import re
 from multiprocessing import Lock
 from pprint import pprint, pformat
@@ -465,7 +470,7 @@ def print_json_input_task(conf_task, run_id,  id):
 
 def print_input(conf_rep_plot, conf_task, file_name):
     with open(os.path.join(conf_rep_plot.fitter.out_path, file_name), "w") as finp:
-        finp.write("task_type:\t\t"   f"{conf_task.fitter.task_type}\n")
+        finp.write("task_type:\t\t"   f"{conf_task.task_type}\n")
         finp.write("iter_max:\t\t"   f"{conf_task.fitter.iter_max}\n")
         finp.write("iter_mid_1:\t\t"   f"{conf_task.fitter.iter_mid_1}\n")
         finp.write("iter_mid_2:\t\t"   f"{conf_task.fitter.iter_mid_2}\n")
@@ -474,7 +479,7 @@ def print_input(conf_rep_plot, conf_task, file_name):
 
         finp.write("nb:\t\t\t"   f"{conf_task.fitter.nb}\n")
         finp.write("nlevs:\t\t\t"   f"{conf_task.fitter.nlevs}\n")
-        finp.write("wf_type:\t\t"   f"{conf_task.fitter.propagation.wf_type}\n")
+        finp.write("wf_type:\t\t"   f"{conf_task.wf_type}\n")
 
         finp.write("impulses_number:\t"   f"{conf_task.fitter.impulses_number}\n")
         finp.write("Em:\t\t\t"   f"{conf_task.fitter.Em}\n")
@@ -489,27 +494,28 @@ def print_input(conf_rep_plot, conf_task, file_name):
         finp.write("h_lambda_mode:\t\t"   f"{conf_task.fitter.h_lambda_mode}\n")
         finp.write("init_guess:\t\t"   f"{conf_task.fitter.init_guess}\n")
         finp.write("init_guess_hf:\t\t"   f"{conf_task.fitter.init_guess_hf}\n")
-        finp.write("F_type:\t\t"   f"{conf_task.fitter.F_type}\n")
+        finp.write("F_type:\t\t\t"   f"{conf_task.fitter.F_type}\n")
         finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos}\n")
         finp.write("hf_hide:\t\t"   f"{conf_task.fitter.hf_hide}\n")
         finp.write("w_list:\t\t\t"   f"{conf_task.fitter.w_list}\n")
         finp.write("w_min:\t\t\t"   f"{conf_task.fitter.w_min}\n")
         finp.write("w_max:\t\t\t"   f"{conf_task.fitter.w_max}\n")
 
-        finp.write("hamil_type:\t\t"   f"{conf_task.fitter.propagation.hamil_type}\n")
+        finp.write("hamil_type:\t\t"   f"{conf_task.hamil_type}\n")
         finp.write("U:\t\t\t"   f"{conf_task.fitter.propagation.U}\n")
         finp.write("W:\t\t\t"   f"{conf_task.fitter.propagation.W}\n")
         finp.write("delta:\t\t\t"   f"{conf_task.fitter.propagation.delta}\n")
         finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
 
-        finp.write("pot_type:\t\t"   f"{conf_task.fitter.propagation.pot_type}\n")
+        finp.write("pot_type:\t\t"   f"{conf_task.pot_type}\n")
         finp.write("Du:\t\t\t"   f"{conf_task.fitter.propagation.Du}\n")
 
         finp.write("np:\t\t\t"   f"{conf_task.fitter.propagation.np}\n")
         finp.write("L:\t\t\t"   f"{conf_task.fitter.propagation.L}\n")
         finp.write("nch:\t\t\t"   f"{conf_task.fitter.propagation.nch}\n")
         finp.write("nt:\t\t\t"   f"{conf_task.fitter.propagation.nt}\n")
-        finp.write("T:\t\t\t"   f"{conf_task.fitter.propagation.T:.6E}\n")
+        finp.write("nt_auto:\t\t"   f"{conf_task.fitter.propagation.nt_auto}\n")
+        finp.write("T:\t\t\t"   f"{conf_task.T:.6E}\n")
 
 
 def process_input_templates_in_report(data_task, data_rep_node):
@@ -687,8 +693,8 @@ def main(argv):
                         "has to be positive or 0.0")
 
                 if (conf_task.fitter.iter_max < -1 or conf_task.fitter.iter_mid_1 < 0 or conf_task.fitter.iter_mid_2 < 0) \
-                        and (conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_KROTOV or
-                        conf_task.fitter.task_type == conf_task.fitter.TaskType.OPTIMAL_CONTROL_GRADIENT):
+                        and (conf_task.task_type == conf_task.TaskType.OPTIMAL_CONTROL_KROTOV or
+                        conf_task.task_type == conf_task.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM):
                     raise ValueError(
                         "The maximum and two threshold numbers of iterations in the optimal control task, "
                         "'iter_max', 'iter_mid_1' and 'iter_mid_2', "
@@ -698,7 +704,7 @@ def main(argv):
                     raise ValueError(
                         "Parameter 'iter_mid_1' must be less than 'iter_mid_2'")
 
-                if conf_task.fitter.propagation.L <= 0.0 or conf_task.fitter.propagation.T <= 0.0:
+                if conf_task.fitter.propagation.L <= 0.0 or conf_task.T <= 0.0:
                     raise ValueError(
                         "The value of spatial range, 'L', and of time range, 'T', of the problem have to be positive")
 
@@ -720,38 +726,38 @@ def main(argv):
                    conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
                     raise ValueError("A batch calculation with init_guess = 'gauss' is running. 't0_auto' parameter must be set to 'True'!")
 
-                if conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.FILTERING or \
-                        conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.SINGLE_POT:
-                    print("A '%s' task begins..." % str(conf_task.fitter.task_type).split(".")[-1].lower())
+                if conf_task.task_type == conf_task.TaskType.FILTERING or \
+                        conf_task.task_type == conf_task.TaskType.SINGLE_POT:
+                    print("A '%s' task begins..." % str(conf_task.task_type).split(".")[-1].lower())
 
                     if conf_task.fitter.propagation.E0 != 0.0:
                         raise ValueError(
                             "For the 'task_type' = '%s' the amplitude value of the laser field energy envelope, 'E0', has to be equal to zero"
-                            % str(conf_task.fitter.task_type).split(".")[-1].lower())
+                            % str(conf_task.task_type).split(".")[-1].lower())
 
                     if conf_task.fitter.propagation.nu_L != 0.0:
                         raise ValueError(
                             "For the 'task_type' = '%s' the value of a basic frequency of the laser field, 'nu_L', has to be equal to zero"
-                            % str(conf_task.fitter.task_type).split(".")[-1].lower())
+                            % str(conf_task.task_type).split(".")[-1].lower())
 
                     if conf_task.fitter.init_guess != conf_task.fitter.InitGuess.ZERO:
                         raise ValueError(
                             "For the 'task_type' = '%s' the initial guess type for the laser field envelope, 'init_guess', has to be 'zero'"
-                            % str(conf_task.fitter.task_type).split(".")[-1].lower())
+                            % str(conf_task.task_type).split(".")[-1].lower())
 
                     if conf_task.fitter.impulses_number != 0:
                         raise ValueError(
                             "For the 'task_type' = '%s' the 'impulses_number' value has to be equal to zero"
-                            % str(conf_task.fitter.task_type).split(".")[-1].lower())
+                            % str(conf_task.task_type).split(".")[-1].lower())
                 else:
-                    if conf_task.fitter.task_type == conf_task.fitter.TaskType.TRANS_WO_CONTROL:
+                    if conf_task.task_type == conf_task.TaskType.TRANS_WO_CONTROL:
                         print("An ordinary transition task begins...")
 
                         if conf_task.fitter.impulses_number != 1:
                             raise ValueError(
                                 "For the 'task_type' = 'trans_wo_control' the 'impulses_number' value has to be equal to 1")
 
-                    elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
+                    elif conf_task.task_type == conf_task.TaskType.INTUITIVE_CONTROL:
                         print("An intuitive control task begins...")
 
                         if conf_task.fitter.init_guess == "zero":
@@ -763,7 +769,7 @@ def main(argv):
                             raise ValueError(
                                 "For the 'task_type' = 'intuitive_control' the 'impulses_number' value has to be larger than 1")
 
-                    elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
+                    elif conf_task.task_type == conf_task.TaskType.LOCAL_CONTROL_POPULATION:
                         print("A local control with goal population task begins...")
 
                         if conf_task.fitter.init_guess == "zero":
@@ -775,7 +781,7 @@ def main(argv):
                             raise ValueError(
                                 "For the 'task_type' = 'local_control_population' the 'impulses_number' value has to be equal to 1")
 
-                    elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
+                    elif conf_task.task_type == conf_task.TaskType.LOCAL_CONTROL_PROJECTION:
                         print("A local control with goal projection task begins...")
 
                         if conf_task.fitter.init_guess == "zero":
@@ -787,7 +793,7 @@ def main(argv):
                             raise ValueError(
                                 "For the 'task_type' = 'local_control_projection' the 'impulses_number' value has to be equal to 1")
 
-                    elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
+                    elif conf_task.task_type == conf_task.TaskType.OPTIMAL_CONTROL_KROTOV:
                         print("An optimal control task with Krotov method begins...")
 
                         if conf_task.fitter.init_guess == "zero":
@@ -799,7 +805,7 @@ def main(argv):
                             raise ValueError(
                                 "For the 'task_type' = 'optimal_control_krotov' the 'impulses_number' value has to be equal to 1")
 
-                    elif conf_task.fitter.task_type == conf_task.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+                    elif conf_task.task_type == conf_task.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                         print("An optimal control task with unitary quantum Fourier transformation begins...")
 
                         if conf_task.fitter.init_guess == "zero":
@@ -833,7 +839,7 @@ def main(argv):
                 else:
                     assert len(conf_task.fitter.w_list) == nw
 
-                task_manager_imp = task_manager.create(conf_task.fitter)
+                task_manager_imp = task_manager.create(conf_task)
 
                 # setup of the grid
                 grid = grid_setup.GridConstructor(conf_task.fitter.propagation)
@@ -866,11 +872,11 @@ def main(argv):
 
                 if conf_task.fitter.propagation.sigma_auto == True:
                     if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
-                        conf_task.fitter.propagation.sigma = 2.0 * conf_task.fitter.propagation.T #TODO: to add a possibility to vary groups of parameters
+                        conf_task.fitter.propagation.sigma = 2.0 * conf_task.T #TODO: to add a possibility to vary groups of parameters
                     elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
-                        conf_task.fitter.propagation.sigma = conf_task.fitter.propagation.T / 5.0
+                        conf_task.fitter.propagation.sigma = conf_task.T / 5.0
                     elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
-                        conf_task.fitter.propagation.sigma = conf_task.fitter.propagation.T / 8.0
+                        conf_task.fitter.propagation.sigma = conf_task.T / 8.0
                     else:
                         pass
 
@@ -880,21 +886,27 @@ def main(argv):
                     elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
                         conf_task.fitter.propagation.t0 = 0.0
                     elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
-                        conf_task.fitter.propagation.t0 = conf_task.fitter.propagation.T / 2.0
+                        conf_task.fitter.propagation.t0 = conf_task.T / 2.0
                     else:
                         pass
+
+                if conf_task.fitter.propagation.nt_auto == True:
+                    conf_task.fitter.propagation.nt = math.floor(conf_task.T / 2.0)
+                else:
+                    pass
 
                 print_input(conf_rep_plot, conf_task, "table_inp_" + str(step) + ".txt")
 
                 # setup of the time grid
-                forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_prop=conf_task.fitter.propagation)
+                forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_task=conf_task)
                 t_step, t_list = forw_time_grid.grid_setup()
 
                 # main calculation part
                 fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
                 fit_reporter_imp.open()
 
-                fitting_solver = fitter.FittingSolver(conf_task.fitter, init_dir, ntriv, psi0, psif,
+                fitting_solver = fitter.FittingSolver(conf_task.fitter, conf_task.task_type, conf_task.T,
+                                                      init_dir, ntriv, psi0, psif,
                                                       task_manager_imp.pot, task_manager_imp.F_goal,
                                                       task_manager_imp.laser_field, task_manager_imp.laser_field_hf,
                                                       task_manager_imp.F_type, task_manager_imp.aF_type, fit_reporter_imp,
