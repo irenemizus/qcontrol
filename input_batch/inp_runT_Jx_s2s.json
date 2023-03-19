@@ -1,22 +1,23 @@
 {
+  "run_id": { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3", "ut/run4", "ut/run5", "ut/run6", "ut/run7", "ut/run8", "ut/run9", "ut/run10" ] },
   "fitter": {
     "task_type": "optimal_control_unit_transform",
     "epsilon": 1e-6,
     "impulses_number": 1,
     "nb": 1,
     "nlevs": 2,
-    "iter_max": 140,
-    "iter_mid_1": 30,
-    "iter_mid_2": 50,
+    "iter_max": 500,
+    "iter_mid_1": 50,
+    "iter_mid_2": 100,
     "q": 0.75,
     "h_lambda": 0.00005,
-    "h_lambda_mode": "dynamical",
-    "init_guess": "gauss",
-    "init_guess_hf": "exp",
+    "h_lambda_mode": "const",
+    "init_guess": "sqrsin",
+    "init_guess_hf": "sin_set",
     "lf_aug_type": "x",
-    "F_type": "sm",
+    "pcos": 2.0,
+    "F_type": "re",
     "hf_hide": false,
-    "pcos": 1.0,
     "propagation": {
       "pot_type": "none",
       "wf_type": "const",
@@ -28,9 +29,9 @@
       "np": 1,
       "L": 1.0,
       "nch": 8,
-      "E0": 40.0,
-      "nt": 3500,
-      "T": 2.779700E-13,
+      "E0": 4000.0,
+      "nt": 5000,
+      "T": 1500E-15,
       "sigma_auto": true,
       "nu_L_auto": true,
       "t0_auto": true
@@ -38,3 +39,4 @@
     "mod_log": 500
   }
 }
+
