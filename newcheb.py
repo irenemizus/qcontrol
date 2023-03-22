@@ -891,7 +891,7 @@ def main(argv):
                         pass
 
                 if conf_task.fitter.propagation.nt_auto == True:
-                    conf_task.fitter.propagation.nt = math.floor(conf_task.T / 2.0)
+                    conf_task.fitter.propagation.nt = math.floor(conf_task.T / 2.0E-15)
                 else:
                     pass
 

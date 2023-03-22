@@ -1,8 +1,8 @@
 {
   "fitter": {
     "table_glob_path": "../output_{input:$.run_id}/glob.csv",
-    "out_path": "../output_{input:$.run_id}/T={input:$.fitter.propagation.T}",
-    "~~out_path": "output_{input:$.run_id}/T={input:$.fitter.propagation.T}__w_list={input:$.fitter.w_list}",
+    "out_path": "../output_{input:$.run_id}/T={input:$.T}",
+    "~~out_path": "output_{input:$.run_id}/T={input:$.T}__w_list={input:$.fitter.w_list}",
     "~out_path": "output_ut",
     "plotting_flag": "tables_iter",
 

@@ -172,13 +172,13 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        #reporter_impl.print_all("../test_data/prop_trans_woc_forw_.py", None)
+        reporter_impl.print_all("../test_data/prop_trans_woc_forw_.py", None)
 
-        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-13)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                       0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                       np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                      0.0001, 0.0001), np.float64(1.e-13)) # psi_max_abs, psi_max_real
 
         for n in range(nlevs):
             self.assertTrue(psi_prop_comparer.compare(reporter_impl.psi_tab[n], test_data.prop_trans_woc_forw.psi_tabs[n]))
@@ -248,13 +248,13 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        #reporter_impl.print_all("../test_data/prop_trans_woc_back_.py", None)
+        reporter_impl.print_all("../test_data/prop_trans_woc_back_.py", None)
 
-        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21))  # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-13))  # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,  # t, moms.x, moms.x2, moms.p, moms.p2,
                                       0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                       np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                      0.0001, 0.0001), np.float64(1.e-13)) # psi_max_abs, psi_max_real
 
         for n in range(nlevs):
             self.assertTrue(

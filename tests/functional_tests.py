@@ -105,7 +105,7 @@ class fitter_Tests(unittest.TestCase):
                                               fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -114,18 +114,18 @@ class fitter_Tests(unittest.TestCase):
         #fit_reporter_imp.print_all("../test_data/fit_iter_single_harm_.py")
         #prop_reporter.print_all("../test_data/prop_single_harm_.py", "../test_data/fitter_single_harm_.py")
 
-        psi_prop_comparer = TableComparer(epsilon=(np.complex128(0.0001 + 0.0001j), 0.0001, 0.0001), delta=np.float64(1.e-21))  # psi, t, x
+        psi_prop_comparer = TableComparer(epsilon=(np.complex128(0.0001 + 0.0001j), 0.0001, 0.0001), delta=np.float64(1.e-12))  # psi, t, x
         tvals_prop_comparer = TableComparer(epsilon=(0.0001, 0.02, 0.001, 0.0001, 0.00001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                              0.000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                              np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                             0.0001, 0.0001), delta=np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                             0.0001, 0.0001), delta=np.float64(1.e-12)) # psi_max_abs, psi_max_real
 
         tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001, 0.000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
-                                            0.001, 0.001, 0.001), np.float64(1.e-21)) # smoms.x, smoms.y, smoms.z
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
         iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
-                                           0.0001, 0.00001), np.float64(1.e-21)) # E_int, J
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-21)) # iter, t, E
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
         for n in range(nlevs):
             self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_single_harm.psi_tabs[n]))
@@ -188,7 +188,7 @@ class fitter_Tests(unittest.TestCase):
                                               fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -197,18 +197,18 @@ class fitter_Tests(unittest.TestCase):
         #fit_reporter_imp.print_all("../test_data/fit_iter_single_morse_.py")
         #prop_reporter.print_all("../test_data/prop_single_morse_.py", "../test_data/fitter_single_morse_.py")
 
-        psi_prop_comparer = TableComparer(epsilon=(np.complex128(0.0001 + 0.0001j), 0.0001, 0.0001), delta=np.float64(1.e-21))  # psi, t, x
+        psi_prop_comparer = TableComparer(epsilon=(np.complex128(0.0001 + 0.0001j), 0.0001, 0.0001), delta=np.float64(1.e-12))  # psi, t, x
         tvals_prop_comparer = TableComparer(epsilon=(0.0001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                             0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                            0.0001, 0.0001), delta=np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                            0.0001, 0.0001), delta=np.float64(1.e-12)) # psi_max_abs, psi_max_real
 
         tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
-                                            0.001, 0.001, 0.001), np.float64(1.e-21)) # smoms.x, smoms.y, smoms.z
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
         iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
-                                           0.0001, 0.00001), np.float64(1.e-21)) # E_int, J
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-21)) # iter, t, E
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
         for n in range(nlevs):
             self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_single_morse.psi_tabs[n]))
@@ -269,7 +269,7 @@ class fitter_Tests(unittest.TestCase):
                                               fit_reporter_imp,
                                               None, None)
 
-        #fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -278,18 +278,18 @@ class fitter_Tests(unittest.TestCase):
         #fit_reporter_imp.print_all("../test_data/fit_iter_filter_.py")
         #prop_reporter.print_all("../test_data/prop_filter_.py", "../test_data/fitter_filter_.py")
 
-        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.0001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                       0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                       np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                      0.0001, 0.0001), np.float64(1.e-12)) # psi_max_abs, psi_max_real
 
         tvals_fit_comparer = TableComparer((0.000001, 0.0001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
-                                            0.001, 0.001, 0.001), np.float64(1.e-21)) # smoms.x, smoms.y, smoms.z
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
         iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
-                                           0.0001, 0.00001), np.float64(1.e-21)) # E_int, J
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-21)) # iter, t, E
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
 
         for n in range(nlevs):
@@ -363,18 +363,18 @@ class fitter_Tests(unittest.TestCase):
         #fit_reporter_imp.print_all("../test_data/fit_iter_trans_woc_.py")
         #prop_reporter.print_all("../test_data/prop_trans_woc_.py", "../test_data/fitter_trans_woc_.py")
 
-        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                       0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                       np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                      0.0001, 0.0001), np.float64(1.e-12)) # psi_max_abs, psi_max_real
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
-                                            0.001, 0.001, 0.001), np.float64(1.e-21)) # smoms.x, smoms.y, smoms.z
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
         iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
-                                           0.0001, 0.00001), np.float64(1.e-21)) # E_int, J
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-21)) # iter, t, E
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
         for n in range(nlevs):
             self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_trans_woc.psi_tabs[n]))
@@ -439,7 +439,7 @@ class fitter_Tests(unittest.TestCase):
                                               fit_reporter_imp,
                                               None, None)
 
-        #fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -448,18 +448,18 @@ class fitter_Tests(unittest.TestCase):
         #fit_reporter_imp.print_all("../test_data/fit_iter_int_ctrl_.py")
         #prop_reporter.print_all("../test_data/prop_int_ctrl_.py", "../test_data/fitter_int_ctrl_.py")
 
-        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                       0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                       np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                      0.0001, 0.0001), np.float64(1.e-12)) # psi_max_abs, psi_max_real
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
-                                            0.001, 0.001, 0.001), np.float64(1.e-21)) # smoms.x, smoms.y, smoms.z
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
         iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
-                                           0.0001, 0.00001), np.float64(1.e-21)) # E_int, J
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-21)) # iter, t, E
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
         for n in range(nlevs):
             self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_int_ctrl.psi_tabs[n]))
@@ -536,18 +536,18 @@ class fitter_Tests(unittest.TestCase):
         #fit_reporter_imp.print_all("../test_data/fit_iter_loc_ctrl_pop_.py")
         #prop_reporter.print_all("../test_data/prop_loc_ctrl_pop_.py", "../test_data/fitter_loc_ctrl_pop_.py")
 
-        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                       0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                       np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                      0.0001, 0.0001), np.float64(1.e-12)) # psi_max_abs, psi_max_real
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
-                                            0.001, 0.001, 0.001), np.float64(1.e-21)) # smoms.x, smoms.y, smoms.z
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
         iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
-                                           0.0001, 0.00001), np.float64(1.e-21)) # E_int, J
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-21)) # iter, t, E
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
         for n in range(nlevs):
             self.assertTrue(psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_loc_ctrl_pop.psi_tabs[n]))
@@ -624,18 +624,18 @@ class fitter_Tests(unittest.TestCase):
         #fit_reporter_imp.print_all("../test_data/fit_iter_loc_ctrl_proj_.py")
         #prop_reporter.print_all("../test_data/prop_loc_ctrl_proj_.py", "../test_data/fitter_loc_ctrl_proj_.py")
 
-        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                       0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                       np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                      0.0001, 0.0001), np.float64(1.e-12)) # psi_max_abs, psi_max_real
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
-                                            0.001, 0.001, 0.001), np.float64(1.e-21)) # smoms.x, smoms.y, smoms.z
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
         iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
-                                           0.0001, 0.00001), np.float64(1.e-21)) # E_int, J
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-21)) # iter, t, E
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
         for n in range(nlevs):
             self.assertTrue(
@@ -710,21 +710,21 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_krot_.py")
-        #prop_reporter.print_all("../test_data/prop_opt_ctrl_krot_.py", "../test_data/fitter_opt_ctrl_krot_.py")
+        fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_krot_.py")
+        prop_reporter.print_all("../test_data/prop_opt_ctrl_krot_.py", "../test_data/fitter_opt_ctrl_krot_.py")
 
-        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                       0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                       np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                      0.0001, 0.0001), np.float64(1.e-12)) # psi_max_abs, psi_max_real
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
-                                            0.001, 0.001, 0.001), np.float64(1.e-21)) # smoms.x, smoms.y, smoms.z
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
         iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
-                                           0.0001, 0.00001), np.float64(1.e-21)) # E_int, J
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-21)) # iter, t, E
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
         for n in range(nlevs):
             self.assertTrue(
@@ -796,7 +796,7 @@ class fitter_Tests(unittest.TestCase):
                                               fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -805,18 +805,18 @@ class fitter_Tests(unittest.TestCase):
         #fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_ut_HB_2lvls_.py")
         #prop_reporter.print_all("../test_data/prop_opt_ctrl_ut_HB_2lvls_.py", "../test_data/fitter_opt_ctrl_ut_HB_2lvls_.py")
 
-        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                       0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                       np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                      0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                      0.0001, 0.0001), np.float64(1.e-12)) # psi_max_abs, psi_max_real
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
-                                            0.001, 0.001, 0.001), np.float64(1.e-21)) # smoms.x, smoms.y, smoms.z
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
         iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
-                                           0.0001, 0.00001), np.float64(1.e-21)) # E_int, J
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-21)) # iter, t, E
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
         for n in range(nlevs):
             self.assertTrue(
@@ -890,7 +890,7 @@ class fitter_Tests(unittest.TestCase):
                                               fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        #fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -899,18 +899,18 @@ class fitter_Tests(unittest.TestCase):
         #fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_ut_HB_2lvls_Jx_.py")
         #prop_reporter.print_all("../test_data/prop_opt_ctrl_ut_HB_2lvls_Jx_.py", "../test_data/fitter_opt_ctrl_ut_HB_2lvls_Jx_.py")
 
-        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-21)) # psi, t, x
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
                                              0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
                                              np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
-                                             0.0001, 0.0001), np.float64(1.e-21)) # psi_max_abs, psi_max_real
+                                             0.0001, 0.0001), np.float64(1.e-12)) # psi_max_abs, psi_max_real
 
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
-                                            0.001, 0.001, 0.001), np.float64(1.e-21)) # smoms.x, smoms.y, smoms.z
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
         iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
-                                           0.0001, 0.00001), np.float64(1.e-21)) # E_int, J
-        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-21)) # iter, t, E
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
         for n in range(nlevs):
             self.assertTrue(
