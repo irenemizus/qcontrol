@@ -340,116 +340,115 @@ Morse or Harmonic problem. It lays on this class.
 
 
 class TaskManager:
-    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
-        if wf_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.MORSE:
+    def __init__(self, conf_task: TaskRootConfiguration):
+        if conf_task.wf_type == TaskRootConfiguration.WaveFuncType.MORSE:
             print("Morse wavefunctions are used")
             self.psi_init_impl = _PsiFunctions.morse
-        elif wf_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.HARMONIC:
+        elif conf_task.wf_type == TaskRootConfiguration.WaveFuncType.HARMONIC:
             print("Harmonic wavefunctions are used")
             self.psi_init_impl = _PsiFunctions.harmonic
-        elif wf_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType.CONST:
+        elif conf_task.wf_type == TaskRootConfiguration.WaveFuncType.CONST:
             print("Constant wavefunctions are used")
             self.psi_init_impl = _PsiFunctions.one
         else:
             raise RuntimeError("Impossible case in the WaveFuncType class")
 
-        if conf_fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO:
+        if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO:
             print("Calculation without laser field")
             self.lf_init_guess = _LaserFields.zero
-        elif conf_fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+        elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
             print("Gaussian type of initial guess for the laser field envelope is used")
             self.lf_init_guess = _LaserFields.laser_field_gauss
-        elif conf_fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
+        elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
             print("Squared sinus type of initial guess for the laser field envelope is used")
             self.lf_init_guess = _LaserFields.laser_field_sqrsin
-        elif conf_fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
+        elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
             print("Maxwell distribution-like type of initial guess for the laser field envelope is used")
             self.lf_init_guess = _LaserFields.laser_field_maxwell
         else:
             raise RuntimeError("Impossible case in the InitGuess class")
 
-        if conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP:
-            if not conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING and \
-               not conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
+        if conf_task.fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP:
+            if not conf_task.task_type == TaskRootConfiguration.TaskType.FILTERING and \
+               not conf_task.task_type == TaskRootConfiguration.TaskType.SINGLE_POT:
                 print("Exponential high-frequency part of initial guess for the laser field is used")
             self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cexp
-        elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.COS:
+        elif conf_task.fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.COS:
             print("Cos-like high-frequency part of initial guess for the laser field with frequency multiplier "
-                  "'pcos' = %f is used" % conf_fitter.pcos)
+                  "'pcos' = %f is used" % conf_task.fitter.pcos)
             self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cos
-        elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.SIN:
+        elif conf_task.fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.SIN:
             print("Sin-like high-frequency part of initial guess for the laser field with frequency multiplier "
-                  "'pcos' = %f is used" % conf_fitter.pcos)
+                  "'pcos' = %f is used" % conf_task.fitter.pcos)
             self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.sin
-        elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.COS_SET:
+        elif conf_task.fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.COS_SET:
             print("A sequence of cos-type terms with 'pcos' = %f as the high-frequency part of initial guess "
                   "for the laser field is used. The maximum frequency multiplier equal to floor(pcos) will be used"
-                  % conf_fitter.pcos)
-            if not conf_fitter.pcos > 1.0:
+                  % conf_task.fitter.pcos)
+            if not conf_task.fitter.pcos > 1.0:
                 raise ValueError("The maximum frequency multiplier in the high frequency part of the laser field, "
                                  "'pcos', has to be > 1")
             self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.cos_set
-        elif conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.SIN_SET:
+        elif conf_task.fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.SIN_SET:
             print("A sequence of sin-type terms with 'pcos' = %f as the high-frequency part of initial guess "
                   "for the laser field is used. The maximum frequency multiplier equal to floor(pcos) will be used"
-                  % conf_fitter.pcos)
-            if not conf_fitter.pcos > 1.0:
+                  % conf_task.fitter.pcos)
+            if not conf_task.fitter.pcos > 1.0:
                 raise ValueError("The maximum frequency multiplier in the high frequency part of the laser field, "
                                  "'pcos', has to be > 1")
             self.lf_init_guess_hf = _LaserFieldsHighFrequencyPart.sin_set
         else:
             raise RuntimeError("Impossible case in the InitGuessHf class")
 
-        if conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV:
+        if conf_task.hamil_type == TaskRootConfiguration.HamilType.NTRIV:
             print("Non-trivial type of the Hamiltonian is used")
             self.ntriv = 1
-            if not conf_fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP:
+            if not conf_task.fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP:
                 raise RuntimeError("For a non-trivial Hamiltonian an exponential high-frequency part of initial guess for the laser field has to be used!")
-        elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.BH_MODEL:
-            if conf_fitter.lf_aug_type == TaskRootConfiguration.FitterConfiguration.LfAugType.Z:
+        elif conf_task.hamil_type == TaskRootConfiguration.HamilType.BH_MODEL:
+            if conf_task.fitter.lf_aug_type == TaskRootConfiguration.FitterConfiguration.LfAugType.Z:
                 print("Bose-Hubbard Hamiltonian with external laser field augmented inside a Jz term is used")
                 self.ntriv = -1
-            elif conf_fitter.lf_aug_type == TaskRootConfiguration.FitterConfiguration.LfAugType.X:
+            elif conf_task.fitter.lf_aug_type == TaskRootConfiguration.FitterConfiguration.LfAugType.X:
                 print("Bose-Hubbard Hamiltonian with external laser field augmented inside a Jx term is used")
                 self.ntriv = -2
             else:
                 raise RuntimeError("Impossible case in the LfAugType class")
-        elif conf_fitter.propagation.hamil_type == TaskRootConfiguration.FitterConfiguration.HamilType.TWO_LEVELS:
+        elif conf_task.hamil_type == TaskRootConfiguration.HamilType.TWO_LEVELS:
             print("Simple trivial two-levels type of the Hamiltonian is used")
             self.ntriv = 0
-            if not conf_fitter.nb == 2:
+            if not conf_task.fitter.nb == 2:
                 raise RuntimeError("Number of basis vectors 'nb' for 'hamil_type' = 'two_levels' has to be equal to 2!")
         else:
             raise RuntimeError("Impossible case in the HamilType class")
 
-        if conf_fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.SM:
+        if conf_task.fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.SM:
             print("The 'squared module' type of the functional (F_sm) is used")
             self.F_type = _F_type.F_sm
             self.aF_type = _aF_type.a_sm
-            self.F_goal = -conf_fitter.nb * conf_fitter.nb
-        elif conf_fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.RE:
+            self.F_goal = -conf_task.fitter.nb * conf_task.fitter.nb
+        elif conf_task.fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.RE:
             print("The 'real' type of the functional (F_re) is used")
             self.F_type = _F_type.F_re
             self.aF_type = _aF_type.a_re
-            self.F_goal = -conf_fitter.nb
-        elif conf_fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.SS:
+            self.F_goal = -conf_task.fitter.nb
+        elif conf_task.fitter.F_type == TaskRootConfiguration.FitterConfiguration.FType.SS:
             print("The 'state-to-state' type of the functional (F_ss) is used")
             self.F_type = _F_type.F_ss
             self.aF_type = _aF_type.a_ss
-            self.F_goal = -conf_fitter.nb
+            self.F_goal = -conf_task.fitter.nb
         else:
             raise RuntimeError("Impossible FType for the unitary transformation task")
 
-        print(f"Number of %d-level basis vectors 'nb' = %d is used" % (conf_fitter.nlevs, conf_fitter.nb))
+        print(f"Number of %d-level basis vectors 'nb' = %d is used" % (conf_task.fitter.nlevs, conf_task.fitter.nb))
 
-        self.conf_fitter = conf_fitter
+        self.conf_task = conf_task
         self.init_dir = PropagationSolver.Direction.FORWARD
 
-        if self.conf_fitter.propagation.nu_L_auto == True:
-            self.nu = 1.0 / 2.0 / self.conf_fitter.propagation.T
+        if self.conf_task.fitter.propagation.nu_L_auto:
+            self.nu = 1.0 / 2.0 / self.conf_task.T
         else:
-            self.nu = self.conf_fitter.propagation.nu_L
+            self.nu = self.conf_task.fitter.propagation.nu_L
 
     def psi_init(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb, nlevs):
         raise NotImplementedError()
@@ -474,9 +473,8 @@ class TaskManager:
 
 
 class HarmonicSingleStateTaskManager(TaskManager):
-    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
-        super().__init__(wf_type, conf_fitter)
+    def __init__(self, conf_task: TaskRootConfiguration):
+        super().__init__(conf_task)
 
     @staticmethod
     def _pot_level1(x, m, a):
@@ -540,9 +538,8 @@ class HarmonicSingleStateTaskManager(TaskManager):
 
 
 class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
-    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
-        super().__init__(wf_type, conf_fitter)
+    def __init__(self, conf_task: TaskRootConfiguration):
+        super().__init__(conf_task)
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         """ Potential energy vector
@@ -581,9 +578,8 @@ class HarmonicMultipleStateTaskManager(HarmonicSingleStateTaskManager):
 
 
 class MorseSingleStateTaskManager(TaskManager):
-    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
-        super().__init__(wf_type, conf_fitter)
+    def __init__(self, conf_task: TaskRootConfiguration):
+        super().__init__(conf_task)
 
     @staticmethod
     def _pot_level1(x, m, De, a):
@@ -646,9 +642,8 @@ class MorseSingleStateTaskManager(TaskManager):
 
 
 class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
-    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
-        super().__init__(wf_type, conf_fitter)
+    def __init__(self, conf_task: TaskRootConfiguration):
+        super().__init__(conf_task)
 
     @staticmethod
     def _pot(x, np, m, De, a, x0p, De_e, a_e, Du):
@@ -689,9 +684,8 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 
 
 class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
-    def __init__(self, wf_type: TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.WaveFuncType,
-                 conf_fitter: TaskRootConfiguration.FitterConfiguration):
-        super().__init__(wf_type, conf_fitter)
+    def __init__(self, conf_task: TaskRootConfiguration):
+        super().__init__(conf_task)
         self.init_dir = PropagationSolver.Direction.BACKWARD
 
     @staticmethod
@@ -780,10 +774,10 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             v.append((D_u, v_u))
 
         elif self.ntriv < 0:
-            U = self.conf_fitter.propagation.U # U ~ 1 / cm
-            W = self.conf_fitter.propagation.W  # W ~ 1 / cm
-            Emax = self.conf_fitter.propagation.E0 * self.conf_fitter.Em
-            l = (self.conf_fitter.nlevs - 1) / 2.0
+            U = self.conf_task.fitter.propagation.U # U ~ 1 / cm
+            W = self.conf_task.fitter.propagation.W  # W ~ 1 / cm
+            Emax = self.conf_task.fitter.propagation.E0 * self.conf_task.fitter.Em
+            l = (self.conf_task.fitter.nlevs - 1) / 2.0
 
             # Maximum and minimum energies achieved during the calculation
             if self.ntriv == -1:
@@ -791,14 +785,14 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
                 vmin = -2.0 * Emax * l
             elif self.ntriv == -2:
                 vmax = 2.0 * l * (U + W * l)
-                if W != 0.0 and self.conf_fitter.nlevs >= U / W + 1:
+                if W != 0.0 and self.conf_task.fitter.nlevs >= U / W + 1:
                     vmin = -U * U / W / 2.0
                 else:
                     vmin = 2.0 * l * (-U + W * l)
             else:
                 raise RuntimeError("Impossible case in the LfAugType class")
 
-            for n in range(self.conf_fitter.nlevs):
+            for n in range(self.conf_task.fitter.nlevs):
                 vmax_list = numpy.array([vmax] * np)
                 v.append((vmin, vmax_list))
         else:
@@ -807,52 +801,52 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
         return v
 
 
-def create(conf_fitter: TaskRootConfiguration.FitterConfiguration):
-    if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING or \
-       conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT:
+def create(conf_task: TaskRootConfiguration):
+    if conf_task.task_type == TaskRootConfiguration.TaskType.FILTERING or \
+       conf_task.task_type == TaskRootConfiguration.TaskType.SINGLE_POT:
 
         task_manager_imp: TaskManager
-        if conf_fitter.nlevs != 2:
+        if conf_task.fitter.nlevs != 2:
             raise RuntimeError(
                 "Number of levels in basis vectors 'nlevs' for 'task_type' = 'single_pot' and 'filtering' should be equal to 2!")
-        if conf_fitter.propagation.hamil_type != TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV:
+        if conf_task.hamil_type != TaskRootConfiguration.HamilType.NTRIV:
             raise RuntimeError("For 'task_type' = 'single_pot' and 'filtering' the Hamiltonian type 'hamil_type' = 'ntriv' should be specified!")
-        if conf_fitter.nb != 1:
+        if conf_task.fitter.nb != 1:
             raise RuntimeError("Number of basis vectors 'nb' for 'task_type' = 'single_pot' and 'filtering' should be equal to 1!")
-        if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
+        if conf_task.pot_type == TaskRootConfiguration.PotentialType.MORSE:
             print("Morse potentials are used")
-            task_manager_imp = MorseSingleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
-        elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
+            task_manager_imp = MorseSingleStateTaskManager(conf_task)
+        elif conf_task.pot_type == TaskRootConfiguration.PotentialType.HARMONIC:
             print("Harmonic potentials are used")
-            task_manager_imp = HarmonicSingleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
+            task_manager_imp = HarmonicSingleStateTaskManager(conf_task)
         else:
             raise RuntimeError("Impossible PotentialType")
     else:
-        if conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
-            task_manager_imp = MultipleStateUnitTransformTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
-            if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.NONE:
+        if conf_task.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+            task_manager_imp = MultipleStateUnitTransformTaskManager(conf_task)
+            if conf_task.pot_type == TaskRootConfiguration.PotentialType.NONE:
                 print("No potentials is used")
             else:
                 raise RuntimeError("Impossible PotentialType for the unitary transformation task")
         else:
-            if conf_fitter.propagation.hamil_type != TaskRootConfiguration.FitterConfiguration.HamilType.NTRIV:
+            if conf_task.hamil_type != TaskRootConfiguration.HamilType.NTRIV:
                 raise RuntimeError(
                     "For 'task_type' = 'trans_wo_control', 'intuitive_control', 'local_control_population', "
                         "'local_control_projection', and 'optimal_control_krotov' the Hamiltonian type 'hamil_type' = 'ntriv' should be specified!")
-            if conf_fitter.nb != 1:
+            if conf_task.fitter.nb != 1:
                 raise RuntimeError(
                         "Number of basis vectors 'nb' for 'task_type' = 'trans_wo_control', 'intuitive_control', 'local_control_population', "
                         "'local_control_projection', and 'optimal_control_krotov' should be equal to 1!")
-            if conf_fitter.nlevs != 2:
+            if conf_task.fitter.nlevs != 2:
                 raise RuntimeError(
                         "Number of levels in basis vectors 'nlevs' for 'task_type' = 'trans_wo_control', 'intuitive_control', 'local_control_population', "
                         "'local_control_projection', and 'optimal_control_krotov' should be equal to 2!")
-            if conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.MORSE:
+            if conf_task.pot_type == TaskRootConfiguration.PotentialType.MORSE:
                 print("Morse potentials are used")
-                task_manager_imp = MorseMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
-            elif conf_fitter.propagation.pot_type == TaskRootConfiguration.FitterConfiguration.PropagationConfiguration.PotentialType.HARMONIC:
+                task_manager_imp = MorseMultipleStateTaskManager(conf_task)
+            elif conf_task.pot_type == TaskRootConfiguration.PotentialType.HARMONIC:
                 print("Harmonic potentials are used")
-                task_manager_imp = HarmonicMultipleStateTaskManager(conf_fitter.propagation.wf_type, conf_fitter)
+                task_manager_imp = HarmonicMultipleStateTaskManager(conf_task)
             else:
                 raise RuntimeError("Impossible PotentialType")
 

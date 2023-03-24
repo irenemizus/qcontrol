@@ -125,6 +125,7 @@ class FittingSolver:
 
             self.solvers.append(PropagationSolver(
                 pot=self.pot_func,
+                T=self.T,
                 _warning_collocation_points=self._warning_collocation_points,
                 _warning_time_steps=self._warning_time_steps,
                 reporter=propagation_reporter,
@@ -152,6 +153,8 @@ class FittingSolver:
     def __init__(
             self,
             conf_fitter,
+            task_type,
+            T,
             init_dir,
             ntriv,
             psi_init_basis: PsiBasis,
@@ -175,6 +178,9 @@ class FittingSolver:
         self.aF_type = aF_type
 
         self.reporter = reporter
+
+        self.task_type = task_type
+        self.T = T
 
         self.conf_fitter = conf_fitter
         self.init_dir = init_dir
@@ -220,7 +226,7 @@ class FittingSolver:
             if self.dyn.iter_step > 0:
                 self.dyn.res = PropagationSolver.StepReaction.ITERATE
 
-            if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+            if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                 chiT = copy.deepcopy(self.psi_goal_basis)
 
                 self.dyn.chi_tlist = [ chiT ]
@@ -228,7 +234,7 @@ class FittingSolver:
             self.dyn.chi_cur = self.dyn.chi_tlist[0]
             init_psi_basis = chiT
             fin_psi_basis = self.psi_init_basis
-            t_init = self.conf_fitter.propagation.T
+            t_init = self.T
 
         self.__initialize_propagation("iter_" + str(self.dyn.iter_step) + ind_dir, laser_field, self.laser_field_hf, self.ntriv)
 
@@ -273,13 +279,13 @@ class FittingSolver:
                     raise AssertionError(f"The solver #{vect} has finished, but asked to proceed. It's a pity.")
 
                 if (solver.dyn.l - 1) % self.conf_fitter.mod_log == 0 and \
-                   self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+                   self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                     print(f"The solver for the basis vector #{vect} is running...")
 
                 if not solver.step(t_init):
                     finished.add(vect)
 
-                if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+                if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                     psi_copy = copy.deepcopy(solver.dyn.psi)
                 else:
                     psi_copy = copy.deepcopy(solver.dyn.psi_omega)
@@ -306,7 +312,7 @@ class FittingSolver:
             else:
                 E_tlist_new.append(E_checked)
                 self.dyn.psi_cur = psi_new
-                if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
+                if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
                     self.dyn.psi_tlist.append(psi_new)
 
             do_continue = len(finished) < self.basis_length
@@ -354,7 +360,7 @@ class FittingSolver:
                     self.dyn.goal_close_vec[vect] += math_base.cprod(solver.stat.psif.f[n], solver.dyn.psi.f[n],
                                                                      solver.stat.dx, self.conf_fitter.propagation.np)
 
-                if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
+                if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
                     chiT_part.f[0] = numpy.zeros(self.conf_fitter.propagation.np, dtype=numpy.complex128)
                     chiT_part.f[1] = self.dyn.goal_close_vec[vect] * solver.stat.psif.f[1]
 
@@ -365,21 +371,21 @@ class FittingSolver:
 
                     chiTp_omega = copy.deepcopy(chiT_part)
                     hf_part = self.laser_field_hf(solver.dyn.freq_mult,
-                                                  self.conf_fitter.propagation.T,
+                                                  self.T,
                                                   self.conf_fitter.pcos,
                                                   self.conf_fitter.w_list)
                     chiTp_omega.f[1] *= cmath.sqrt(hf_part)
                     chiT_omega.psis[vect] = chiTp_omega
                     chiT.psis[vect] = copy.deepcopy(chiT_part)
 
-                elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+                elif self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                     print("goal_close value for the basis vector ", vect, " = ", self.dyn.goal_close_vec[vect])
                 else:
                     pass
 
             self.dyn.goal_close_scal += self.dyn.goal_close_vec[vect] # tau
 
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV and \
+        if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV and \
                 direct == PropagationSolver.Direction.FORWARD:
             self.dyn.chi_tlist = [ chiT_omega ]
 
@@ -390,9 +396,9 @@ class FittingSolver:
 
         print("Fsm = ", self.dyn.Fsm.real)
 
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
+        if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
             h_lambda = self.conf_fitter.h_lambda
-        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+        elif self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             h_lambda = self.dyn.h_lambda
         else:
             h_lambda = 0.0
@@ -450,7 +456,7 @@ class FittingSolver:
 
 #            np.savez_compressed(os.path.join(path, "fitter_state_bins.npz"), arrays)
 
-            if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+            if self.task_type != TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                 if abs(self.dyn.Fsm.real - self.Fgoal) <= self.conf_fitter.epsilon and self.dyn.iter_step == 0:
                     print("The goal has been reached on the very first iteration. You don't need the control!")
                     self.dyn.res = PropagationSolver.StepReaction.OK
@@ -472,7 +478,7 @@ class FittingSolver:
     def time_propagation(self, dx, x, t_step, t_list):
         self.dyn = FittingSolver.FitterDynamicState(self.basis_length, self.levels_number, E_vel=0.0, freq_mult_vel=0.0,
                                                     iter_step=0, dir=self.init_dir)
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+        if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             E_tlist_init = []
             goal_close_init = numpy.zeros(self.basis_length, dtype=numpy.complex128)
             goal_close_scal_init = 0.0
@@ -501,8 +507,8 @@ class FittingSolver:
                 E_cur_init = E_tlist_init[el + 1]
                 E_int_init += E_cur_init * E_cur_init.conjugate() * (t_step * 1e15)
 
-            if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
-               self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+            if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
+               self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                 if self.ntriv == -1:
                     h_lambda_init = self.conf_fitter.h_lambda * phys_base.Red_Planck_h / phys_base.cm_to_erg
                 else:
@@ -515,8 +521,8 @@ class FittingSolver:
             self.reporter.print_iter_point_fitter(-1, goal_close_abs_init, E_tlist_init, t_list, Fsm_init,
                                                   E_int_init, J_init, self.conf_fitter.propagation.nt)
 
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
-           self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+        if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV or \
+           self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             # 0-th iteration
             self.__single_iteration_optimal(dx, x, t_step, t_list)
 #                self.dyn = FittingSolver.FitterDynamicState.from_json(saved_json)
@@ -558,11 +564,11 @@ class FittingSolver:
 
     def do_the_thing(self, dyn: PropagationSolver.DynamicState, instr: PropagationSolver.InstrumentationOutputData):
         # algorithm without control
-        if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION and \
-           self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
+        if self.task_type != TaskRootConfiguration.TaskType.LOCAL_CONTROL_POPULATION and \
+           self.task_type != TaskRootConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
             dAdt = 0.0
         # local control algorithm with goal population
-        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
+        elif self.task_type == TaskRootConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
             dAdt = dyn.E * instr.psigc_psie.imag * coef
             if dAdt >= 0.0:
@@ -604,19 +610,19 @@ class FittingSolver:
                 self.dyn.res = PropagationSolver.StepReaction.CORRECT
 
         if dyn.l % self.conf_fitter.mod_log == 0:
-            if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING:
+            if self.task_type != TaskRootConfiguration.TaskType.FILTERING:
                 print("emax = ", instr.emax)
                 print("emin = ", instr.emin)
-            if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING and \
-               self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT and \
-               self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+            if self.task_type != TaskRootConfiguration.TaskType.FILTERING and \
+               self.task_type != TaskRootConfiguration.TaskType.SINGLE_POT and \
+               self.task_type != TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                 print("normalization on the state #1 = ", abs(instr.cnorm[1]))
-            if self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.FILTERING and \
-               self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.SINGLE_POT and \
-               self.conf_fitter.task_type != TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+            if self.task_type != TaskRootConfiguration.TaskType.FILTERING and \
+               self.task_type != TaskRootConfiguration.TaskType.SINGLE_POT and \
+               self.task_type != TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                 print("energy on the state #1 = ", instr.cener[1].real)
-            if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION or \
-               self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
+            if self.task_type == TaskRootConfiguration.TaskType.LOCAL_CONTROL_POPULATION or \
+               self.task_type == TaskRootConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
                 print("Time derivation of the expectation value from the goal operator A = ", dAdt)
 
             if self.dyn.res == PropagationSolver.StepReaction.CORRECT:
@@ -633,11 +639,11 @@ class FittingSolver:
         self.dyn.E_patched = self.laser_field(self.conf_fitter.propagation.E0, dyn.t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma)
 
         # transition without control
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.TRANS_WO_CONTROL:
+        if self.task_type == TaskRootConfiguration.TaskType.TRANS_WO_CONTROL:
             E = self.dyn.E_patched
 
         # intuitive control algorithm
-        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.INTUITIVE_CONTROL:
+        elif self.task_type == TaskRootConfiguration.TaskType.INTUITIVE_CONTROL:
             for npul in range(1, self.conf_fitter.impulses_number):
                 self.dyn.E_patched += self.laser_field(self.conf_fitter.propagation.E0, dyn.t,
                                                        self.conf_fitter.propagation.t0 + (npul * self.conf_fitter.delay),
@@ -645,7 +651,7 @@ class FittingSolver:
             E = self.dyn.E_patched
 
         # local control algorithm (with A = Pe)
-        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
+        elif self.task_type == TaskRootConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             if prop.dyn.E == 0.0:
                 prop.dyn.E = self.dyn.E_patched
 
@@ -667,7 +673,7 @@ class FittingSolver:
             E = prop.dyn.E + self.dyn.E_vel * abs(stat.dt)
 
         # optimal control algorithm
-        elif (self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV) and \
+        elif (self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV) and \
               self.dyn.dir == PropagationSolver.Direction.FORWARD:
             if self.dyn.iter_step == 0:
                 E = self.dyn.E_patched
@@ -681,7 +687,7 @@ class FittingSolver:
                 E = -2.0 * chie_old_psig_new.imag / self.conf_fitter.h_lambda
 
         # optimal control unitary transformation algorithm
-        elif (self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM) and \
+        elif (self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM) and \
               self.dyn.dir == PropagationSolver.Direction.FORWARD:
             conf_prop = self.conf_fitter.propagation
             if prop.dyn.l == 0:
@@ -711,19 +717,19 @@ class FittingSolver:
                 chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
                 psi_basis = self.dyn.psi_cur
                 sum = 0.0
-                sum1 = 0.0
+#                sum1 = 0.0
 
                 for vect in range(self.basis_length):
                     for n in range(self.levels_number):
                         sum += self.a0[vect] * math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
-                        sum1 += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
+#                        sum1 += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
                 hf_part = self.laser_field_hf(dyn.freq_mult, dyn.t - (abs(stat.dt) / 2.0), self.conf_fitter.pcos, self.conf_fitter.w_list)
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 E_init = s * conf_prop.E0 * hf_part
 
-                if prop.dyn.l <= 5:
-                    print("sum:\t\t"   f"{sum}\n")
-                    print("sum1 * a0[0]:\t\t"   f"{sum1 * self.a0[0]}\n")
+#                if prop.dyn.l <= 5:
+#                    print("sum:\t\t"   f"{sum}\n")
+#                    print("sum1 * a0[0]:\t\t"   f"{sum1 * self.a0[0]}\n")
 
                 delta_E = - s * sum.imag / self.dyn.h_lambda
 #                delta_E = - s * (self.a0[0] * sum1).imag / self.dyn.h_lambda
@@ -750,7 +756,7 @@ class FittingSolver:
         assert self.dyn.dir == PropagationSolver.Direction.BACKWARD
 
         # optimal control algorithm
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
+        if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
             chie_new_psig_old = math_base.cprod(dyn.psi_omega.f[1],
                                                 self.dyn.psi_tlist[conf_prop.nt - prop.dyn.l].psis[0].f[0],
                                                 stat.dx, conf_prop.np)
@@ -758,7 +764,7 @@ class FittingSolver:
             E = -2.0 * chie_new_psig_old.imag / self.conf_fitter.h_lambda
 
         # optimal control unitary transformation algorithm
-        elif self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+        elif self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             if self.dyn.iter_step == 0:
                 hf_part = self.laser_field_hf(dyn.freq_mult, dyn.t, self.conf_fitter.pcos, self.conf_fitter.w_list)
                 E = self.laser_field(conf_prop.E0, dyn.t, conf_prop.t0, conf_prop.sigma) * hf_part
@@ -775,7 +781,7 @@ class FittingSolver:
     # calculating a frequency multiplier value at the given time value
     def FreqMultiplier(self, dyn: PropagationSolver.DynamicState, stat: PropagationSolver.StaticState):
         # local control algorithm (with A = Pg + Pe)
-        if self.conf_fitter.task_type == TaskRootConfiguration.FitterConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
+        if self.task_type == TaskRootConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
             if self.dyn.freq_mult_patched < 0:
                 raise RuntimeError("freq_mult_patched has to be positive or zero")
 

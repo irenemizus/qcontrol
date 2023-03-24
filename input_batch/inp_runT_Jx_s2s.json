@@ -3,23 +3,25 @@
   "pot_type": "none",
   "wf_type": "const",
   "hamil_type": "BH_model",
-  "T": 5.4E-13,
+  "T": 1500E-15,
+  "run_id": { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3", "ut/run4", "ut/run5", "ut/run6", "ut/run7", "ut/run8", "ut/run9", "ut/run10" ] },
   "fitter": {
-    "epsilon": 1e-5,
+    "epsilon": 1e-6,
     "impulses_number": 1,
-    "nb": 2,
-    "iter_max": 3,
-    "iter_mid_1": 250,
-    "iter_mid_2": 300,
+    "nb": 1,
+    "nlevs": 2,
+    "iter_max": 500,
+    "iter_mid_1": 50,
+    "iter_mid_2": 100,
     "q": 0.75,
     "h_lambda": 0.00005,
-    "h_lambda_mode": "dynamical",
+    "h_lambda_mode": "const",
     "init_guess": "sqrsin",
     "init_guess_hf": "sin_set",
     "lf_aug_type": "x",
     "pcos": 2.0,
+    "F_type": "re",
     "hf_hide": false,
-    "w_list": [1.5, -1.0, 0.7999999999999998],
     "propagation": {
       "U": 30.0,
       "W": 30.0,
@@ -28,12 +30,13 @@
       "np": 1,
       "L": 1.0,
       "nch": 8,
-      "t0": 0.0,
-      "E0": 40.0,
-      "nt": 3500,
+      "E0": 4000.0,
+      "nt": 5000,
       "sigma_auto": true,
-      "nu_L_auto": true
+      "nu_L_auto": true,
+      "t0_auto": true
     },
     "mod_log": 500
   }
 }
+

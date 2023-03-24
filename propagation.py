@@ -111,6 +111,7 @@ class PropagationSolver:
     def __init__(
             self,
             pot,
+            T,
             _warning_collocation_points,
             _warning_time_steps,
             reporter: PropagationReporter,
@@ -126,6 +127,7 @@ class PropagationSolver:
             conf_prop):
         self.milliseconds_full = 0.0
         self.pot = pot
+        self.T = T
         self._warning_collocation_points = _warning_collocation_points
         self._warning_time_steps = _warning_time_steps
         self.reporter = reporter
@@ -143,7 +145,6 @@ class PropagationSolver:
         self.L = conf_prop.L
         self.np = conf_prop.np
         self.nch = conf_prop.nch
-        self.T = conf_prop.T
         self.nt = conf_prop.nt
         self.x0 = conf_prop.x0
         self.p0 = conf_prop.p0
