@@ -9,7 +9,7 @@ class Psi:
         psi: List[numpy.ndarray] = []
         for lvl in range(lvls):
             if f is None:
-                psi.append(numpy.array(0))
+                psi.append(numpy.zeros(1, dtype=numpy.complex128))
             else:
                 psi.append(f[lvl])
         self._psi = psi

@@ -57,7 +57,7 @@ class PropagationSolver:
         psi_omega: Psi
 
         def __init__(self, l=0, t=0.0, psi: Psi = Psi(None), psi_omega: Psi = Psi(None),
-                     E=0.0, freq_mult=1.0, dir=None):
+                     E=0.0, freq_mult: numpy.float64 = 1.0, dir=None):
             assert (psi is None and psi_omega is None) or \
                    (psi.f[0] is not psi_omega.f[0] and psi.f[1] is not psi_omega.f[1]), \
                 "A single array is passed twice (as psi and psi_omega). Clone it!"
@@ -67,7 +67,7 @@ class PropagationSolver:
             self.psi = psi
             self.psi_omega = psi_omega
             self.E = E
-            self.freq_mult = freq_mult
+            self.freq_mult = numpy.float64(freq_mult)
             self.dir = dir
 
     # These parameters are recalculated from scratch on each step,
@@ -349,15 +349,17 @@ class PropagationSolver:
 
         # calculating of initial ground/excited energies
         eL = self.nu_L * phys_base.Hz_to_cm / 2.0
-        cener0 = self._ener_eval(psi=psi0, v=v, akx2=akx2, dx=dx, np=self.np, E=0.0, eL=eL, U=self.U, W=self.W,
-                                 delta=self.delta, ntriv=self.ntriv, E_full=0.0, orig=True)
+        cener0 = self._ener_eval(psi=psi0, v=v, akx2=akx2, dx=dx, np=self.np, E=numpy.float64(0.0),
+                                 eL=eL, U=self.U, W=self.W,
+                                 delta=self.delta, ntriv=self.ntriv, E_full=numpy.float64(0.0), orig=True)
 
         # final normalization check
         cnormf = self._norm_eval(psif, dx, self.np)
 
         # calculating of final excited/filtered energy
-        cenerf = self._ener_eval(psi=psif, v=v, akx2=akx2, dx=dx, np=self.np, E=0.0, eL=eL, U=self.U, W=self.W,
-                                 delta=self.delta, ntriv=self.ntriv, E_full=0.0, orig=True)
+        cenerf = self._ener_eval(psi=psif, v=v, akx2=akx2, dx=dx, np=self.np, E=numpy.float64(0.0),
+                                 eL=eL, U=self.U, W=self.W,
+                                 delta=self.delta, ntriv=self.ntriv, E_full=numpy.float64(0.0), orig=True)
 
         # time propagation
         dt = dir.value * t_step
@@ -375,9 +377,9 @@ class PropagationSolver:
                      cener0, cenerf, overlp00, overlpf0, dt, dx, x, v, akx2)
 
         if dir == PropagationSolver.Direction.FORWARD:
-            self.dyn = self.dynamic_state_factory(0, 0.0, psi, psi, 0.0, 1.0, dir)
+            self.dyn = self.dynamic_state_factory(0, numpy.float64(0.0), psi, psi, numpy.float64(0.0), numpy.float64(1.0), dir)
         else:
-            self.dyn = self.dynamic_state_factory(0, self.T, psi, psi, 0.0, 1.0, dir)
+            self.dyn = self.dynamic_state_factory(0, self.T, psi, psi, numpy.float64(0.0), numpy.float64(1.0), dir)
 
         # Calculating the initial field value
         self.dyn.E = self.laser_field_envelope(self, self.stat, self.dyn)
@@ -389,21 +391,23 @@ class PropagationSolver:
     def step(self, t_start):
         time_before = datetime.datetime.now()
 
+        nlvls = len(self.stat.psi0.f)
+
         extr = []
         # calculating limits of energy ranges of the one-dimensional Hamiltonian operator
-        for n in range(len(self.stat.psi0.f)):
+        for n in range(nlvls):
             extr.append(self.stat.v[n][1][0] + abs(self.stat.akx2[int(self.np / 2 - 1)]))# + 2.0
             extr.append(self.stat.v[n][0])
 
         self.dyn.t = self.stat.dt * self.dyn.l + t_start
 
         eL = self.nu_L * self.dyn.freq_mult * phys_base.Hz_to_cm / 2.0
-        exp_L = 1.0
+        exp_L = numpy.float64(1.0)
 
         # Here we're transforming the problem to the one for psi_omega -- if needed
         if self.hf_hide:
             self.dyn.freq_mult = self.freq_multiplier(self.dyn, self.stat)
-            exp_L = cmath.sqrt(self.laser_field_hf(self.dyn.freq_mult, self.dyn.t, self.pcos, self.w_list))
+            exp_L = numpy.complex128(cmath.sqrt(self.laser_field_hf(self.dyn.freq_mult, self.dyn.t, self.pcos, self.w_list)))
 
             psi_omega_l = self.dyn.psi.f[0] / exp_L
             self.dyn.psi_omega.f[0][:] = psi_omega_l[:]
@@ -432,8 +436,8 @@ class PropagationSolver:
         #print("l = %d" % self.dyn.l)
         #print("E = %f" % self.dyn.E)
 
-        psigc_psie = 0.0
-        psigc_dv_psie = 0.0
+        psigc_psie = numpy.float64(0.0)
+        psigc_dv_psie = numpy.float64(0.0)
 
         cnorm = []
         if self.hf_hide:
@@ -441,17 +445,17 @@ class PropagationSolver:
             self.dyn.psi_omega = phys_base.prop_cpu(psi=self.dyn.psi_omega, t_sc=t_sc, nch=self.nch, np=self.np,
                                                     v=self.stat.v, akx2=self.stat.akx2, emin=emin, emax=emax,
                                                     E=self.dyn.E, eL=eL, U=self.U, W=self.W, delta=self.delta,
-                                                    ntriv=self.ntriv)
+                                                    ntriv=self.ntriv, E_full=E_full)
 
             cnorm_sum = 0.0
-            for n in range(len(self.stat.psi0.f)):
+            for n in range(nlvls):
                 cnormn = math_base.cprod(self.dyn.psi_omega.f[n], self.dyn.psi_omega.f[n], self.stat.dx, self.np)
                 cnorm.append(cnormn)
                 cnorm_sum += cnormn
 
             # renormalization
             if abs(cnorm_sum) > 0.0:
-                for n in range(len(self.stat.psi0.f)):
+                for n in range(nlvls):
                     self.dyn.psi_omega.f[n] /= math.sqrt(abs(cnorm_sum))
 
             psigc_psie = math_base.cprod(self.dyn.psi_omega.f[1], self.dyn.psi_omega.f[0], self.stat.dx, self.np)
@@ -472,14 +476,14 @@ class PropagationSolver:
             #print(self.dyn.psi.f)
 
             cnorm_sum = 0.0
-            for n in range(len(self.stat.psi0.f)):
+            for n in range(nlvls):
                 cnormn = math_base.cprod(self.dyn.psi.f[n], self.dyn.psi.f[n], self.stat.dx, self.np)
                 cnorm.append(cnormn)
                 cnorm_sum += cnormn
 
             # renormalization
             if abs(cnorm_sum) > 0.0:
-                for n in range(len(self.stat.psi0.f)):
+                for n in range(nlvls):
                     self.dyn.psi.f[n] /= math.sqrt(abs(cnorm_sum))
 
         # calculating of a current energy

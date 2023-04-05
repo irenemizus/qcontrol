@@ -105,7 +105,7 @@ class fitter_Tests(unittest.TestCase):
                                               fit_reporter_imp,
                                               None, None)
 
-        #fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -188,7 +188,7 @@ class fitter_Tests(unittest.TestCase):
                                               fit_reporter_imp,
                                               None, None)
 
-        #fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -710,8 +710,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
-        fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_krot_.py")
-        prop_reporter.print_all("../test_data/prop_opt_ctrl_krot_.py", "../test_data/fitter_opt_ctrl_krot_.py")
+        #fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_krot_.py")
+        #prop_reporter.print_all("../test_data/prop_opt_ctrl_krot_.py", "../test_data/fitter_opt_ctrl_krot_.py")
 
         psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
@@ -796,7 +796,7 @@ class fitter_Tests(unittest.TestCase):
                                               fit_reporter_imp,
                                               None, None)
 
-        #fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -890,7 +890,7 @@ class fitter_Tests(unittest.TestCase):
                                               fit_reporter_imp,
                                               None, None)
 
-        #fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]

@@ -1,7 +1,18 @@
 {
   "run_id": { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3", "ut/run4", "ut/run5", "ut/run6", "ut/run7", "ut/run8", "ut/run9", "ut/run10", "ut/run11", "ut/run12", "ut/run13", "ut/run14", "ut/run15", "ut/run16", "ut/run17", "ut/run18", "ut/run19", "ut/run20" ] },
+  "task_type": "optimal_control_unit_transform",
+  "pot_type": "none",
+  "wf_type": "const",
+  "hamil_type": "BH_model",
+  "T": { "@SUBST:LIST":
+  [
+    5.05E-13,   5.1E-13,   5.15E-13,   5.2E-13,   5.25E-13,
+    5.3E-13,    5.35E-13,  5.4E-13,    5.45E-13,  5.5E-13,
+    5.55E-13,   5.6E-13,   5.65E-13,   5.7E-13,   5.75E-13,
+    5.8E-13,    5.85E-13,  5.9E-13,    5.95E-13,  5E-13,
+    9.6E-13,    22E-13,    35.5E-13
+  ] },
   "fitter": {
-    "task_type": "optimal_control_unit_transform",
     "epsilon": 1e-3,
     "impulses_number": 1,
     "nb": 2,
@@ -17,9 +28,6 @@
     "pcos": 2.0,
     "hf_hide": false,
     "propagation": {
-      "pot_type": "none",
-      "wf_type": "const",
-      "hamil_type": "BH_model",
       "U": 30.0,
       "W": 30.0,
       "delta": 15.0,
@@ -30,14 +38,6 @@
       "t0": 0.0,
       "E0": 40.0,
       "nt": 3500,
-      "T": { "@SUBST:LIST":
-        [
-          5.05E-13,   5.1E-13,   5.15E-13,   5.2E-13,   5.25E-13,
-          5.3E-13,    5.35E-13,  5.4E-13,    5.45E-13,  5.5E-13,
-          5.55E-13,   5.6E-13,   5.65E-13,   5.7E-13,   5.75E-13,
-          5.8E-13,    5.85E-13,  5.9E-13,    5.95E-13,  5E-13,
-          9.6E-13,    22E-13,    35.5E-13
-        ] },
       "sigma_auto": true,
       "nu_L_auto": true
     },

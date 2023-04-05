@@ -242,6 +242,7 @@ Options:
         type of initial guessed laser field envelope used in propagation tasks.
         Available options:
         "zero"      - without external laser field (by default)
+        "const"     - a constant envelope
         "gauss"     - a gaussian-like envelope
         "sqrsin"    - a squared sinus envelope
         "maxwell"   - a maxwell distribution-like envelope
@@ -343,10 +344,10 @@ Options:
         U, W, delta
             parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'BH_model' only),
             U, W and delta are in units of 1 / cm.
-            For lf_aug_type = "x" and nb <= 2: W value should be equal to U.
+            For lf_aug_type = "x" and nb <= 2: W value should be equal to U or 0.0.
             For lf_aug_type = "x" and nb = 4: W value should be equal to 2 * U.
             For lf_aug_type = "z": W is a dummy variable
-            By default, all are equal to 0.0
+            By default, U, W are equal to 0.0; delta is equal to 1.0
         x0
             coordinate initial condition.
             By default, is equal to 0.0
@@ -376,7 +377,7 @@ Options:
                         is identically equated to zero for filtering / single morse / single harmonic tasks
         t0
             initial time, when the laser field reaches its maximum value, in sec.
-            Is a dummy variable for filtering / single morse / single harmonic tasks.
+            Is a dummy variable for filtering / single morse / single harmonic tasks and a "const" type of the envelope.
             By default, is equal to 300e-15 s
         t0_auto
             parameter that controls the way of using t0 parameter.
@@ -388,7 +389,7 @@ Options:
             By default, is "False"
         sigma
             scaling parameter of the laser field envelope in sec.
-            Is a dummy variable for filtering / single morse / single harmonic tasks.
+            Is a dummy variable for filtering / single morse / single harmonic tasks and a "const" type of the envelope.
             By default, is equal to 50e-15 s
         sigma_auto
             parameter that controls the way of using sigma parameter.
@@ -769,6 +770,10 @@ def main(argv):
                             raise ValueError(
                                 "For the 'task_type' = 'intuitive_control' the 'impulses_number' value has to be larger than 1")
 
+                        if not conf_task.fitter.hf_hide:
+                            raise ValueError(
+                                "For the 'task_type' = 'intuitive_control' the 'hf_hide' value has to be equal to 'true'")
+
                     elif conf_task.task_type == conf_task.TaskType.LOCAL_CONTROL_POPULATION:
                         print("A local control with goal population task begins...")
 
@@ -780,6 +785,10 @@ def main(argv):
                         if conf_task.fitter.impulses_number != 1:
                             raise ValueError(
                                 "For the 'task_type' = 'local_control_population' the 'impulses_number' value has to be equal to 1")
+
+                        if not conf_task.fitter.hf_hide:
+                            raise ValueError(
+                                "For the 'task_type' = 'local_control_population' the 'hf_hide' value has to be equal to 'true'")
 
                     elif conf_task.task_type == conf_task.TaskType.LOCAL_CONTROL_PROJECTION:
                         print("A local control with goal projection task begins...")
@@ -793,6 +802,10 @@ def main(argv):
                             raise ValueError(
                                 "For the 'task_type' = 'local_control_projection' the 'impulses_number' value has to be equal to 1")
 
+                        if not conf_task.fitter.hf_hide:
+                            raise ValueError(
+                                "For the 'task_type' = 'local_control_projection' the 'hf_hide' value has to be equal to 'true'")
+
                     elif conf_task.task_type == conf_task.TaskType.OPTIMAL_CONTROL_KROTOV:
                         print("An optimal control task with Krotov method begins...")
 
@@ -804,6 +817,10 @@ def main(argv):
                         if conf_task.fitter.impulses_number != 1:
                             raise ValueError(
                                 "For the 'task_type' = 'optimal_control_krotov' the 'impulses_number' value has to be equal to 1")
+
+                        if not conf_task.fitter.hf_hide:
+                            raise ValueError(
+                                "For the 'task_type' = 'optimal_control_krotov' the 'hf_hide' value has to be equal to 'true'")
 
                     elif conf_task.task_type == conf_task.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                         print("An optimal control task with unitary quantum Fourier transformation begins...")
@@ -872,21 +889,21 @@ def main(argv):
 
                 if conf_task.fitter.propagation.sigma_auto == True:
                     if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
-                        conf_task.fitter.propagation.sigma = 2.0 * conf_task.T #TODO: to add a possibility to vary groups of parameters
+                        conf_task.fitter.propagation.sigma = numpy.float64(2.0 * conf_task.T) #TODO: to add a possibility to vary groups of parameters
                     elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
-                        conf_task.fitter.propagation.sigma = conf_task.T / 5.0
+                        conf_task.fitter.propagation.sigma = numpy.float64(conf_task.T / 5.0)
                     elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
-                        conf_task.fitter.propagation.sigma = conf_task.T / 8.0
+                        conf_task.fitter.propagation.sigma = numpy.float64(conf_task.T / 8.0)
                     else:
                         pass
 
                 if conf_task.fitter.propagation.t0_auto == True:
                     if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
-                        conf_task.fitter.propagation.t0 = 0.0 #TODO: to add a possibility to vary groups of parameters
+                        conf_task.fitter.propagation.t0 = numpy.float64(0.0) #TODO: to add a possibility to vary groups of parameters
                     elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
-                        conf_task.fitter.propagation.t0 = 0.0
+                        conf_task.fitter.propagation.t0 = numpy.float64(0.0)
                     elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
-                        conf_task.fitter.propagation.t0 = conf_task.T / 2.0
+                        conf_task.fitter.propagation.t0 = numpy.float64(conf_task.T / 2.0)
                     else:
                         pass
 

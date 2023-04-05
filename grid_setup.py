@@ -17,6 +17,7 @@ class GridConstructor:
 
         # calculating coordinate step of the problem
         if self.np > 1:
+            dx: numpy.float64
             dx = self.L / (self.np - 1)
 
             # setting the coordinate grid
@@ -24,7 +25,7 @@ class GridConstructor:
             x_list = [numpy.float64(i) * dx - shift for i in range(self.np)]
             x = numpy.array(x_list)
         elif self.np == 1:
-            dx = 1.0
+            dx = numpy.float64(1.0)
             x = numpy.array([ 0.0 ])
         else:
             raise RuntimeError("The number of collocation points 'np' must be positive integers!")
