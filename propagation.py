@@ -115,6 +115,7 @@ class PropagationSolver:
             _warning_collocation_points,
             _warning_time_steps,
             reporter: PropagationReporter,
+            hamil2D,
             laser_field_envelope,
             laser_field_hf,
             freq_multiplier: Callable[[DynamicState, StaticState], numpy.float64],
@@ -131,6 +132,7 @@ class PropagationSolver:
         self._warning_collocation_points = _warning_collocation_points
         self._warning_time_steps = _warning_time_steps
         self.reporter = reporter
+        self.hamil2D = hamil2D
         self.laser_field_envelope = laser_field_envelope
         self.laser_field_hf = laser_field_hf
         self.freq_multiplier = freq_multiplier
@@ -175,11 +177,10 @@ class PropagationSolver:
 
         return cnorm
 
-    @staticmethod
-    def _ener_eval(psi: Psi, v, akx2, dx, np, E, eL, U, W, delta, ntriv, E_full, orig):
+    def _ener_eval(self, psi: Psi, v, akx2, dx, np, E, eL, U, W, delta, ntriv, E_full, orig):
         cener: NDArray[numpy.complex128] = numpy.zeros(len(psi.f), numpy.complex128)
 
-        phi = phys_base.hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=0.0, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv,
+        phi = self.hamil2D(psi=psi, v=v, akx2=akx2, np=np, E=0.0, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv,
                                     E_full=E_full, orig=orig)
         for n in range(len(psi.f)):
             cener[n] = math_base.cprod(psi.f[n], phi.f[n], dx, np)
@@ -442,10 +443,10 @@ class PropagationSolver:
         cnorm = []
         if self.hf_hide:
             E_full = self.dyn.E * exp_L * exp_L
-            self.dyn.psi_omega = phys_base.prop_cpu(psi=self.dyn.psi_omega, t_sc=t_sc, nch=self.nch, np=self.np,
-                                                    v=self.stat.v, akx2=self.stat.akx2, emin=emin, emax=emax,
-                                                    E=self.dyn.E, eL=eL, U=self.U, W=self.W, delta=self.delta,
-                                                    ntriv=self.ntriv, E_full=E_full)
+            hpsi = self.hamil2D(psi=self.dyn.psi_omega, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
+                                eL=eL, U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv, E_full=E_full, orig=False)
+            self.dyn.psi_omega = phys_base.prop_cpu(psi=self.dyn.psi_omega, hpsi=hpsi, t_sc=t_sc, nch=self.nch, np=self.np,
+                                                    emin=emin, emax=emax)
 
             cnorm_sum = 0.0
             for n in range(nlvls):
@@ -468,10 +469,10 @@ class PropagationSolver:
 
         else:
             E_full = self.dyn.E
-
-            self.dyn.psi = phys_base.prop_cpu(psi=self.dyn.psi, t_sc=t_sc, nch=self.nch, np=self.np, v=self.stat.v,
-                                              akx2=self.stat.akx2, emin=emin, emax=emax, E=self.dyn.E, eL=eL,
-                                              U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv, E_full=E_full)
+            hpsi = self.hamil2D(psi=self.dyn.psi_omega, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
+                                eL=eL, U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv, E_full=E_full, orig=False)
+            self.dyn.psi = phys_base.prop_cpu(psi=self.dyn.psi, hpsi=hpsi, t_sc=t_sc, nch=self.nch, np=self.np,
+                                              emin=emin, emax=emax)
 
             #print(self.dyn.psi.f)
 

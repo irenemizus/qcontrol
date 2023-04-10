@@ -1,5 +1,4 @@
 import cmath
-import math
 
 import numpy
 import copy
@@ -68,116 +67,116 @@ def hamil_cpu(psi, v, akx2, np, ntriv):
     return phi
 
 
-def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, orig=False):
-    """ Calculates two-dimensional Hamiltonian mapping of vector psi
-        INPUT
-        psi         list of complex vectors of length np
-        v           list of potential energy real vectors of length np
-        akx2        complex kinetic energy vector of length np, = k^2/2m
-        np          number of grid points
-        E           a real value of external laser field
-        eL          a laser field energy shift = h * nu_L / 2.0
-        E_full      a complex value of external laser field
-        ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
-                                        0 -- a trivial 2-level system
-                                       -1 -- a trivial n-level system with angular momentum Hamiltonian and
-                                             with external laser field augmented inside a Jz term
-                                       -2 -- a trivial n-level system with angular momentum Hamiltonian and
-                                             with external laser field augmented inside a Jx term
-        orig        a boolean parameter that depends
-                    if an original form of the Hamiltonian should be used (orig = True) or
-                    the shifted real version (orig = False -- by default)
-        U, W, delta parameters of angular momentum-type Hamiltonian
+# def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, orig=False):
+#     """ Calculates two-dimensional Hamiltonian mapping of vector psi
+#         INPUT
+#         psi         list of complex vectors of length np
+#         v           list of potential energy real vectors of length np
+#         akx2        complex kinetic energy vector of length np, = k^2/2m
+#         np          number of grid points
+#         E           a real value of external laser field
+#         eL          a laser field energy shift = h * nu_L / 2.0
+#         E_full      a complex value of external laser field
+#         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+#                                         0 -- a trivial 2-level system
+#                                        -1 -- a trivial n-level system with angular momentum Hamiltonian and
+#                                              with external laser field augmented inside a Jz term
+#                                        -2 -- a trivial n-level system with angular momentum Hamiltonian and
+#                                              with external laser field augmented inside a Jx term
+#         orig        a boolean parameter that depends
+#                     if an original form of the Hamiltonian should be used (orig = True) or
+#                     the shifted real version (orig = False -- by default)
+#         U, W, delta parameters of angular momentum-type Hamiltonian
+#
+#         OUTPUT
+#         phi = H psi list of complex vectors of length np """
+#
+#     for i in range(len(psi.f)):
+#         assert psi.f[i].size == np
+#         assert v[i][1].size == np
+#     assert akx2.size == np
+#
+#     phi: Psi = Psi(lvls=len(psi.f))
+#
+#     if ntriv < 0:
+#         nlvls = len(psi.f)
+#         l = (nlvls - 1) / 2.0
+#         H = numpy.zeros((nlvls, nlvls), dtype=numpy.complex128)
+#
+#         if ntriv == -1:
+#             H.itemset((0, 0), 2.0 * l**2 * U + 2.0 * l * E)
+#             for vi in range(1, nlvls):
+#                 Q = 2.0 * (l - vi)**2 * U + 2.0 * (l - vi) * E # U ~ 1 / cm
+#                 P = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+#                 R = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+#                 H.itemset((vi, vi), Q)
+#                 H.itemset((vi - 1, vi), P)
+#                 H.itemset((vi, vi - 1), R)
+#         elif ntriv == -2:
+#             # H.itemset((0, 0), -2.0 * l * U + 2.0 * l * l * W)
+#             # for vi in range(1, nlvls):
+#             #     Q = -2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
+#             #     P = -delta * E_full * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+#             #     R = -delta * E_full.conjugate() * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+#             #     H.itemset((vi, vi), Q)
+#             #     H.itemset((vi - 1, vi), P)
+#             #     H.itemset((vi, vi - 1), R)
+#
+#             H.itemset((0, 0), 2.0 * l * U + 2.0 * l * l * W)
+#             for vi in range(1, nlvls):
+#                 Q = 2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
+#                 P = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+#                 R = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+#                 H.itemset((vi, vi), Q)
+#                 H.itemset((vi - 1, vi), P)
+#                 H.itemset((vi, vi - 1), R)
+#
+#         else:
+#             raise RuntimeError("Impossible case in the LfAugType class")
+#
+#         for gl in range(nlvls):
+#             phi_gl = numpy.zeros(np, dtype=numpy.complex128)
+#             for il in range(nlvls):
+#                 H_psi_el_mult = H.item(gl, il) * psi.f[il]
+#                 phi_gl = numpy.add(phi_gl, H_psi_el_mult)
+#             phi.f[gl] = phi_gl
+#     else:
+#         if orig or ntriv == 0:
+#             # without laser field energy shift
+#             # diagonal terms
+#             psieL_l = 0.0
+#             psieL_u = 0.0
+#             # non-diagonal terms
+#             psiE_l = psi.f[0] * E_full.conjugate()
+#             psiE_u = psi.f[1] * E_full
+#         else:
+#             # with laser field energy shift
+#             # diagonal terms
+#             psieL_l = psi.f[0] * eL
+#             psieL_u = psi.f[1] * eL
+#             # non-diagonal terms
+#             psiE_l = psi.f[0] * E
+#             psiE_u = psi.f[1] * E
+#
+#         # diagonal terms
+#         # 1D Hamiltonians mapping for the corresponding states
+#         phi_dl = hamil_cpu(psi.f[0], v[0][1], akx2, np, ntriv)
+#         phi_du = hamil_cpu(psi.f[1], v[1][1], akx2, np, ntriv)
+#
+#         if ntriv == 1:
+#             # diagonal terms
+#             # adding of the laser field energy shift
+#             numpy.add(phi_dl, psieL_l, out=phi_dl)
+#             numpy.subtract(phi_du, psieL_u, out=phi_du)
+#
+#         # adding non-diagonal terms
+#         phi.f[0] = numpy.subtract(phi_dl, psiE_u)
+#         phi.f[1] = numpy.subtract(phi_du, psiE_l)
+#
+#     return phi
 
-        OUTPUT
-        phi = H psi list of complex vectors of length np """
 
-    for i in range(len(psi.f)):
-        assert psi.f[i].size == np
-        assert v[i][1].size == np
-    assert akx2.size == np
-
-    phi: Psi = Psi(lvls=len(psi.f))
-
-    if ntriv < 0:
-        nlvls = len(psi.f)
-        l = (nlvls - 1) / 2.0
-        H = numpy.zeros((nlvls, nlvls), dtype=numpy.complex128)
-
-        if ntriv == -1:
-            H.itemset((0, 0), 2.0 * l**2 * U + 2.0 * l * E)
-            for vi in range(1, nlvls):
-                Q = 2.0 * (l - vi)**2 * U + 2.0 * (l - vi) * E # U ~ 1 / cm
-                P = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-                R = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-                H.itemset((vi, vi), Q)
-                H.itemset((vi - 1, vi), P)
-                H.itemset((vi, vi - 1), R)
-        elif ntriv == -2:
-            # H.itemset((0, 0), -2.0 * l * U + 2.0 * l * l * W)
-            # for vi in range(1, nlvls):
-            #     Q = -2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
-            #     P = -delta * E_full * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-            #     R = -delta * E_full.conjugate() * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-            #     H.itemset((vi, vi), Q)
-            #     H.itemset((vi - 1, vi), P)
-            #     H.itemset((vi, vi - 1), R)
-
-            H.itemset((0, 0), 2.0 * l * U + 2.0 * l * l * W)
-            for vi in range(1, nlvls):
-                Q = 2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
-                P = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-                R = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-                H.itemset((vi, vi), Q)
-                H.itemset((vi - 1, vi), P)
-                H.itemset((vi, vi - 1), R)
-
-        else:
-            raise RuntimeError("Impossible case in the LfAugType class")
-
-        for gl in range(nlvls):
-            phi_gl = numpy.zeros(np, dtype=numpy.complex128)
-            for il in range(nlvls):
-                H_psi_el_mult = H.item(gl, il) * psi.f[il]
-                phi_gl = numpy.add(phi_gl, H_psi_el_mult)
-            phi.f[gl] = phi_gl
-    else:
-        if orig or ntriv == 0:
-            # without laser field energy shift
-            # diagonal terms
-            psieL_l = 0.0
-            psieL_u = 0.0
-            # non-diagonal terms
-            psiE_l = psi.f[0] * E_full.conjugate()
-            psiE_u = psi.f[1] * E_full
-        else:
-            # with laser field energy shift
-            # diagonal terms
-            psieL_l = psi.f[0] * eL
-            psieL_u = psi.f[1] * eL
-            # non-diagonal terms
-            psiE_l = psi.f[0] * E
-            psiE_u = psi.f[1] * E
-
-        # diagonal terms
-        # 1D Hamiltonians mapping for the corresponding states
-        phi_dl = hamil_cpu(psi.f[0], v[0][1], akx2, np, ntriv)
-        phi_du = hamil_cpu(psi.f[1], v[1][1], akx2, np, ntriv)
-
-        if ntriv == 1:
-            # diagonal terms
-            # adding of the laser field energy shift
-            numpy.add(phi_dl, psieL_l, out=phi_dl)
-            numpy.subtract(phi_du, psieL_u, out=phi_du)
-
-        # adding non-diagonal terms
-        phi.f[0] = numpy.subtract(phi_dl, psiE_u)
-        phi.f[1] = numpy.subtract(phi_du, psiE_l)
-
-    return phi
-
-
-def residum_cpu(psi: Psi, v, akx2, xp, np, emin, emax, E, eL, U, W, delta, ntriv, E_full=0.0):
+def residum_cpu(psi: Psi, hpsi, xp, np, emin, emax):
     """ Scaled and normalized mapping phi = ( O - xp I ) phi
         INPUT
         psi         list of complex vectors of length np
@@ -203,12 +202,12 @@ def residum_cpu(psi: Psi, v, akx2, xp, np, emin, emax, E, eL, U, W, delta, ntriv
 
     for i in range(len(psi.f)):
         assert psi.f[i].size == np
-        assert v[i][1].size == np
-    assert akx2.size == np
+        #assert v[i][1].size == np
+    #assert akx2.size == np
 
     phi: Psi = Psi(lvls=len(psi.f))
 
-    hpsi = hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=E, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv, E_full=E_full)
+    #hpsi = hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=E, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv, E_full=E_full)
 
     # changing the range from -2 to 2
     coef1 = 4.0 / (emax - emin)
@@ -238,7 +237,7 @@ def func(z, t):
     return cmath.exp(-1j * z * t)
 
 
-def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, W, delta, ntriv, E_full=0.0):
+def prop_cpu(psi: Psi, hpsi, t_sc, nch, np, emin, emax):
     """ Propagation subroutine using Newton interpolation
         P(O) psi = dv0 psi + dv1 (O - x0 I) psi + dv2 (O - x1 I)(O - x0 I) psi + ...
         INPUT
@@ -269,8 +268,8 @@ def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, W, delta, n
 
     for i in range(len(psi.f)):
         assert psi.f[i].size == np
-        assert v[i][1].size == np
-    assert akx2.size == np
+        #assert v[i][1].size == np
+    #assert akx2.size == np
 
     # interpolation points and divided difference coefficients
     xp, dv = math_base.points(nch, t_sc, func)
@@ -285,7 +284,7 @@ def prop_cpu(psi: Psi, t_sc, nch, np, v, akx2, emin, emax, E, eL, U, W, delta, n
     # recurrence loop
     for j in range(nch - 1):
         # mapping by scaled operator of phi
-        phi = residum_cpu(psi=phi, v=v, akx2=akx2, xp=xp[j], np=np, emin=emin, emax=emax, E=E, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv, E_full=E_full)
+        phi = residum_cpu(psi=phi, hpsi=hpsi, xp=xp[j], np=np, emin=emin, emax=emax)
 
         # accumulation of Newtonian's interpolation
         for n in range(len(psi.f)):

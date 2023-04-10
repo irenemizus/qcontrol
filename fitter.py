@@ -115,7 +115,7 @@ class FittingSolver:
     solvers: List[PropagationSolver]
     propagation_reporters: List[PropagationReporter]
 
-    def __initialize_propagation(self, prop_id: str, laser_field_envelope, laser_field_hf, ntriv):
+    def __initialize_propagation(self, prop_id: str, laser_field_envelope, laser_field_hf, hamil2D, ntriv):
 
         self.solvers = []
         self.propagation_reporters = [None] * self.basis_length
@@ -130,6 +130,7 @@ class FittingSolver:
                 _warning_collocation_points=self._warning_collocation_points,
                 _warning_time_steps=self._warning_time_steps,
                 reporter=propagation_reporter,
+                hamil2D=hamil2D,
                 laser_field_envelope=laser_field_envelope,
                 laser_field_hf=laser_field_hf,
                 freq_multiplier=self.FreqMultiplier,
@@ -166,6 +167,7 @@ class FittingSolver:
             laser_field_hf,
             F_type,
             aF_type,
+            hamil2D,
             reporter: reporter.FitterReporter,
             _warning_collocation_points,
             _warning_time_steps
@@ -177,6 +179,7 @@ class FittingSolver:
         self.laser_field_hf = laser_field_hf
         self.F_type = F_type
         self.aF_type = aF_type
+        self.hamil2D = hamil2D
 
         self.reporter = reporter
 
@@ -237,7 +240,7 @@ class FittingSolver:
             fin_psi_basis = self.psi_init_basis
             t_init = self.T
 
-        self.__initialize_propagation("iter_" + str(self.dyn.iter_step) + ind_dir, laser_field, self.laser_field_hf, self.ntriv)
+        self.__initialize_propagation("iter_" + str(self.dyn.iter_step) + ind_dir, laser_field, self.laser_field_hf, self.hamil2D, self.ntriv)
 
         # Propagation loop
         finished: set[int] = set()

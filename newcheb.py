@@ -926,7 +926,8 @@ def main(argv):
                                                       init_dir, ntriv, psi0, psif,
                                                       task_manager_imp.pot, task_manager_imp.F_goal,
                                                       task_manager_imp.laser_field, task_manager_imp.laser_field_hf,
-                                                      task_manager_imp.F_type, task_manager_imp.aF_type, fit_reporter_imp,
+                                                      task_manager_imp.F_type, task_manager_imp.aF_type,
+                                                      task_manager_imp.hamil_impl, fit_reporter_imp,
                                                       _warning_collocation_points,
                                                       _warning_time_steps
                                                       )

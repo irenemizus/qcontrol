@@ -5,9 +5,10 @@ import numpy
 from numpy.typing import NDArray
 
 import math_base
+import phys_base
 from config import TaskRootConfiguration
 from propagation import PropagationSolver
-from psi_basis import PsiBasis
+from psi_basis import PsiBasis, Psi
 
 from phys_base import dalt_to_au, hart_to_cm
 
@@ -334,6 +335,134 @@ class _PsiFunctions:
         return psi
 
 
+class _Hamil2D:
+    @staticmethod
+    def non_trivial(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full, orig):
+        for i in range(len(psi.f)):
+            assert psi.f[i].size == np
+            assert v[i][1].size == np
+        assert akx2.size == np
+
+        phi: Psi = Psi(lvls=len(psi.f))
+
+        if orig:
+            # without laser field energy shift
+            # diagonal terms
+            psieL_l = 0.0
+            psieL_u = 0.0
+            # non-diagonal terms
+            psiE_l = psi.f[0] * E_full.conjugate()
+            psiE_u = psi.f[1] * E_full
+        else:
+            # with laser field energy shift
+            # diagonal terms
+            psieL_l = psi.f[0] * eL
+            psieL_u = psi.f[1] * eL
+            # non-diagonal terms
+            psiE_l = psi.f[0] * E
+            psiE_u = psi.f[1] * E
+
+        # diagonal terms
+        # 1D Hamiltonians mapping for the corresponding states
+        phi_dl = phys_base.hamil_cpu(psi.f[0], v[0][1], akx2, np, ntriv)
+        phi_du = phys_base.hamil_cpu(psi.f[1], v[1][1], akx2, np, ntriv)
+
+        # diagonal terms
+        # adding of the laser field energy shift
+        numpy.add(phi_dl, psieL_l, out=phi_dl)
+        numpy.subtract(phi_du, psieL_u, out=phi_du)
+
+        # adding non-diagonal terms
+        phi.f[0] = numpy.subtract(phi_dl, psiE_u)
+        phi.f[1] = numpy.subtract(phi_du, psiE_l)
+
+        return phi
+
+    @staticmethod
+    def two_levels(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full, orig):
+        for i in range(len(psi.f)):
+            assert psi.f[i].size == np
+            assert v[i][1].size == np
+        assert akx2.size == np
+
+        phi: Psi = Psi(lvls=len(psi.f))
+
+        # non-diagonal terms
+        psiE_l = psi.f[0] * E_full.conjugate()
+        psiE_u = psi.f[1] * E_full
+
+        # diagonal terms
+        # 1D Hamiltonians mapping for the corresponding states
+        phi_dl = phys_base.hamil_cpu(psi.f[0], v[0][1], akx2, np, ntriv)
+        phi_du = phys_base.hamil_cpu(psi.f[1], v[1][1], akx2, np, ntriv)
+
+        # adding non-diagonal terms
+        phi.f[0] = numpy.subtract(phi_dl, psiE_u)
+        phi.f[1] = numpy.subtract(phi_du, psiE_l)
+
+        return phi
+
+    @staticmethod
+    def BH_X(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full, orig):
+        for i in range(len(psi.f)):
+            assert psi.f[i].size == np
+            assert v[i][1].size == np
+        assert akx2.size == np
+
+        phi: Psi = Psi(lvls=len(psi.f))
+        nlvls = len(psi.f)
+        l = (nlvls - 1) / 2.0
+        H = numpy.zeros((nlvls, nlvls), dtype=numpy.complex128)
+
+        H.itemset((0, 0), 2.0 * l * U + 2.0 * l * l * W)
+        for vi in range(1, nlvls):
+            Q = 2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
+            P = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+            R = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+            H.itemset((vi, vi), Q)
+            H.itemset((vi - 1, vi), P)
+            H.itemset((vi, vi - 1), R)
+
+        for gl in range(nlvls):
+            phi_gl = numpy.zeros(np, dtype=numpy.complex128)
+            for il in range(nlvls):
+                H_psi_el_mult = H.item(gl, il) * psi.f[il]
+                phi_gl = numpy.add(phi_gl, H_psi_el_mult)
+            phi.f[gl] = phi_gl
+
+        return phi
+
+    @staticmethod
+    def BH_Z(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full, orig):
+        for i in range(len(psi.f)):
+            assert psi.f[i].size == np
+            assert v[i][1].size == np
+        assert akx2.size == np
+
+        phi: Psi = Psi(lvls=len(psi.f))
+        nlvls = len(psi.f)
+        l = (nlvls - 1) / 2.0
+        H = numpy.zeros((nlvls, nlvls), dtype=numpy.complex128)
+
+        H.itemset((0, 0), 2.0 * l ** 2 * U + 2.0 * l * E)
+        for vi in range(1, nlvls):
+            Q = 2.0 * (l - vi) ** 2 * U + 2.0 * (l - vi) * E  # U ~ 1 / cm
+            P = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi))  # delta ~ 1 / cm
+            R = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi))  # delta ~ 1 / cm
+            H.itemset((vi, vi), Q)
+            H.itemset((vi - 1, vi), P)
+            H.itemset((vi, vi - 1), R)
+
+        for gl in range(nlvls):
+            phi_gl = numpy.zeros(np, dtype=numpy.complex128)
+            for il in range(nlvls):
+                H_psi_el_mult = H.item(gl, il) * psi.f[il]
+                phi_gl = numpy.add(phi_gl, H_psi_el_mult)
+            phi.f[gl] = phi_gl
+
+        return phi
+
+
 """
 The implementations of this interface set up the task. That includes defining the starting
 conditions, the goal, the potential, and all the possible other parameters necessary to define the task.
@@ -410,22 +539,28 @@ class TaskManager:
         if conf_task.hamil_type == TaskRootConfiguration.HamilType.NTRIV:
             print("Non-trivial type of the Hamiltonian is used")
             self.ntriv = 1
+            self.hamil_impl = _Hamil2D.non_trivial
             if not conf_task.fitter.init_guess_hf == TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP:
                 raise RuntimeError("For a non-trivial Hamiltonian an exponential high-frequency part of initial guess for the laser field has to be used!")
         elif conf_task.hamil_type == TaskRootConfiguration.HamilType.BH_MODEL:
             if conf_task.fitter.lf_aug_type == TaskRootConfiguration.FitterConfiguration.LfAugType.Z:
                 print("Bose-Hubbard Hamiltonian with external laser field augmented inside a Jz term is used")
                 self.ntriv = -1
+                self.hamil_impl = _Hamil2D.BH_Z
             elif conf_task.fitter.lf_aug_type == TaskRootConfiguration.FitterConfiguration.LfAugType.X:
                 print("Bose-Hubbard Hamiltonian with external laser field augmented inside a Jx term is used")
                 self.ntriv = -2
+                self.hamil_impl = _Hamil2D.BH_X
             else:
                 raise RuntimeError("Impossible case in the LfAugType class")
         elif conf_task.hamil_type == TaskRootConfiguration.HamilType.TWO_LEVELS:
             print("Simple trivial two-levels type of the Hamiltonian is used")
             self.ntriv = 0
+            self.hamil_impl = _Hamil2D.two_levels
             if not conf_task.fitter.nb == 2:
                 raise RuntimeError("Number of basis vectors 'nb' for 'hamil_type' = 'two_levels' has to be equal to 2!")
+            if conf_task.fitter.hf_hide:
+                raise RuntimeError("'hf_hide' parameter for 'hamil_type' = 'two_levels' should be set to 'false'!")
         else:
             raise RuntimeError("Impossible case in the HamilType class")
 
@@ -465,6 +600,32 @@ class TaskManager:
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         raise NotImplementedError()
+
+    def hamil2D(self, psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, orig=False):
+        """ Calculates two-dimensional Hamiltonian mapping of vector psi
+            INPUT
+            psi         list of complex vectors of length np
+            v           list of potential energy real vectors of length np
+            akx2        complex kinetic energy vector of length np, = k^2/2m
+            np          number of grid points
+            E           a real value of external laser field
+            eL          a laser field energy shift = h * nu_L / 2.0
+            E_full      a complex value of external laser field
+            ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+                                            0 -- a trivial 2-level system
+                                           -1 -- a trivial n-level system with angular momentum Hamiltonian and
+                                                 with external laser field augmented inside a Jz term
+                                           -2 -- a trivial n-level system with angular momentum Hamiltonian and
+                                                 with external laser field augmented inside a Jx term
+            orig        a boolean parameter that depends
+                        if an original form of the Hamiltonian should be used (orig = True) or
+                        the shifted real version (orig = False -- by default)
+            U, W, delta parameters of angular momentum-type Hamiltonian
+
+            OUTPUT
+            phi = H psi list of complex vectors of length np """
+
+        return self.hamil_impl(psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full, orig)
 
     def laser_field(self, E0, t, t0, sigma):
         return self.lf_init_guess(E0, t, t0, sigma)
