@@ -250,7 +250,7 @@ class TestFitterReporter(FitterReporter):
 
     def plot_iter(self, iter, goal_close, Fsm, E_int, J):
         self.iter_tab.append((
-            iter, goal_close, Fsm, E_int, J
+            iter, goal_close, Fsm.real, E_int.real, J
         ))
 
     def plot_i_E(self, E_tlist, iter, t_list, nt):

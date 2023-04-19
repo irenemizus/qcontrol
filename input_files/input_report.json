@@ -3,7 +3,7 @@
     "out_path": "../output_s2s_tst",
     "plotting_flag": "tables_iter",
 
-    "table.imin": 0,
+    "table.imin": -1,
     "table.imod_fileout": 1,
     "table.tab_iter": "tab_iter.csv",
     "table.tab_iter_E": "tab_iter_E.csv",

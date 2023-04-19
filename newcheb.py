@@ -430,6 +430,8 @@ from pprint import pprint, pformat
 
 from jsonpath2 import Path
 
+import math_base
+import phys_base
 from json_substitutions import JsonSubstitutions
 from tools import print_err
 
@@ -847,45 +849,14 @@ def main(argv):
                     else:
                         raise RuntimeError("Impossible case in the TaskType class")
 
+                # defining the automatically obtained parameters
                 nw = int(2 * conf_task.fitter.pcos - 1)
-                #nw = int(conf_task.fitter.pcos + 1)    #Tmp!
                 if not conf_task.fitter.w_list:
                     conf_task.fitter.w_list = [x for x in numpy.random.default_rng().uniform(conf_task.fitter.w_min,
                                                                                              conf_task.fitter.w_max,
                                                                                              nw)]
                 else:
                     assert len(conf_task.fitter.w_list) == nw
-
-                task_manager_imp = task_manager.create(conf_task)
-
-                # setup of the grid
-                grid = grid_setup.GridConstructor(conf_task.fitter.propagation)
-                dx, x = grid.grid_setup()
-
-                # evaluating of initial wavefunction (of type PsiBasis)
-                psi0 = task_manager_imp.psi_init(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
-                                                 conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
-                                                 conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
-                                                 conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
-                                                 conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
-                                                 conf_task.fitter.propagation.L, conf_task.fitter.nb, conf_task.fitter.nlevs)
-
-                # evaluating of the final goal (of type PsiBasis)
-                psif = task_manager_imp.psi_goal(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
-                                                 conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
-                                                 conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
-                                                 conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
-                                                 conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
-                                                 conf_task.fitter.propagation.L, conf_task.fitter.nb, conf_task.fitter.nlevs)
-
-                # initial propagation direction
-                init_dir = task_manager_imp.init_dir
-                # checking of triviality of the system
-                ntriv = task_manager_imp.ntriv
-                step = -1
-
-                if not os.path.exists(conf_rep_plot.fitter.out_path):
-                    os.makedirs(conf_rep_plot.fitter.out_path, exist_ok=True)
 
                 if conf_task.fitter.propagation.sigma_auto == True:
                     if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
@@ -912,22 +883,77 @@ def main(argv):
                 else:
                     pass
 
+                # printing final values of all the calculation parameters to the file
+                step = -1
+                if not os.path.exists(conf_rep_plot.fitter.out_path):
+                    os.makedirs(conf_rep_plot.fitter.out_path, exist_ok=True)
                 print_input(conf_rep_plot, conf_task, "table_inp_" + str(step) + ".txt")
+
+                # setup of the task
+                task_manager_imp = task_manager.create(conf_task)
+
+                # setup of the grid
+                grid = grid_setup.GridConstructor(conf_task.fitter.propagation)
+                dx, x = grid.grid_setup()
+
+                # evaluating of initial wavefunction (of type PsiBasis)
+                psi0 = task_manager_imp.psi_init(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
+                                                 conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
+                                                 conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
+                                                 conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
+                                                 conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
+                                                 conf_task.fitter.propagation.L, conf_task.fitter.nb, conf_task.fitter.nlevs)
+
+                # evaluating of the final goal (of type PsiBasis)
+                psif = task_manager_imp.psi_goal(x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
+                                                 conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
+                                                 conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
+                                                 conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
+                                                 conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
+                                                 conf_task.fitter.propagation.L, conf_task.fitter.nb, conf_task.fitter.nlevs)
+
+                # initial propagation direction
+                init_dir = task_manager_imp.init_dir
 
                 # setup of the time grid
                 forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_task=conf_task)
                 t_step, t_list = forw_time_grid.grid_setup()
+
+                # evaluating of potential(s)
+                v = task_manager_imp.pot(x, conf_task.fitter.propagation.np,
+                                         conf_task.fitter.propagation.m,
+                                         conf_task.fitter.propagation.De,
+                                         conf_task.fitter.propagation.a,
+                                         conf_task.fitter.propagation.x0p,
+                                         conf_task.fitter.propagation.De_e,
+                                         conf_task.fitter.propagation.a_e,
+                                         conf_task.fitter.propagation.Du)
+
+                # evaluating of k vector
+                akx2 = math_base.initak(conf_task.fitter.propagation.np, dx, 2, task_manager_imp.ntriv)
+
+                # evaluating of kinetic energy
+                akx2 *= -phys_base.hart_to_cm / (2.0 * conf_task.fitter.propagation.m * phys_base.dalt_to_au)
+
+                # Hamiltonian for the current task
+                hamil2D = task_manager_imp.hamil_impl(v, akx2, conf_task.fitter.propagation.np,
+                                                      conf_task.fitter.propagation.U,
+                                                      conf_task.fitter.propagation.W,
+                                                      conf_task.fitter.propagation.delta,
+                                                      task_manager_imp.ntriv
+                                                      )
+
 
                 # main calculation part
                 fit_reporter_imp = reporter.MultipleFitterReporter(conf_rep_table=conf_rep_table.fitter, conf_rep_plot=conf_rep_plot.fitter)
                 fit_reporter_imp.open()
 
                 fitting_solver = fitter.FittingSolver(conf_task.fitter, conf_task.task_type, conf_task.T,
-                                                      init_dir, ntriv, psi0, psif,
-                                                      task_manager_imp.pot, task_manager_imp.F_goal,
+                                                      init_dir, task_manager_imp.ntriv, psi0, psif, v, akx2,
+                                                      task_manager_imp.F_goal,
                                                       task_manager_imp.laser_field, task_manager_imp.laser_field_hf,
                                                       task_manager_imp.F_type, task_manager_imp.aF_type,
-                                                      task_manager_imp.hamil_impl, fit_reporter_imp,
+                                                      hamil2D, fit_reporter_imp,
                                                       _warning_collocation_points,
                                                       _warning_time_steps
                                                       )

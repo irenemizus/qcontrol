@@ -125,7 +125,6 @@ class FittingSolver:
             self.propagation_reporters[vect] = propagation_reporter
 
             self.solvers.append(PropagationSolver(
-                pot=self.pot_func,
                 T=self.T,
                 _warning_collocation_points=self._warning_collocation_points,
                 _warning_time_steps=self._warning_time_steps,
@@ -161,7 +160,8 @@ class FittingSolver:
             ntriv,
             psi_init_basis: PsiBasis,
             psi_goal_basis: PsiBasis,
-            pot_func,
+            v,
+            akx2,
             Fgoal,
             laser_field,
             laser_field_hf,
@@ -174,7 +174,6 @@ class FittingSolver:
     ):
         self._warning_collocation_points = _warning_collocation_points
         self._warning_time_steps = _warning_time_steps
-        self.pot_func = pot_func
         self.laser_field = laser_field
         self.laser_field_hf = laser_field_hf
         self.F_type = F_type
@@ -192,6 +191,9 @@ class FittingSolver:
         self.Fgoal = Fgoal
         self.psi_init_basis = psi_init_basis
         self.psi_goal_basis = psi_goal_basis
+
+        self.v = v
+        self.akx2 = akx2
 
         self.basis_length = len(psi_init_basis)
         self.levels_number = len(psi_init_basis.psis[0].f)
@@ -248,7 +250,8 @@ class FittingSolver:
         # Starting solvers
         for vect in range(self.basis_length):
             solver = self.solvers[vect]
-            solver.start(dx, x, t_step, init_psi_basis.psis[vect], fin_psi_basis.psis[vect], self.dyn.dir)
+
+            solver.start(self.v, self.akx2, dx, x, t_step, init_psi_basis.psis[vect], fin_psi_basis.psis[vect], self.dyn.dir)
 
         # Paranoid checking E EVERYWHERE
         E_checked = self.solvers[0].dyn.E
@@ -745,8 +748,8 @@ class FittingSolver:
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 E_init = s * conf_prop.E0 * hf_part
 
-                if prop.dyn.l <= 5:
-                    print("sum:\t\t"   f"{sum}\n")
+#                if prop.dyn.l <= 5:
+#                    print("sum:\t\t"   f"{sum}\n")
 #                    print("sum1 * a0[0]:\t\t"   f"{sum1 * self.a0[0]}\n")
 
                 delta_E = -s * sum.imag / self.dyn.h_lambda

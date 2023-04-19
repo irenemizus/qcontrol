@@ -2,6 +2,8 @@ import unittest
 
 import fitter
 import grid_setup
+import math_base
+import phys_base
 import task_manager
 import test_data
 from config import TaskRootConfiguration
@@ -44,14 +46,32 @@ class fitter_Tests(unittest.TestCase):
                                          conf_prop.a, conf_prop.a_e,
                                          conf_prop.L, conf.fitter.nb, conf.fitter.nlevs)
 
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
+        # evaluating of potential(s)
+        v = task_manager_imp.pot(x, conf_prop.np, conf_prop.m,
+                                 conf_prop.De, conf_prop.a,
+                                 conf_prop.x0p, conf_prop.De_e,
+                                 conf_prop.a_e, conf_prop.Du)
+
+        # evaluating of k vector
+        akx2 = math_base.initak(conf_prop.np, dx, 2, task_manager_imp.ntriv)
+
+        # evaluating of kinetic energy
+        akx2 *= -phys_base.hart_to_cm / (2.0 * conf_prop.m * phys_base.dalt_to_au)
+
         # checking of triviality of the system
         ntriv = task_manager_imp.ntriv
+
+        # Hamiltonian for the current task
+        hamil2D = task_manager_imp.hamil_impl(v, akx2, conf_prop.np,
+                                              conf_prop.U, conf_prop.W,
+                                              conf_prop.delta, ntriv)
+
+        # initial propagation direction
+        init_dir = task_manager_imp.init_dir
         # number of levels
         nlevs = len(psi0.psis[0].f)
 
-        return conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif
+        return conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D
 
     def test_single_harm(self):
         user_conf = {
@@ -89,20 +109,19 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              fit_reporter_imp,
+                                              hamil2D, fit_reporter_imp,
                                               None, None)
 
         fitting_solver.time_propagation(dx, x, t_step, t_list)
@@ -123,7 +142,7 @@ class fitter_Tests(unittest.TestCase):
         tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001, 0.000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
                                             0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
-        iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
                                            0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
@@ -172,20 +191,19 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              fit_reporter_imp,
+                                              hamil2D, fit_reporter_imp,
                                               None, None)
 
         fitting_solver.time_propagation(dx, x, t_step, t_list)
@@ -206,7 +224,7 @@ class fitter_Tests(unittest.TestCase):
         tvals_fit_comparer = TableComparer((0.0001, 0.0001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
                                             0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
-        iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
                                            0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
@@ -253,20 +271,19 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              fit_reporter_imp,
+                                              hamil2D, fit_reporter_imp,
                                               None, None)
 
         fitting_solver.time_propagation(dx, x, t_step, t_list)
@@ -287,7 +304,7 @@ class fitter_Tests(unittest.TestCase):
         tvals_fit_comparer = TableComparer((0.000001, 0.0001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
                                             0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
-        iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
                                            0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
@@ -338,20 +355,19 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              fit_reporter_imp,
+                                              hamil2D, fit_reporter_imp,
                                               None, None)
 
         fitting_solver.time_propagation(dx, x, t_step, t_list)
@@ -372,7 +388,7 @@ class fitter_Tests(unittest.TestCase):
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
                                             0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
-        iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
                                            0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
@@ -423,20 +439,19 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              fit_reporter_imp,
+                                              hamil2D, fit_reporter_imp,
                                               None, None)
 
         fitting_solver.time_propagation(dx, x, t_step, t_list)
@@ -457,7 +472,7 @@ class fitter_Tests(unittest.TestCase):
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
                                             0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
-        iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
                                            0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
@@ -511,20 +526,19 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              fit_reporter_imp,
+                                              hamil2D, fit_reporter_imp,
                                               None, None)
 
         fitting_solver.time_propagation(dx, x, t_step, t_list)
@@ -545,7 +559,7 @@ class fitter_Tests(unittest.TestCase):
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
                                             0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
-        iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
                                            0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
@@ -599,20 +613,19 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              fit_reporter_imp,
+                                              hamil2D, fit_reporter_imp,
                                               None, None)
 
         fitting_solver.time_propagation(dx, x, t_step, t_list)
@@ -633,7 +646,7 @@ class fitter_Tests(unittest.TestCase):
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
                                             0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
-        iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
                                            0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
@@ -688,20 +701,19 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              fit_reporter_imp,
+                                              hamil2D, fit_reporter_imp,
                                               None, None)
 
         fitting_solver.time_propagation(dx, x, t_step, t_list)
@@ -722,7 +734,7 @@ class fitter_Tests(unittest.TestCase):
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
                                             0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
-        iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
                                            0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
@@ -736,7 +748,7 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_krot.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_krot.iter_tab_E))
 
-    def test_opt_ctrl_ut_HB_2lvls(self):
+    def test_opt_ctrl_ut_HB_2lvls_Jz(self):
         user_conf = {
             "task_type": "optimal_control_unit_transform",
             "pot_type": "none",
@@ -780,20 +792,19 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = -1
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              fit_reporter_imp,
+                                              hamil2D, fit_reporter_imp,
                                               None, None)
 
         fitting_solver.time_propagation(dx, x, t_step, t_list)
@@ -802,8 +813,8 @@ class fitter_Tests(unittest.TestCase):
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
 
         # Uncomment in case of emergency :)
-        #fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_ut_HB_2lvls_.py")
-        #prop_reporter.print_all("../test_data/prop_opt_ctrl_ut_HB_2lvls_.py", "../test_data/fitter_opt_ctrl_ut_HB_2lvls_.py")
+        #fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_ut_HB_2lvls_Jz_.py")
+        #prop_reporter.print_all("../test_data/prop_opt_ctrl_ut_HB_2lvls_Jz_.py", "../test_data/fitter_opt_ctrl_ut_HB_2lvls_Jz_.py")
 
         psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
@@ -814,19 +825,19 @@ class fitter_Tests(unittest.TestCase):
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
                                             0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
-        iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
                                            0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
         for n in range(nlevs):
             self.assertTrue(
-                psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_opt_ctrl_ut_HB_2lvls.psi_tabs[n]))
+                psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_opt_ctrl_ut_HB_2lvls_Jz.psi_tabs[n]))
             self.assertTrue(
-                tvals_prop_comparer.compare(prop_reporter.prop_tab[n], test_data.prop_opt_ctrl_ut_HB_2lvls.prop_tabs[n]))
+                tvals_prop_comparer.compare(prop_reporter.prop_tab[n], test_data.prop_opt_ctrl_ut_HB_2lvls_Jz.prop_tabs[n]))
 
-        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_opt_ctrl_ut_HB_2lvls.tvals_tab))
-        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_ut_HB_2lvls.iter_tab))
-        self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_ut_HB_2lvls.iter_tab_E))
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_opt_ctrl_ut_HB_2lvls_Jz.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_ut_HB_2lvls_Jz.iter_tab))
+        self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_ut_HB_2lvls_Jz.iter_tab_E))
 
     def test_opt_ctrl_ut_HB_2lvls_Jx(self):
         user_conf = {
@@ -834,13 +845,12 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "none",
             "wf_type": "const",
             "hamil_type": "BH_model",
-            "T": 8.4E-13,
+            "T": 5.4E-13,
             "fitter": {
-                "epsilon": 1.0e-3,
+                "epsilon": 1e-5,
                 "impulses_number": 1,
                 "nb": 2,
-                "nlevs": 2,
-                "iter_max": 50,
+                "iter_max": 3,
                 "iter_mid_1": 250,
                 "iter_mid_2": 300,
                 "q": 0.75,
@@ -849,9 +859,9 @@ class fitter_Tests(unittest.TestCase):
                 "init_guess": "sqrsin",
                 "init_guess_hf": "sin_set",
                 "lf_aug_type": "x",
-                "hf_hide": False,
                 "pcos": 2.0,
-                "w_list": [1.2000000000000002, -1.9, 0.7000000000000002],
+                "hf_hide": False,
+                "w_list": [1.5, -1.0, 0.7999999999999998],
                 "propagation": {
                     "U": 30.0,
                     "W": 30.0,
@@ -874,20 +884,19 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = -1
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif = self._test_setup(user_conf)
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif,
-                                              task_manager_imp.pot,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              fit_reporter_imp,
+                                              hamil2D, fit_reporter_imp,
                                               None, None)
 
         fitting_solver.time_propagation(dx, x, t_step, t_list)
@@ -908,7 +917,7 @@ class fitter_Tests(unittest.TestCase):
         tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
                                             0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
-        iter_fit_comparer = TableComparer((0, 0.0001, np.complex128(0.00001 + 0.00001j), # iter, goal_close, Fsm,
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
                                            0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
         iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
 
@@ -921,6 +930,99 @@ class fitter_Tests(unittest.TestCase):
         self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_opt_ctrl_ut_HB_2lvls_Jx.tvals_tab))
         self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_ut_HB_2lvls_Jx.iter_tab))
         self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_ut_HB_2lvls_Jx.iter_tab_E))
+
+    def test_opt_ctrl_ut_HB_s2s_Jx(self):
+        user_conf = {
+            "task_type": "optimal_control_unit_transform",
+            "pot_type": "none",
+            "wf_type": "const",
+            "hamil_type": "BH_model",
+            "T": 2.779700E-13,
+            "fitter": {
+                "epsilon": 1e-6,
+                "impulses_number": 1,
+                "nb": 1,
+                "nlevs": 2,
+                "iter_max": 50,
+                "iter_mid_1": 30,
+                "iter_mid_2": 50,
+                "q": 0.75,
+                "h_lambda": 0.00005,
+                "h_lambda_mode": "dynamical",
+                "init_guess": "gauss",
+                "init_guess_hf": "exp",
+                "lf_aug_type": "x",
+                "F_type": "sm",
+                "hf_hide": False,
+                "pcos": 1.0,
+                "propagation": {
+                    "U": 30.0,
+                    "W": 30.0,
+                    "delta": 15.0,
+                    "Du": 1.0,
+                    "np": 1,
+                    "L": 1.0,
+                    "nch": 8,
+                    "E0": 40.0,
+                    "nt": 3500,
+                    "sigma_auto": True,
+                    "nu_L_auto": True,
+                    "t0_auto": True
+                },
+                "mod_log": 500
+            }
+        }
+        mod_fileout = 100
+        lmin = 0
+        imod_fileout = 1
+        imin = -1
+
+        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+
+        fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
+        fit_reporter_imp.open()
+
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.F_goal,
+                                              task_manager_imp.laser_field,
+                                              task_manager_imp.laser_field_hf,
+                                              task_manager_imp.F_type,
+                                              task_manager_imp.aF_type,
+                                              hamil2D, fit_reporter_imp,
+                                              None, None)
+
+        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fit_reporter_imp.close()
+
+        prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
+
+        # Uncomment in case of emergency :)
+        #fit_reporter_imp.print_all("../test_data/fit_iter_opt_ctrl_ut_HB_s2s_Jx_.py")
+        #prop_reporter.print_all("../test_data/prop_opt_ctrl_ut_HB_s2s_Jx_.py", "../test_data/fitter_opt_ctrl_ut_HB_s2s_Jx_.py")
+
+        psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-12)) # psi, t, x
+        tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
+                                             0.0000001, np.complex128(0.001 + 0.001j), # ener, norm,
+                                             np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp0, overlpf,
+                                             0.0001, 0.0001), np.float64(1.e-12)) # psi_max_abs, psi_max_real
+
+        tvals_fit_comparer = TableComparer((0.000001, 0.00001, 0.0001, 0.0000001, # t, E, freq_mult, ener_tot,
+                                            np.complex128(0.001 + 0.001j), np.complex128(0.001 + 0.001j), # overlp_tot[0], overlp_tot[1],
+                                            0.001, 0.001, 0.001), np.float64(1.e-12)) # smoms.x, smoms.y, smoms.z
+        iter_fit_comparer = TableComparer((0, 0.0001, 0.00001, # iter, goal_close, Fsm,
+                                           0.0001, 0.00001), np.float64(1.e-12)) # E_int, J
+        iter_fit_E_comparer = TableComparer((0, 0.0001, 0.0001), np.float64(1.e-12)) # iter, t, E
+
+        for n in range(nlevs):
+            self.assertTrue(
+                psi_prop_comparer.compare(prop_reporter.psi_tab[n], test_data.prop_opt_ctrl_ut_HB_s2s_Jx.psi_tabs[n]))
+            self.assertTrue(
+                tvals_prop_comparer.compare(prop_reporter.prop_tab[n], test_data.prop_opt_ctrl_ut_HB_s2s_Jx.prop_tabs[n]))
+
+        self.assertTrue(tvals_fit_comparer.compare(prop_reporter.fit_tab, test_data.fitter_opt_ctrl_ut_HB_s2s_Jx.tvals_tab))
+        self.assertTrue(iter_fit_comparer.compare(fit_reporter_imp.iter_tab, test_data.fit_iter_opt_ctrl_ut_HB_s2s_Jx.iter_tab))
+        self.assertTrue(iter_fit_E_comparer.compare(fit_reporter_imp.iter_tab_E, test_data.fit_iter_opt_ctrl_ut_HB_s2s_Jx.iter_tab_E))
 
 
 if __name__ == '__main__':

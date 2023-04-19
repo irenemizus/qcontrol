@@ -1,5 +1,6 @@
 import unittest
 
+import hamil_2d
 import test_data
 from propagation import *
 import grid_setup
@@ -106,10 +107,27 @@ class propagation_Tests(unittest.TestCase):
                                               conf_prop.a_e,
                                               conf_prop.L)
 
-        return conf, dx, x, psi0, psif, t_step, t_list
+        # evaluating of potential(s)
+        v = task_manager.MorseMultipleStateTaskManager._pot(x, conf_prop.np, conf_prop.m,
+                                                            conf_prop.De, conf_prop.a,
+                                                            conf_prop.x0p, conf_prop.De_e,
+                                                            conf_prop.a_e, conf_prop.Du)
+
+        # evaluating of k vector
+        akx2 = math_base.initak(conf_prop.np, dx, 2, 1)
+
+        # evaluating of kinetic energy
+        akx2 *= -phys_base.hart_to_cm / (2.0 * conf_prop.m * phys_base.dalt_to_au)
+
+        # Hamiltonian for the current task
+        hamil2D = hamil_2d.Hamil2DNonTrivial(v, akx2, conf_prop.np,
+                                             conf_prop.U, conf_prop.W,
+                                             conf_prop.delta, 1)
+
+        return conf, dx, x, psi0, psif, t_step, t_list, v, akx2, hamil2D
 
     def test_prop_forward(self):
-        conf, dx, x, psi0, psif, t_step, t_list = self._test_setup()
+        conf, dx, x, psi0, psif, t_step, t_list, v, akx2, hamil2D = self._test_setup()
         conf_prop = conf.fitter.propagation
 
         def _warning_collocation_points(np, np_min):
@@ -147,11 +165,11 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.open()
 
         solver = PropagationSolver(
-            pot=task_manager.MorseMultipleStateTaskManager._pot,
             T=conf.T,
             _warning_collocation_points=_warning_collocation_points,
             _warning_time_steps=_warning_time_steps,
             reporter=reporter_impl,
+            hamil2D=hamil2D,
             laser_field_envelope=laser_field_envelope,
             laser_field_hf=laser_field_hf,
             freq_multiplier=freq_multiplier,
@@ -163,7 +181,7 @@ class propagation_Tests(unittest.TestCase):
             hf_hide=conf.fitter.hf_hide,
             conf_prop=conf_prop)
 
-        solver.start(dx, x, t_step, psi0.psis[0], psif.psis[0], PropagationSolver.Direction.FORWARD)
+        solver.start(v, akx2, dx, x, t_step, psi0.psis[0], psif.psis[0], PropagationSolver.Direction.FORWARD)
 
         # main propagation loop
         while solver.step(0.0):
@@ -172,7 +190,7 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        reporter_impl.print_all("../test_data/prop_trans_woc_forw_.py", None)
+        #reporter_impl.print_all("../test_data/prop_trans_woc_forw_.py", None)
 
         psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-13)) # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001, # t, moms.x, moms.x2, moms.p, moms.p2,
@@ -185,7 +203,7 @@ class propagation_Tests(unittest.TestCase):
             self.assertTrue(tvals_prop_comparer.compare(reporter_impl.prop_tab[n], test_data.prop_trans_woc_forw.prop_tabs[n]))
 
     def test_prop_backward(self):
-        conf, dx, x, psi0, psif, t_step, t_list = self._test_setup()
+        conf, dx, x, psi0, psif, t_step, t_list, v, akx2, hamil2D = self._test_setup()
         conf_prop = conf.fitter.propagation
 
         def _warning_collocation_points(np, np_min):
@@ -223,11 +241,11 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.open()
 
         solver = PropagationSolver(
-            pot=task_manager.MorseMultipleStateTaskManager._pot,
             T=conf.T,
             _warning_collocation_points=_warning_collocation_points,
             _warning_time_steps=_warning_time_steps,
             reporter=reporter_impl,
+            hamil2D=hamil2D,
             laser_field_envelope=laser_field_envelope,
             laser_field_hf=laser_field_hf,
             freq_multiplier=freq_multiplier,
@@ -239,7 +257,7 @@ class propagation_Tests(unittest.TestCase):
             hf_hide=conf.fitter.hf_hide,
             conf_prop=conf_prop)
 
-        solver.start(dx, x, t_step, psif.psis[0], psi0.psis[0], PropagationSolver.Direction.BACKWARD)
+        solver.start(v, akx2, dx, x, t_step, psif.psis[0], psi0.psis[0], PropagationSolver.Direction.BACKWARD)
 
         # main propagation loop
         while solver.step(conf.T):
@@ -248,7 +266,7 @@ class propagation_Tests(unittest.TestCase):
         reporter_impl.close()
 
         # Uncomment in case of emergency :)
-        reporter_impl.print_all("../test_data/prop_trans_woc_back_.py", None)
+        #reporter_impl.print_all("../test_data/prop_trans_woc_back_.py", None)
 
         psi_prop_comparer = TableComparer((np.complex128(0.0001 + 0.0001j), 0.000001, 0.0001), np.float64(1.e-13))  # psi, t, x
         tvals_prop_comparer = TableComparer((0.000001, 0.001, 0.001, 0.001, 0.000001,  # t, moms.x, moms.x2, moms.p, moms.p2,

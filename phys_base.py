@@ -176,27 +176,23 @@ def hamil_cpu(psi, v, akx2, np, ntriv):
 #     return phi
 
 
-def residum_cpu(psi: Psi, hpsi, xp, np, emin, emax):
+def residum_cpu(psi: Psi, hamil2D, xp, np, emin, emax, E, eL, E_full, orig):
     """ Scaled and normalized mapping phi = ( O - xp I ) phi
         INPUT
-        psi         list of complex vectors of length np
-        v           list of potential energy vectors of length np
+        psi         PsiBasis element (current wavefunction)
+        hamil2D     hamil2D object (hpsi = H psi)
         xp          sampling interpolation point
         np          number of grid points (must be a power of 2)
         emax, emin  upper and lower limits of energy spectra
         E           a real value of external laser field
+        eL          a laser field energy shift = h * nu_L / 2.0
         E_full      a complex value of external laser field
-        eL          a laser field energy shift
-        ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
-                                        0 -- a trivial 2-level system
-                                       -1 -- a trivial n-level system with angular momentum Hamiltonian and
-                                             with external laser field augmented inside a Jz term
-                                       -2 -- a trivial n-level system with angular momentum Hamiltonian and
-                                             with external laser field augmented inside a Jx term
-        U, W, delta    parameters of angular momentum-type Hamiltonian
+        orig        a boolean parameter that depends
+                    if an original form of the Hamiltonian should be used (orig = True) or
+                    the shifted real version (orig = False -- by default)
 
         OUTPUT
-        phi  list of complex vectors of length np
+        phi  PsiBasis element
              the operator is normalized from -2 to 2 resulting in:
              phi = 4.O / (emax - emin) * H psi - 2.0 (emax + emin) / (emax - emin) * I psi - xp I psi """
 
@@ -207,7 +203,7 @@ def residum_cpu(psi: Psi, hpsi, xp, np, emin, emax):
 
     phi: Psi = Psi(lvls=len(psi.f))
 
-    #hpsi = hamil2D_cpu(psi=psi, v=v, akx2=akx2, np=np, E=E, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv, E_full=E_full)
+    hpsi = hamil2D(orig, psi=psi, E=E, eL=eL, E_full=E_full)
 
     # changing the range from -2 to 2
     coef1 = 4.0 / (emax - emin)
@@ -237,33 +233,27 @@ def func(z, t):
     return cmath.exp(-1j * z * t)
 
 
-def prop_cpu(psi: Psi, hpsi, t_sc, nch, np, emin, emax):
+def prop_cpu(psi: Psi, hamil2D, t_sc, nch, np, emin, emax, E, eL, E_full, orig):
     """ Propagation subroutine using Newton interpolation
         P(O) psi = dv0 psi + dv1 (O - x0 I) psi + dv2 (O - x1 I)(O - x0 I) psi + ...
         INPUT
-        psi         list of complex vectors of length np describing wavefunctions
-                    at the beginning of interval
+        psi         PsiBasis element (current wavefunction at the beginning of interval)
+        hamil2D     hamil2D object (hpsi = H psi)
         t_sc        time interval (normalized by the reduced Planck constant)
         nch         order of interpolation polynomial (must be a power of 2 if
                     reorder is necessary)
         np          number of grid points (must be a power of 2)
-        v           list of potential energy vectors of length np
-        akx2        kinetic energy vector of length np
         emax, emin  upper and lower limits of energy spectra
         E           a real value of external laser field
+        eL          a laser field energy shift = h * nu_L / 2.0
         E_full      a complex value of external laser field
-        eL          a laser field energy shift
-        ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
-                                        0 -- a trivial 2-level system
-                                       -1 -- a trivial n-level system with angular momentum Hamiltonian and
-                                             with external laser field augmented inside a Jz term
-                                       -2 -- a trivial n-level system with angular momentum Hamiltonian and
-                                             with external laser field augmented inside a Jx term
-        U, W, delta    parameters of angular momentum-type Hamiltonian
+        orig        a boolean parameter that depends
+                    if an original form of the Hamiltonian should be used (orig = True) or
+                    the shifted real version (orig = False -- by default)
+
 
         OUTPUT
-        psi  list of complex vectors of length np
-             describing the propagated wavefunction
+        psi  PsiBasis element describing the propagated wavefunction
              phi(t) = exp(-iHt) psi(0) """
 
     for i in range(len(psi.f)):
@@ -284,7 +274,7 @@ def prop_cpu(psi: Psi, hpsi, t_sc, nch, np, emin, emax):
     # recurrence loop
     for j in range(nch - 1):
         # mapping by scaled operator of phi
-        phi = residum_cpu(psi=phi, hpsi=hpsi, xp=xp[j], np=np, emin=emin, emax=emax)
+        phi = residum_cpu(psi=phi, hamil2D=hamil2D, xp=xp[j], np=np, emin=emin, emax=emax, E=E, eL=eL, E_full=E_full, orig=orig)
 
         # accumulation of Newtonian's interpolation
         for n in range(len(psi.f)):

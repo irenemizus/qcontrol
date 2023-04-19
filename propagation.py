@@ -110,7 +110,6 @@ class PropagationSolver:
 
     def __init__(
             self,
-            pot,
             T,
             _warning_collocation_points,
             _warning_time_steps,
@@ -127,7 +126,6 @@ class PropagationSolver:
             hf_hide,
             conf_prop):
         self.milliseconds_full = 0.0
-        self.pot = pot
         self.T = T
         self._warning_collocation_points = _warning_collocation_points
         self._warning_time_steps = _warning_time_steps
@@ -177,11 +175,10 @@ class PropagationSolver:
 
         return cnorm
 
-    def _ener_eval(self, psi: Psi, v, akx2, dx, np, E, eL, U, W, delta, ntriv, E_full, orig):
+    def _ener_eval(self, psi: Psi, dx, np, E, eL, E_full, orig):
         cener: NDArray[numpy.complex128] = numpy.zeros(len(psi.f), numpy.complex128)
 
-        phi = self.hamil2D(psi=psi, v=v, akx2=akx2, np=np, E=0.0, eL=eL, U=U, W=W, delta=delta, ntriv=ntriv,
-                                    E_full=E_full, orig=orig)
+        phi = self.hamil2D(orig=orig, psi=psi, E=E, eL=eL, E_full=E_full)
         for n in range(len(psi.f)):
             cener[n] = math_base.cprod(psi.f[n], phi.f[n], dx, np)
 
@@ -335,32 +332,30 @@ class PropagationSolver:
                 "milliseconds per step: " + str(milliseconds_per_step) + ", on average: " + str(
                     self.milliseconds_full / self.dyn.l))
 
-    def start(self, dx, x, t_step, psi0, psif, dir: Direction):
-        # evaluating of potential(s)
-        v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du)
-
-        # evaluating of k vector
-        akx2 = math_base.initak(self.np, dx, 2, self.ntriv)
-
-        # evaluating of kinetic energy
-        akx2 *= -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
+    def start(self, v, akx2, dx, x, t_step, psi0, psif, dir: Direction):
+        # # evaluating of potential(s)
+        # v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du)
+        #
+        # # evaluating of k vector
+        # akx2 = math_base.initak(self.np, dx, 2, self.ntriv)
+        #
+        # # evaluating of kinetic energy
+        # akx2 *= -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
 
         # initial normalization check
         cnorm0 = self._norm_eval(psi0, dx, self.np)
 
         # calculating of initial ground/excited energies
         eL = self.nu_L * phys_base.Hz_to_cm / 2.0
-        cener0 = self._ener_eval(psi=psi0, v=v, akx2=akx2, dx=dx, np=self.np, E=numpy.float64(0.0),
-                                 eL=eL, U=self.U, W=self.W,
-                                 delta=self.delta, ntriv=self.ntriv, E_full=numpy.float64(0.0), orig=True)
+        cener0 = self._ener_eval(psi=psi0, dx=dx, np=self.np, E=numpy.float64(0.0),
+                                 eL=eL, E_full=numpy.float64(0.0), orig=True)
 
         # final normalization check
         cnormf = self._norm_eval(psif, dx, self.np)
 
         # calculating of final excited/filtered energy
-        cenerf = self._ener_eval(psi=psif, v=v, akx2=akx2, dx=dx, np=self.np, E=numpy.float64(0.0),
-                                 eL=eL, U=self.U, W=self.W,
-                                 delta=self.delta, ntriv=self.ntriv, E_full=numpy.float64(0.0), orig=True)
+        cenerf = self._ener_eval(psi=psif, dx=dx, np=self.np, E=numpy.float64(0.0),
+                                 eL=eL, E_full=numpy.float64(0.0), orig=True)
 
         # time propagation
         dt = dir.value * t_step
@@ -443,10 +438,11 @@ class PropagationSolver:
         cnorm = []
         if self.hf_hide:
             E_full = self.dyn.E * exp_L * exp_L
-            hpsi = self.hamil2D(psi=self.dyn.psi_omega, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
-                                eL=eL, U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv, E_full=E_full, orig=False)
-            self.dyn.psi_omega = phys_base.prop_cpu(psi=self.dyn.psi_omega, hpsi=hpsi, t_sc=t_sc, nch=self.nch, np=self.np,
-                                                    emin=emin, emax=emax)
+            #hpsi = self.hamil2D(psi=self.dyn.psi_omega, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
+            #                    eL=eL, U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv, E_full=E_full, orig=False)
+            self.dyn.psi_omega = phys_base.prop_cpu(psi=self.dyn.psi_omega, hamil2D=self.hamil2D, t_sc=t_sc,
+                                                    nch=self.nch, np=self.np, emin=emin, emax=emax,
+                                                    E=self.dyn.E, eL=eL, E_full=E_full, orig=False)
 
             cnorm_sum = 0.0
             for n in range(nlvls):
@@ -469,10 +465,10 @@ class PropagationSolver:
 
         else:
             E_full = self.dyn.E
-            hpsi = self.hamil2D(psi=self.dyn.psi_omega, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
-                                eL=eL, U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv, E_full=E_full, orig=False)
-            self.dyn.psi = phys_base.prop_cpu(psi=self.dyn.psi, hpsi=hpsi, t_sc=t_sc, nch=self.nch, np=self.np,
-                                              emin=emin, emax=emax)
+            #hpsi = self.hamil2D(psi=self.dyn.psi, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
+            #                    eL=eL, U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv, E_full=E_full, orig=False)
+            self.dyn.psi = phys_base.prop_cpu(psi=self.dyn.psi, hamil2D=self.hamil2D, t_sc=t_sc, nch=self.nch, np=self.np,
+                                              emin=emin, emax=emax, E=self.dyn.E, eL=eL, E_full=E_full, orig=False)
 
             #print(self.dyn.psi.f)
 
@@ -488,8 +484,7 @@ class PropagationSolver:
                     self.dyn.psi.f[n] /= math.sqrt(abs(cnorm_sum))
 
         # calculating of a current energy
-        cener = self._ener_eval(psi=self.dyn.psi, v=self.stat.v, akx2=self.stat.akx2, dx=self.stat.dx, np=self.np,
-                                E=self.dyn.E, eL=eL, U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv,
+        cener = self._ener_eval(psi=self.dyn.psi, dx=self.stat.dx, np=self.np, E=self.dyn.E, eL=eL,
                                 E_full=E_full, orig=True)
 
         overlp0 = self._pop_eval(self.stat.psi0, self.dyn.psi, self.stat.dx, self.np)
