@@ -1,5 +1,4 @@
 import math
-import time
 from typing import List
 from typing import Dict
 import numpy
@@ -12,6 +11,7 @@ def cprod(cx1, cx2, dx, np):
         cx2 complex vector of length np
         dx coordinate grid step
         np number of grid points
+
         OUTPUT
         cnorm = < cx1 | cx2 > """
 
@@ -28,6 +28,7 @@ def cprod2(cx1, cx, dx, np):
         cx complex vector of length np
         dx coordinate grid step
         np number of grid points
+
         OUTPUT
         cnorm2 = < cx1 | cx | cx1> """
 
@@ -46,6 +47,7 @@ def cprod3(cx1, cx, cx2, dx, np):
         cx2 complex vector of length np
         dx coordinate grid step
         np number of grid points
+
         OUTPUT
         cnorm3 = < cx1 | cx | cx2> """
 
@@ -73,6 +75,7 @@ def initak(n, dx, iorder, ntriv):
                                          with external laser field augmented inside a Jz term
                                    -2 -- a trivial n-level system with angular momentum Hamiltonian and
                                          with external laser field augmented inside a Jx term
+
         OUTPUT
         ak      complex one dimensional array of length n """
 
@@ -117,6 +120,7 @@ def reorder(nch):
     """ Shuffles the order of points in the Chebyshev interpolation scheme
         INPUT
         nch   number of interpolation points (must be a power of 2)
+
         OUTPUT
         jj    integer vector of length nch containing order of interpolation points """
 
@@ -152,6 +156,7 @@ def points(nch, t, func):
         nch   number of interpolation points (must be a power of 2 if reorder is necessary)
         t     scaled time interval (dimensionless)
         func  a function to be approximated by Chebyshev interpolation scheme
+
         OUTPUT
         xp    real vector of length nch defining the positions of the interpolation points				^
         dv    complex vector of length nch defining the divided differences """

@@ -14,12 +14,14 @@ dalt_to_au = numpy.float64(1822.888486) # a.u. / D
 Red_Planck_h = numpy.float64(1.054572e-27) # erg * s
 Hz_to_cm = numpy.float64(3.33564095e-11) # s / cm
 
+
 def diff_cpu(psi, akx2, np):
     """ Calculates kinetic energy mapping carried out in momentum space
         INPUT
         psi   complex vector of length np
         akx2  complex vector of length np, = k^2/2m
         np    number of grid points
+
         OUTPUT
         phi   complex vector of length np describing the mapping
               of kinetic energy phi = P^2/2m psi """
@@ -47,6 +49,7 @@ def hamil_cpu(psi, v, akx2, np, ntriv):
                                          with external laser field augmented inside a Jz term
                                    -2 -- a trivial n-level system with angular momentum Hamiltonian and
                                          with external laser field augmented inside a Jx term
+
         OUTPUT
         phi = H psi list of complex vectors of length np """
 
@@ -65,115 +68,6 @@ def hamil_cpu(psi, v, akx2, np, ntriv):
         phi = numpy.multiply(v, psi)
 
     return phi
-
-
-# def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, orig=False):
-#     """ Calculates two-dimensional Hamiltonian mapping of vector psi
-#         INPUT
-#         psi         list of complex vectors of length np
-#         v           list of potential energy real vectors of length np
-#         akx2        complex kinetic energy vector of length np, = k^2/2m
-#         np          number of grid points
-#         E           a real value of external laser field
-#         eL          a laser field energy shift = h * nu_L / 2.0
-#         E_full      a complex value of external laser field
-#         ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
-#                                         0 -- a trivial 2-level system
-#                                        -1 -- a trivial n-level system with angular momentum Hamiltonian and
-#                                              with external laser field augmented inside a Jz term
-#                                        -2 -- a trivial n-level system with angular momentum Hamiltonian and
-#                                              with external laser field augmented inside a Jx term
-#         orig        a boolean parameter that depends
-#                     if an original form of the Hamiltonian should be used (orig = True) or
-#                     the shifted real version (orig = False -- by default)
-#         U, W, delta parameters of angular momentum-type Hamiltonian
-#
-#         OUTPUT
-#         phi = H psi list of complex vectors of length np """
-#
-#     for i in range(len(psi.f)):
-#         assert psi.f[i].size == np
-#         assert v[i][1].size == np
-#     assert akx2.size == np
-#
-#     phi: Psi = Psi(lvls=len(psi.f))
-#
-#     if ntriv < 0:
-#         nlvls = len(psi.f)
-#         l = (nlvls - 1) / 2.0
-#         H = numpy.zeros((nlvls, nlvls), dtype=numpy.complex128)
-#
-#         if ntriv == -1:
-#             H.itemset((0, 0), 2.0 * l**2 * U + 2.0 * l * E)
-#             for vi in range(1, nlvls):
-#                 Q = 2.0 * (l - vi)**2 * U + 2.0 * (l - vi) * E # U ~ 1 / cm
-#                 P = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-#                 R = -delta * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-#                 H.itemset((vi, vi), Q)
-#                 H.itemset((vi - 1, vi), P)
-#                 H.itemset((vi, vi - 1), R)
-#         elif ntriv == -2:
-#             # H.itemset((0, 0), -2.0 * l * U + 2.0 * l * l * W)
-#             # for vi in range(1, nlvls):
-#             #     Q = -2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
-#             #     P = -delta * E_full * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-#             #     R = -delta * E_full.conjugate() * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-#             #     H.itemset((vi, vi), Q)
-#             #     H.itemset((vi - 1, vi), P)
-#             #     H.itemset((vi, vi - 1), R)
-#
-#             H.itemset((0, 0), 2.0 * l * U + 2.0 * l * l * W)
-#             for vi in range(1, nlvls):
-#                 Q = 2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
-#                 P = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-#                 R = -delta * E * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
-#                 H.itemset((vi, vi), Q)
-#                 H.itemset((vi - 1, vi), P)
-#                 H.itemset((vi, vi - 1), R)
-#
-#         else:
-#             raise RuntimeError("Impossible case in the LfAugType class")
-#
-#         for gl in range(nlvls):
-#             phi_gl = numpy.zeros(np, dtype=numpy.complex128)
-#             for il in range(nlvls):
-#                 H_psi_el_mult = H.item(gl, il) * psi.f[il]
-#                 phi_gl = numpy.add(phi_gl, H_psi_el_mult)
-#             phi.f[gl] = phi_gl
-#     else:
-#         if orig or ntriv == 0:
-#             # without laser field energy shift
-#             # diagonal terms
-#             psieL_l = 0.0
-#             psieL_u = 0.0
-#             # non-diagonal terms
-#             psiE_l = psi.f[0] * E_full.conjugate()
-#             psiE_u = psi.f[1] * E_full
-#         else:
-#             # with laser field energy shift
-#             # diagonal terms
-#             psieL_l = psi.f[0] * eL
-#             psieL_u = psi.f[1] * eL
-#             # non-diagonal terms
-#             psiE_l = psi.f[0] * E
-#             psiE_u = psi.f[1] * E
-#
-#         # diagonal terms
-#         # 1D Hamiltonians mapping for the corresponding states
-#         phi_dl = hamil_cpu(psi.f[0], v[0][1], akx2, np, ntriv)
-#         phi_du = hamil_cpu(psi.f[1], v[1][1], akx2, np, ntriv)
-#
-#         if ntriv == 1:
-#             # diagonal terms
-#             # adding of the laser field energy shift
-#             numpy.add(phi_dl, psieL_l, out=phi_dl)
-#             numpy.subtract(phi_du, psieL_u, out=phi_du)
-#
-#         # adding non-diagonal terms
-#         phi.f[0] = numpy.subtract(phi_dl, psiE_u)
-#         phi.f[1] = numpy.subtract(phi_du, psiE_l)
-#
-#     return phi
 
 
 def residum_cpu(psi: Psi, hamil2D, xp, np, emin, emax, E, eL, E_full, orig):
@@ -198,8 +92,6 @@ def residum_cpu(psi: Psi, hamil2D, xp, np, emin, emax, E, eL, E_full, orig):
 
     for i in range(len(psi.f)):
         assert psi.f[i].size == np
-        #assert v[i][1].size == np
-    #assert akx2.size == np
 
     phi: Psi = Psi(lvls=len(psi.f))
 
@@ -226,6 +118,7 @@ def func(z, t):
         INPUT
         z     real coordinate parameter
         t     real time parameter (dimensionless)
+
         OUTPUT
         func  value of the function (complex)
         func = f (z, t) """
@@ -251,15 +144,12 @@ def prop_cpu(psi: Psi, hamil2D, t_sc, nch, np, emin, emax, E, eL, E_full, orig):
                     if an original form of the Hamiltonian should be used (orig = True) or
                     the shifted real version (orig = False -- by default)
 
-
         OUTPUT
         psi  PsiBasis element describing the propagated wavefunction
              phi(t) = exp(-iHt) psi(0) """
 
     for i in range(len(psi.f)):
         assert psi.f[i].size == np
-        #assert v[i][1].size == np
-    #assert akx2.size == np
 
     # interpolation points and divided difference coefficients
     xp, dv = math_base.points(nch, t_sc, func)
@@ -318,6 +208,7 @@ def exp_vals_calc(psi: Psi, x, akx2, dx, np, m, ntriv):
                                              with external laser field augmented inside a Jz term
                                        -2 -- a trivial n-level system with angular momentum Hamiltonian and
                                              with external laser field augmented inside a Jx term
+
         OUTPUT
         moms  list of complex vectors of length np """
 
@@ -377,6 +268,7 @@ def exp_sigma_vals_calc(psi: Psi, dx, np, ntriv):
                                              with external laser field augmented inside a Jz term
                                        -2 -- a trivial n-level system with angular momentum Hamiltonian and
                                              with external laser field augmented inside a Jx term
+
         OUTPUT
         smoms  list of complex vectors of length np """
 

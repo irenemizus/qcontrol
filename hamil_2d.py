@@ -156,6 +156,36 @@ class _Hamil2D:
 
         return phi
 
+    @staticmethod
+    def qubit(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full, orig):
+        for i in range(len(psi.f)):
+            assert psi.f[i].size == np
+            assert v[i][1].size == np
+        assert akx2.size == np
+
+        phi: Psi = Psi(lvls=len(psi.f))
+        nlvls = len(psi.f)
+        l = (nlvls - 1) / 2.0
+        H = numpy.zeros((nlvls, nlvls), dtype=numpy.complex128)
+
+        H.itemset((0, 0), -2.0 * l * U + 2.0 * l * l * W)
+        for vi in range(1, nlvls):
+            Q = -2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
+            P = -delta * E_full * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+            R = -delta * E_full.conjugate() * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+            H.itemset((vi, vi), Q)
+            H.itemset((vi - 1, vi), P)
+            H.itemset((vi, vi - 1), R)
+
+        for gl in range(nlvls):
+            phi_gl = numpy.zeros(np, dtype=numpy.complex128)
+            for il in range(nlvls):
+                H_psi_el_mult = H.item(gl, il) * psi.f[il]
+                phi_gl = numpy.add(phi_gl, H_psi_el_mult)
+            phi.f[gl] = phi_gl
+
+        return phi
+
 
 class Hamil2D:
     def __init__(self, v, akx2, np, U, W, delta, ntriv):
@@ -186,3 +216,9 @@ class Hamil2DBHX(Hamil2D):
 class Hamil2DTwoLevels(Hamil2D):
     def __call__(self, orig: bool, psi, E, eL, E_full):
         return _Hamil2D.two_levels(psi, self._v, self._akx2, self._np, E, eL, self._U, self._W, self._delta, self._ntriv, E_full, orig)
+
+class Hamil2DQubit(Hamil2D):
+    def __call__(self, orig: bool, psi, E, eL, E_full):
+        return _Hamil2D.qubit(psi, self._v, self._akx2, self._np, E, eL, self._U, self._W, self._delta,
+                              self._ntriv, E_full, orig)
+

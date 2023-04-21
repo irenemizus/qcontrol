@@ -660,7 +660,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
         super().__init__(conf_task)
 
     @staticmethod
-    def _pot(x, np, m, De, a, x0p, De_e, a_e, Du):
+    def _pot(x, np, m, De, a, x0p, De_e, a_e, Du, ntriv, conf_task):
         # Lower morse potential
         v = MorseSingleStateTaskManager._pot_level1(x, m, De, a)
 
@@ -687,7 +687,7 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
             OUTPUT
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
 
-        return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du)
+        return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du, self.ntriv, self.conf_task)
 
     def psi_goal(self, x, np, x0, p0, x0p, m, De, De_e, Du, a, a_e, L, nb, nlevs) -> PsiBasis:
         psi_goal_obj = PsiBasis(nb)
@@ -750,15 +750,76 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             phi = self._matrix_PsiBasis_mult(F, psi, nb, np)
         elif nb == 1 and nlevs == 2:
             phi = PsiBasis(nb)
-            # phi.psis[0].f[0] = _PsiFunctions.zero(np)
-            # phi.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
-
             phi.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
             phi.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
         else:
             raise RuntimeError("Impossible Task Type")
 
         return phi
+
+    @staticmethod
+    def _pot(x, np, m, De, a, x0p, De_e, a_e, Du, ntriv, conf_task):
+        """ Potential energy vectors
+            INPUT
+            x           vector of length np defining positions of grid points
+            np          number of grid points (dummy variable)
+            a           scaling factor of the ground state
+            De          dissociation energy of the ground state
+            m           reduced mass of the system
+            x0p         partial shift value of the upper potential corresponding to the ground one
+            De_e        dissociation energy of the excited state
+            a_e         scaling factor of the excited state
+            Du          energy shift between the minima of the potentials
+            ntriv       constant parameter; 1 -- an ordinary non-trivial diatomic-like system
+                                            0 -- a trivial 2-level system
+                                           -1 -- a trivial n-level system with angular momentum Hamiltonian and
+                                                 with external laser field augmented inside a Jz term
+                                           -2 -- a trivial n-level system with angular momentum Hamiltonian and
+                                                 with external laser field augmented inside a Jx term
+            conf_task   json task configuration
+
+            OUTPUT
+            v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
+
+        v = []
+
+        if not ntriv:
+            # Lower potential
+            D_l = -Du / 2.0
+            v_l = numpy.array([D_l] * np)
+            v.append((D_l, v_l))
+
+            # Upper potential
+            D_u = Du + D_l
+            v_u = numpy.array([D_u] * np)
+            v.append((D_u, v_u))
+
+        elif ntriv < 0:
+            U = conf_task.fitter.propagation.U # U ~ 1 / cm
+            W = conf_task.fitter.propagation.W  # W ~ 1 / cm
+            Emax = conf_task.fitter.propagation.E0 * conf_task.fitter.Em
+            l = (conf_task.fitter.nlevs - 1) / 2.0
+
+            # Maximum and minimum energies achieved during the calculation
+            if ntriv == -1:
+                vmax = 2.0 * U * l**2 + 2.0 * Emax * l
+                vmin = -2.0 * Emax * l
+            elif ntriv == -2:
+                vmax = 2.0 * l * (U + W * l)
+                if W != 0.0 and conf_task.fitter.nlevs >= U / W + 1:
+                    vmin = -U * U / W / 2.0
+                else:
+                    vmin = 2.0 * l * (-U + W * l)
+            else:
+                raise RuntimeError("Impossible case in the LfAugType class")
+
+            for n in range(conf_task.fitter.nlevs):
+                vmax_list = numpy.array([vmax] * np)
+                v.append((vmin, vmax_list))
+        else:
+            raise RuntimeError("Unsupported type of potential!")
+
+        return v
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
         """ Potential energy vectors
@@ -776,45 +837,7 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             OUTPUT
             v       a list of real vectors of length np describing the potentials V_u(X) and V_l(X) """
 
-        v = []
-
-        if not self.ntriv:
-            # Lower potential
-            D_l = -Du / 2.0
-            v_l = numpy.array([D_l] * np)
-            v.append((D_l, v_l))
-
-            # Upper potential
-            D_u = Du + D_l
-            v_u = numpy.array([D_u] * np)
-            v.append((D_u, v_u))
-
-        elif self.ntriv < 0:
-            U = self.conf_task.fitter.propagation.U # U ~ 1 / cm
-            W = self.conf_task.fitter.propagation.W  # W ~ 1 / cm
-            Emax = self.conf_task.fitter.propagation.E0 * self.conf_task.fitter.Em
-            l = (self.conf_task.fitter.nlevs - 1) / 2.0
-
-            # Maximum and minimum energies achieved during the calculation
-            if self.ntriv == -1:
-                vmax = 2.0 * U * l**2 + 2.0 * Emax * l
-                vmin = -2.0 * Emax * l
-            elif self.ntriv == -2:
-                vmax = 2.0 * l * (U + W * l)
-                if W != 0.0 and self.conf_task.fitter.nlevs >= U / W + 1:
-                    vmin = -U * U / W / 2.0
-                else:
-                    vmin = 2.0 * l * (-U + W * l)
-            else:
-                raise RuntimeError("Impossible case in the LfAugType class")
-
-            for n in range(self.conf_task.fitter.nlevs):
-                vmax_list = numpy.array([vmax] * np)
-                v.append((vmin, vmax_list))
-        else:
-            raise RuntimeError("Unsupported type of potential!")
-
-        return v
+        return self._pot(x, np, m, De, a, x0p, De_e, a_e, Du, self.ntriv, self.conf_task)
 
 
 def create(conf_task: TaskRootConfiguration):

@@ -33,3 +33,6 @@ from test_data import prop_opt_ctrl_ut_HB_2lvls_Jx
 from test_data import fit_iter_opt_ctrl_ut_HB_s2s_Jx
 from test_data import fitter_opt_ctrl_ut_HB_s2s_Jx
 from test_data import prop_opt_ctrl_ut_HB_s2s_Jx
+from test_data import fit_iter_pi_pulse
+from test_data import fitter_pi_pulse
+from test_data import prop_pi_pulse
