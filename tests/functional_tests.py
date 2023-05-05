@@ -21,60 +21,10 @@ class fitter_Tests(unittest.TestCase):
         conf = TaskRootConfiguration()
         conf.load(user_conf)
         print(conf)
-        conf_prop = conf.fitter.propagation
 
         task_manager_imp = task_manager.create(conf)
 
-        # setup of the grid
-        grid = grid_setup.GridConstructor(conf_prop)
-        dx, x = grid.grid_setup()
-
-        # setup of the time grid
-        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_task=conf)
-        t_step, t_list = forw_time_grid.grid_setup()
-
-        # evaluating of initial wavefunction
-        psi0 = task_manager_imp.psi_init(x, conf_prop.np, conf_prop.x0,
-                                         conf_prop.p0, conf_prop.x0p,
-                                         conf_prop.m, conf_prop.De,
-                                         conf_prop.De_e, conf_prop.Du,
-                                         conf_prop.a, conf_prop.a_e,
-                                         conf_prop.L, conf.fitter.nb, conf.fitter.nlevs)
-
-        # evaluating of the final goal
-        psif = task_manager_imp.psi_goal(x, conf_prop.np, conf_prop.x0,
-                                         conf_prop.p0, conf_prop.x0p,
-                                         conf_prop.m, conf_prop.De,
-                                         conf_prop.De_e, conf_prop.Du,
-                                         conf_prop.a, conf_prop.a_e,
-                                         conf_prop.L, conf.fitter.nb, conf.fitter.nlevs)
-
-        # evaluating of potential(s)
-        v = task_manager_imp.pot(x, conf_prop.np, conf_prop.m,
-                                 conf_prop.De, conf_prop.a,
-                                 conf_prop.x0p, conf_prop.De_e,
-                                 conf_prop.a_e, conf_prop.Du)
-
-        # evaluating of k vector
-        akx2 = math_base.initak(conf_prop.np, dx, 2, task_manager_imp.ntriv)
-
-        # evaluating of kinetic energy
-        akx2 *= -phys_base.hart_to_cm / (2.0 * conf_prop.m * phys_base.dalt_to_au)
-
-        # checking of triviality of the system
-        ntriv = task_manager_imp.ntriv
-
-        # Hamiltonian for the current task
-        hamil2D = task_manager_imp.hamil_impl(v, akx2, conf_prop.np,
-                                              conf_prop.U, conf_prop.W,
-                                              conf_prop.delta, ntriv)
-
-        # initial propagation direction
-        init_dir = task_manager_imp.init_dir
-        # number of levels
-        nlevs = len(psi0.psis[0].f)
-
-        return conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D
+        return conf, task_manager_imp
 
     @staticmethod
     def _pi_pulse_test_setup(user_conf):
@@ -174,22 +124,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -256,22 +210,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -336,22 +294,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -420,22 +382,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -504,22 +470,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -591,22 +561,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -678,22 +652,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -766,22 +744,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = 0
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -857,22 +839,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = -1
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -949,22 +935,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = -1
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -1042,22 +1032,26 @@ class fitter_Tests(unittest.TestCase):
         imod_fileout = 1
         imin = -1
 
-        conf, task_manager_imp, dx, x, t_step, t_list, init_dir, ntriv, nlevs, psi0, psif, v, akx2, hamil2D = self._test_setup(user_conf)
+        conf, task_manager_imp = self._test_setup(user_conf)
+        # number of levels
+        nlevs = len(task_manager_imp.psi0.psis[0].f)
 
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
         fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
-                                              init_dir, ntriv, psi0, psif, v, akx2,
+                                              task_manager_imp.init_dir, task_manager_imp.ntriv,
+                                              task_manager_imp.psi0, task_manager_imp.psif,
+                                              task_manager_imp.v, task_manager_imp.akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,
                                               task_manager_imp.laser_field_hf,
                                               task_manager_imp.F_type,
                                               task_manager_imp.aF_type,
-                                              hamil2D, fit_reporter_imp,
+                                              task_manager_imp.hamil2D, fit_reporter_imp,
                                               None, None)
 
-        fitting_solver.time_propagation(dx, x, t_step, t_list)
+        fitting_solver.time_propagation(task_manager_imp.dx, task_manager_imp.x, task_manager_imp.t_step, task_manager_imp.t_list)
         fit_reporter_imp.close()
 
         prop_reporter = fit_reporter_imp.prop_reporters[PATH_REP]
@@ -1094,6 +1088,7 @@ class fitter_Tests(unittest.TestCase):
             "task_type": "trans_wo_control",
             "pot_type": "none",
             "wf_type": "const",
+            "hamil_type": "BH_model",
             "T": 555.9416E-15,
             "fitter": {
                 "epsilon": 1e-5,

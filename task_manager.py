@@ -4,8 +4,10 @@ import math
 import numpy
 from numpy.typing import NDArray
 
+import grid_setup
 import hamil_2d
 import math_base
+import phys_base
 from config import TaskRootConfiguration
 from propagation import PropagationSolver
 from psi_basis import PsiBasis
@@ -457,7 +459,57 @@ class TaskManager:
         print(f"Number of %d-level basis vectors 'nb' = %d is used" % (conf_task.fitter.nlevs, conf_task.fitter.nb))
 
         self.conf_task = conf_task
+
+        # initial propagation direction
         self.init_dir = PropagationSolver.Direction.FORWARD
+
+        # setup of the grid
+        grid = grid_setup.GridConstructor(conf_task.fitter.propagation)
+        self.dx, self.x = grid.grid_setup()
+
+        # evaluating of initial wavefunction (of type PsiBasis)
+        self.psi0 = self.psi_init(self.x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
+                                         conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
+                                         conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
+                                         conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
+                                         conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
+                                         conf_task.fitter.propagation.L, conf_task.fitter.nb, conf_task.fitter.nlevs)
+
+        # evaluating of the final goal (of type PsiBasis)
+        self.psif = self.psi_goal(self.x, conf_task.fitter.propagation.np, conf_task.fitter.propagation.x0,
+                                         conf_task.fitter.propagation.p0, conf_task.fitter.propagation.x0p,
+                                         conf_task.fitter.propagation.m, conf_task.fitter.propagation.De,
+                                         conf_task.fitter.propagation.De_e, conf_task.fitter.propagation.Du,
+                                         conf_task.fitter.propagation.a, conf_task.fitter.propagation.a_e,
+                                         conf_task.fitter.propagation.L, conf_task.fitter.nb, conf_task.fitter.nlevs)
+
+        # setup of the time grid
+        forw_time_grid = grid_setup.ForwardTimeGridConstructor(conf_task=conf_task)
+        self.t_step, self.t_list = forw_time_grid.grid_setup()
+
+        # evaluating of potential(s)
+        self.v = self.pot(self.x, conf_task.fitter.propagation.np,
+                                 conf_task.fitter.propagation.m,
+                                 conf_task.fitter.propagation.De,
+                                 conf_task.fitter.propagation.a,
+                                 conf_task.fitter.propagation.x0p,
+                                 conf_task.fitter.propagation.De_e,
+                                 conf_task.fitter.propagation.a_e,
+                                 conf_task.fitter.propagation.Du)
+
+        # evaluating of k vector
+        self.akx2 = math_base.initak(conf_task.fitter.propagation.np, self.dx, 2, self.ntriv)
+
+        # evaluating of kinetic energy
+        self.akx2 *= -phys_base.hart_to_cm / (2.0 * conf_task.fitter.propagation.m * phys_base.dalt_to_au)
+
+        # Hamiltonian for the current task
+        self.hamil2D = self.hamil_impl(self.v, self.akx2, conf_task.fitter.propagation.np,
+                                              conf_task.fitter.propagation.U,
+                                              conf_task.fitter.propagation.W,
+                                              conf_task.fitter.propagation.delta,
+                                              self.ntriv
+                                              )
 
         if self.conf_task.fitter.propagation.nu_L_auto:
             self.nu = numpy.float64(1.0 / 2.0 / self.conf_task.T)
