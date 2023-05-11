@@ -87,14 +87,52 @@ class TaskRootConfiguration(ConfigurationBase):
         self._data["pot_type"] = TaskRootConfiguration.PotentialType.MORSE
         self._data["wf_type"] = TaskRootConfiguration.WaveFuncType.MORSE
         self._data["hamil_type"] = TaskRootConfiguration.HamilType.NTRIV
+        self._data["lf_aug_type"] = TaskRootConfiguration.FitterConfiguration.LfAugType.Z
+        self._data["init_guess"] = TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO
+        self._data["init_guess_hf"] = TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP
         self._data["fitter"] = TaskRootConfiguration.FitterConfiguration()
         self._data["run_id"] = "no_id"
+
+        self._data["nb"] = 1
+        self._data["nlevs"] = 2
 
         self._data["T"] = 600e-15  # s
         # 1200 fs -- for two laser pulses;
         # 280 (600) fs -- for the working transition between PECs and LC;
         # 2240 fs -- for filtering on the ground PEC (99.16% quality)
         # 0.1 pi (half period units) -- for a model harmonic oscillator
+        self._data["L"] = 5.0  # a_0
+        # 5.0 a_0 -- for the working transition between PECs and controls;
+        # 0.2 -- for a model harmonic oscillator with a = 1.0;
+        # 4.0 a_0 -- for morse oscillator;
+        # 10.0 a_0 -- for dimensional harmonic oscillator
+        self._data["np"] = 1024
+        # 1024 -- for the working transition between PECs and controls;
+        # 128 -- for a model harmonic oscillator with a = 1.0;
+        # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality);
+        # 512 -- for dimensional harmonic oscillator
+
+        # parameters of the potentials
+        self._data["De"] = 20000.0  # 1/cm
+        self._data["De_e"] = 10000.0  # 1/cm
+        self._data["Du"] = 20000.0  # 1/cm
+        self._data["x0p"] = -0.17  # a_0
+
+        # parameters of the wavefunctions
+        self._data["x0"] = 0.0  # TODO: to fix x0 != 0
+        self._data["p0"] = 0.0  # TODO: to fix p0 != 0
+        self._data["a"] = 1.0  # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
+        self._data["a_e"] = 1.0  # 1/a_0
+
+        # parameters of the Hamiltonian
+        self._data["U"] = 0.0  # 1 / cm
+        self._data["W"] = 0.0  # 1 / cm
+        self._data["delta"] = 1.0  # 1 / cm
+
+        self._data["t0_auto"] = False
+        self._data["nt_auto"] = False
+        self._data["sigma_auto"] = False
+        self._data["nu_L_auto"] = False
 
         self._float64ify_data()
 
@@ -162,44 +200,19 @@ class TaskRootConfiguration(ConfigurationBase):
                 # default input values
                 self._data["m"] = 0.5   # Dalton
                 # 1.0 -- for a model harmonic oscillator
-                self._data["U"] = 0.0 # 1 / cm
-                self._data["W"] = 0.0  # 1 / cm
-                self._data["delta"] = 1.0 # 1 / cm
-                self._data["a"] = 1.0   # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
-                self._data["De"] = 20000.0  # 1/cm
-                self._data["x0p"] = -0.17   # a_0
-                self._data["a_e"] = 1.0 # 1/a_0
-                self._data["De_e"] = 10000.0 # 1/cm
-                self._data["Du"] = 20000.0 # 1/cm
-                self._data["x0"] = 0.0  # TODO: to fix x0 != 0
-                self._data["p0"] = 0.0  # TODO: to fix p0 != 0
-                self._data["L"] = 5.0   # a_0
-                # 5.0 a_0 -- for the working transition between PECs and controls;
-                # 0.2 -- for a model harmonic oscillator with a = 1.0;
-                # 4.0 a_0 -- for morse oscillator;
-                # 10.0 a_0 -- for dimensional harmonic oscillator
-                self._data["np"] = 1024
-                # 1024 -- for the working transition between PECs and controls;
-                # 128 -- for a model harmonic oscillator with a = 1.0;
-                # 2048 -- for morse oscillator and filtering on the ground PEC (99.16% quality);
-                # 512 -- for dimensional harmonic oscillator
                 self._data["nch"] = 64
                 self._data["nt"] = 420000
                 # 840000 -- for two laser pulses;
                 # 200000 (420000) -- for the working transition between PECs and LC;
                 # 900000 -- for filtering on the ground PEC (99.16% quality)
-                self._data["nt_auto"] = False
                 self._data["E0"] = 71.54    # 1/cm
                 self._data["t0"] = 300e-15  # s
-                self._data["t0_auto"] = False
                 self._data["sigma"] = 50e-15    # s
-                self._data["sigma_auto"] = False
                 self._data["nu_L"] = 0.29297e15 # Hz
                 # 0.29297e15 -- for the working transition between PECs;
                 # 0.5879558e15 -- analytical difference b/w excited and ground energies;
                 # 0.5859603e15 -- calculated difference b/w excited and ground energies !!;
                 # 0.599586e15 = 20000 1/cm
-                self._data["nu_L_auto"] = False
 
                 self._float64ify_data()
 
@@ -273,13 +286,10 @@ class TaskRootConfiguration(ConfigurationBase):
         def __init__(self):
             super().__init__(key_prefix="")
             # default input values
-            self._data["init_guess"] = TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO
-            self._data["init_guess_hf"] = TaskRootConfiguration.FitterConfiguration.InitGuessHf.EXP
             self._data["F_type"] = TaskRootConfiguration.FitterConfiguration.FType.SM
             self._data["w_list"] = []
             self._data["w_min"] = -2.0
             self._data["w_max"] = 2.0
-            self._data["lf_aug_type"] = TaskRootConfiguration.FitterConfiguration.LfAugType.Z
             self._data["propagation"] = TaskRootConfiguration.FitterConfiguration.PropagationConfiguration()
             self._data["k_E"] = 1e29    # 1 / (s*s)
             self._data["lamb"] = 4e14 # 1 / s
@@ -294,8 +304,6 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["q"] = 0.0
             self._data["h_lambda"] = 0.0066
             self._data["h_lambda_mode"] = TaskRootConfiguration.FitterConfiguration.HlambdaModeType.CONST
-            self._data["nb"] = 1
-            self._data["nlevs"] = 2
             self._data["pcos"] = 1.0
             self._data["hf_hide"] = True
             self._data["Em"] = 1.5

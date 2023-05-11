@@ -1,6 +1,6 @@
 {
   "fitter": {
-    "out_path": "../output_s2s_tst",
+    "out_path": "../output_tst",
     "plotting_flag": "tables_iter",
 
     "table.imin": -1,

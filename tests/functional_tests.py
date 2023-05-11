@@ -36,7 +36,7 @@ class fitter_Tests(unittest.TestCase):
         task_manager_imp = task_manager.create(conf)
 
         # setup of the grid
-        grid = grid_setup.GridConstructor(conf_prop)
+        grid = grid_setup.GridConstructor(conf)
         dx, x = grid.grid_setup()
 
         # setup of the time grid
@@ -45,44 +45,30 @@ class fitter_Tests(unittest.TestCase):
 
         psi0 = PsiBasis(1)
         # evaluating of initial wavefunction
-        psi0.psis[0].f[0] = task_manager._PsiFunctions.one(x,
-                                             conf_prop.np,
-                                             conf_prop.x0,
-                                             conf_prop.p0,
-                                             conf_prop.m,
-                                             conf_prop.De,
-                                             conf_prop.a,
-                                             conf_prop.L)
-        psi0.psis[0].f[1] = task_manager._PsiFunctions.zero(conf_prop.np)
+        psi0.psis[0].f[0] = task_manager._PsiFunctions.one(x, conf.np, conf.x0, conf.p0, conf_prop.m,
+                                             conf.De, conf.a, conf.L)
+        psi0.psis[0].f[1] = task_manager._PsiFunctions.zero(conf.np)
 
         psif = PsiBasis(1)
         # evaluating of the final goal
-        psif.psis[0].f[0] = task_manager._PsiFunctions.zero(conf_prop.np)
-        psif.psis[0].f[1] = task_manager._PsiFunctions.one(x,
-                                              conf_prop.np,
-                                              conf_prop.x0p + conf_prop.x0,
-                                              conf_prop.p0,
-                                              conf_prop.m,
-                                              conf_prop.De_e,
-                                              conf_prop.a_e,
-                                              conf_prop.L)
+        psif.psis[0].f[0] = task_manager._PsiFunctions.zero(conf.np)
+        psif.psis[0].f[1] = task_manager._PsiFunctions.one(x, conf.np, conf.x0p + conf.x0, conf.p0,
+                                              conf_prop.m, conf.De_e, conf.a_e, conf.L)
 
         # evaluating of potential(s)
-        v = task_manager.MultipleStateUnitTransformTaskManager._pot(x, conf_prop.np, conf_prop.m,
-                                                            conf_prop.De, conf_prop.a,
-                                                            conf_prop.x0p, conf_prop.De_e,
-                                                            conf_prop.a_e, conf_prop.Du, -2, conf)
+        v = task_manager.MultipleStateUnitTransformTaskManager._pot(x, conf.np, conf_prop.m,
+                                                            conf.De, conf.a, conf.x0p, conf.De_e,
+                                                            conf.a_e, conf.Du, -2, conf)
 
         # evaluating of k vector
-        akx2 = math_base.initak(conf_prop.np, dx, 2, -2)
+        akx2 = math_base.initak(conf.np, dx, 2, -2)
 
         # evaluating of kinetic energy
         akx2 *= -phys_base.hart_to_cm / (2.0 * conf_prop.m * phys_base.dalt_to_au)
 
         # Hamiltonian for the current task
-        hamil2D = hamil_2d.Hamil2DQubit(v, akx2, conf_prop.np,
-                                             conf_prop.U, conf_prop.W,
-                                             conf_prop.delta, -2)
+        hamil2D = hamil_2d.Hamil2DQubit(v, akx2, conf.np, conf.U, conf.W, conf.delta, -2)
+
         # number of levels
         nlevs = len(psi0.psis[0].f)
 
@@ -94,23 +80,23 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "harmonic",
             "wf_type": "harmonic",
             "hamil_type": "ntriv",
+            "init_guess": "zero",
+            "nb": 1,
+            "nlevs": 2,
             "T": 280e-15,
+            "L": 10.0,
+            "np": 512,
+            "a": 1.0,
+            "x0p": 0.0,
+            "a_e": 0.0,
+            "De_e": 0.0,
+            "Du": 0.0,
+            "x0": 1.0,
+            "p0": 0.0,
             "fitter": {
                 "impulses_number": 0,
-                "init_guess": "zero",
-                "nb": 1,
-                "nlevs": 2,
                 "propagation": {
                   "m": 0.5,
-                  "a": 1.0,
-                  "x0p": 0.0,
-                  "a_e": 0.0,
-                  "De_e": 0.0,
-                  "Du": 0.0,
-                  "x0": 1.0,
-                  "p0": 0.0,
-                  "L": 10.0,
-                  "np": 512,
                   "nch": 64,
                   "nt": 200000,
                   "E0": 0.0,
@@ -131,7 +117,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -179,24 +165,24 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "morse",
             "wf_type": "morse",
             "hamil_type": "ntriv",
+            "init_guess": "zero",
+            "nb": 1,
+            "nlevs": 2,
             "T": 280e-16,
+            "L": 4.0,
+            "np": 2048,
+            "a": 1.0,
+            "De": 20000.0,
+            "x0p": 0.0,
+            "a_e": 0.0,
+            "De_e": 0.0,
+            "Du": 0.0,
+            "x0": 0.0,
+            "p0": 0.0,
             "fitter": {
                 "impulses_number": 0,
-                "init_guess": "zero",
-                "nb": 1,
-                "nlevs": 2,
                 "propagation": {
                   "m": 0.5,
-                  "a": 1.0,
-                  "De": 20000.0,
-                  "x0p": 0.0,
-                  "a_e": 0.0,
-                  "De_e": 0.0,
-                  "Du": 0.0,
-                  "x0": 0.0,
-                  "p0": 0.0,
-                  "L": 4.0,
-                  "np": 2048,
                   "nch": 64,
                   "nt": 20000,
                   "E0": 0.0,
@@ -217,7 +203,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -265,22 +251,22 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "morse",
             "wf_type": "harmonic",
             "hamil_type": "ntriv",
+            "init_guess": "zero",
+            "nb": 1,
+            "nlevs": 2,
             "T": 1980e-15,
+            "L": 5.0,
+            "np": 2048,
+            "a": 1.0,
+            "De": 20000.0,
+            "x0p": 0.0,
+            "a_e": 0.0,
+            "De_e": 0.0,
+            "Du": 0.0,
             "fitter": {
                 "impulses_number": 0,
-                "init_guess": "zero",
-                "nb": 1,
-                "nlevs": 2,
                 "propagation": {
                     "m": 0.5,
-                    "a": 1.0,
-                    "De": 20000.0,
-                    "x0p": 0.0,
-                    "a_e": 0.0,
-                    "De_e": 0.0,
-                    "Du": 0.0,
-                    "L": 5.0,
-                    "np": 2048,
                     "nch": 64,
                     "nt": 800000,
                     "E0": 0.0,
@@ -301,7 +287,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -350,23 +336,23 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "morse",
             "wf_type": "morse",
             "hamil_type": "ntriv",
+            "init_guess": "gauss",
+            "init_guess_hf": "exp",
+            "nb": 1,
+            "nlevs": 2,
             "T": 330e-15,
+            "L": 5.0,
+            "np": 1024,
+            "a": 1.0,
+            "De": 20000.0,
+            "x0p": -0.17,
+            "a_e": 1.0,
+            "De_e": 10000.0,
+            "Du": 20000.0,
             "fitter": {
                 "impulses_number": 1,
-                "init_guess": "gauss",
-                "init_guess_hf": "exp",
-                "nb": 1,
-                "nlevs": 2,
                 "propagation": {
                     "m": 0.5,
-                    "a": 1.0,
-                    "De": 20000.0,
-                    "x0p": -0.17,
-                    "a_e": 1.0,
-                    "De_e": 10000.0,
-                    "Du": 20000.0,
-                    "L": 5.0,
-                    "np": 1024,
                     "nch": 64,
                     "nt": 230000,
                     "E0": 71.54,
@@ -389,7 +375,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -437,24 +423,24 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "morse",
             "wf_type": "morse",
             "hamil_type": "ntriv",
+            "init_guess": "gauss",
+            "init_guess_hf": "exp",
+            "nb": 1,
+            "nlevs": 2,
             "T": 700e-15,
+            "L": 5.0,
+            "np": 1024,
+            "a": 1.0,
+            "De": 20000.0,
+            "x0p": -0.17,
+            "a_e": 1.0,
+            "De_e": 10000.0,
+            "Du": 20000.0,
             "fitter": {
                 "impulses_number": 2,
                 "delay": 300e-15,
-                "init_guess": "gauss",
-                "init_guess_hf": "exp",
-                "nb": 1,
-                "nlevs": 2,
                 "propagation": {
                     "m": 0.5,
-                    "a": 1.0,
-                    "De": 20000.0,
-                    "x0p": -0.17,
-                    "a_e": 1.0,
-                    "De_e": 10000.0,
-                    "Du": 20000.0,
-                    "L": 5.0,
-                    "np": 1024,
                     "nch": 64,
                     "nt": 490000,
                     "E0": 71.54,
@@ -477,7 +463,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -525,27 +511,27 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "morse",
             "wf_type": "morse",
             "hamil_type": "ntriv",
+            "init_guess": "gauss",
+            "init_guess_hf": "exp",
+            "nb": 1,
+            "nlevs": 2,
             "T": 400e-15,
+            "L": 5.0,
+            "np": 1024,
+            "a": 1.0,
+            "De": 20000.0,
+            "x0p": -0.17,
+            "a_e": 1.0,
+            "De_e": 10000.0,
+            "Du": 20000.0,
             "fitter": {
                 "k_E": 1e29,
                 "lamb": 4e14,
                 "pow": 0.8,
                 "epsilon": 1e-15,
                 "impulses_number": 1,
-                "init_guess": "gauss",
-                "init_guess_hf": "exp",
-                "nb": 1,
-                "nlevs": 2,
                 "propagation": {
                     "m": 0.5,
-                    "a": 1.0,
-                    "De": 20000.0,
-                    "x0p": -0.17,
-                    "a_e": 1.0,
-                    "De_e": 10000.0,
-                    "Du": 20000.0,
-                    "L": 5.0,
-                    "np": 1024,
                     "nch": 64,
                     "nt": 280000,
                     "E0": 71.54,
@@ -568,7 +554,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -616,27 +602,27 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "morse",
             "wf_type": "morse",
             "hamil_type": "ntriv",
+            "init_guess": "gauss",
+            "init_guess_hf": "exp",
+            "nb": 1,
+            "nlevs": 2,
             "T": 450e-15,
+            "L": 5.0,
+            "np": 1024,
+            "a": 1.0,
+            "De": 20000.0,
+            "x0p": -0.17,
+            "a_e": 1.0,
+            "De_e": 10000.0,
+            "Du": 20000.0,
             "fitter": {
                 "k_E": 1e29,
                 "lamb": 8e14,
                 "pow": 0.65,
                 "epsilon": 1e-15,
                 "impulses_number": 1,
-                "init_guess": "gauss",
-                "init_guess_hf": "exp",
-                "nb": 1,
-                "nlevs": 2,
                 "propagation": {
                     "m": 0.5,
-                    "a": 1.0,
-                    "De": 20000.0,
-                    "x0p": -0.17,
-                    "a_e": 1.0,
-                    "De_e": 10000.0,
-                    "Du": 20000.0,
-                    "L": 5.0,
-                    "np": 1024,
                     "nch": 64,
                     "nt": 315000,
                     "E0": 71.54,
@@ -659,7 +645,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -709,26 +695,26 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "morse",
             "wf_type": "morse",
             "hamil_type": "ntriv",
+            "init_guess": "gauss",
+            "init_guess_hf": "exp",
+            "nb": 1,
+            "nlevs": 2,
             "T": 350e-15,
+            "L": 5.0,
+            "np": 1024,
+            "a": 1.0,
+            "De": 20000.0,
+            "x0p": -0.17,
+            "a_e": 1.0,
+            "De_e": 10000.0,
+            "Du": 20000.0,
             "fitter": {
                 "epsilon": 1e-8,
                 "impulses_number": 1,
                 "iter_max": 1,
                 "h_lambda": 0.0066,
-                "init_guess": "gauss",
-                "init_guess_hf": "exp",
-                "nb": 1,
-                "nlevs": 2,
                 "propagation": {
                     "m": 0.5,
-                    "a": 1.0,
-                    "De": 20000.0,
-                    "x0p": -0.17,
-                    "a_e": 1.0,
-                    "De_e": 10000.0,
-                    "Du": 20000.0,
-                    "L": 5.0,
-                    "np": 1024,
                     "nch": 64,
                     "nt": 230000,
                     "E0": 71.54,
@@ -751,7 +737,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -801,29 +787,29 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "none",
             "wf_type": "const",
             "hamil_type": "BH_model",
+            "lf_aug_type": "z",
+            "init_guess": "sqrsin",
+            "init_guess_hf": "cos_set",
+            "nb": 2,
+            "nlevs": 2,
             "T": 3.306555E-13,
+            "np": 1,
+            "L": 1.0,
+            "Du": 1.0,
+            "U": 5.0,
+            "delta": 25.0,
             "fitter": {
                 "epsilon": 1e-8,
                 "impulses_number": 1,
-                "nb": 2,
-                "nlevs": 2,
                 "iter_max": 50,
                 "h_lambda": 0.005,
-                "init_guess": "sqrsin",
-                "init_guess_hf": "cos_set",
                 "hf_hide": False,
                 "w_list": [
                     0.88, 0.34, 0.92, 0.27, 0.39, 0.82, 0.68
                 ],
-                "lf_aug_type": "z",
                 "pcos": 4.0,
                 "Em": 5.0,
                 "propagation": {
-                    "U": 5.0,
-                    "delta": 25.0,
-                    "Du": 1.0,
-                    "np": 1,
-                    "L": 1.0,
                     "nch": 8,
                     "t0": 0.0,
                     "E0": 40.0,
@@ -846,7 +832,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -896,36 +882,36 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "none",
             "wf_type": "const",
             "hamil_type": "BH_model",
+            "lf_aug_type": "x",
+            "init_guess": "sqrsin",
+            "init_guess_hf": "sin_set",
+            "nb": 2,
             "T": 5.4E-13,
+            "np": 1,
+            "L": 1.0,
+            "Du": 1.0,
+            "U": 30.0,
+            "W": 30.0,
+            "delta": 15.0,
+            "sigma_auto": True,
+            "nu_L_auto": True,
             "fitter": {
                 "epsilon": 1e-5,
                 "impulses_number": 1,
-                "nb": 2,
                 "iter_max": 3,
                 "iter_mid_1": 250,
                 "iter_mid_2": 300,
                 "q": 0.75,
                 "h_lambda": 0.00005,
                 "h_lambda_mode": "dynamical",
-                "init_guess": "sqrsin",
-                "init_guess_hf": "sin_set",
-                "lf_aug_type": "x",
                 "pcos": 2.0,
                 "hf_hide": False,
                 "w_list": [1.5, -1.0, 0.7999999999999998],
                 "propagation": {
-                    "U": 30.0,
-                    "W": 30.0,
-                    "delta": 15.0,
-                    "Du": 1.0,
-                    "np": 1,
-                    "L": 1.0,
                     "nch": 8,
                     "t0": 0.0,
                     "E0": 40.0,
-                    "nt": 3500,
-                    "sigma_auto": True,
-                    "nu_L_auto": True
+                    "nt": 3500
                 },
                 "mod_log": 500
             }
@@ -942,7 +928,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -992,37 +978,37 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "none",
             "wf_type": "const",
             "hamil_type": "BH_model",
+            "lf_aug_type": "x",
+            "init_guess": "gauss",
+            "init_guess_hf": "exp",
+            "nb": 1,
+            "nlevs": 2,
             "T": 2.779700E-13,
+            "np": 1,
+            "L": 1.0,
+            "Du": 1.0,
+            "U": 30.0,
+            "W": 30.0,
+            "delta": 15.0,
+            "sigma_auto": True,
+            "nu_L_auto": True,
+            "t0_auto": True,
             "fitter": {
                 "epsilon": 1e-6,
                 "impulses_number": 1,
-                "nb": 1,
-                "nlevs": 2,
                 "iter_max": 50,
                 "iter_mid_1": 30,
                 "iter_mid_2": 50,
                 "q": 0.75,
                 "h_lambda": 0.00005,
                 "h_lambda_mode": "dynamical",
-                "init_guess": "gauss",
-                "init_guess_hf": "exp",
-                "lf_aug_type": "x",
                 "F_type": "sm",
                 "hf_hide": False,
                 "pcos": 1.0,
                 "propagation": {
-                    "U": 30.0,
-                    "W": 30.0,
-                    "delta": 15.0,
-                    "Du": 1.0,
-                    "np": 1,
-                    "L": 1.0,
                     "nch": 8,
                     "E0": 40.0,
-                    "nt": 3500,
-                    "sigma_auto": True,
-                    "nu_L_auto": True,
-                    "t0_auto": True
+                    "nt": 3500
                 },
                 "mod_log": 500
             }
@@ -1039,7 +1025,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               task_manager_imp.init_dir, task_manager_imp.ntriv,
                                               task_manager_imp.psi0, task_manager_imp.psif,
                                               task_manager_imp.v, task_manager_imp.akx2,
@@ -1089,31 +1075,31 @@ class fitter_Tests(unittest.TestCase):
             "pot_type": "none",
             "wf_type": "const",
             "hamil_type": "BH_model",
+            "lf_aug_type": "x",
+            "init_guess": "const",
+            "init_guess_hf": "exp",
+            "nb": 1,
+            "nlevs": 2,
             "T": 555.9416E-15,
+            "np": 1,
+            "L": 1.0,
+            "Du": 1.0,
+            "U": 30.0,
+            "W": 0.0,
+            "delta": 15.0,
             "fitter": {
                 "epsilon": 1e-5,
                 "impulses_number": 1,
-                "nb": 1,
-                "nlevs": 2,
                 "iter_max": 300,
                 "iter_mid_1": 250,
                 "iter_mid_2": 300,
                 "q": 0.75,
                 "h_lambda": 0.00005,
                 "h_lambda_mode": "const",
-                "init_guess": "const",
-                "init_guess_hf": "exp",
-                "lf_aug_type": "x",
                 "F_type": "sm",
                 "pcos": 1.0,
                 "hf_hide": False,
                 "propagation": {
-                    "U": 30.0,
-                    "W": 0.0,
-                    "delta": 15.0,
-                    "Du": 1.0,
-                    "np": 1,
-                    "L": 1.0,
                     "nch": 8,
                     "t0": 0.0,
                     "E0": 1.0,
@@ -1135,7 +1121,7 @@ class fitter_Tests(unittest.TestCase):
         fit_reporter_imp = TestFitterReporter(mod_fileout, lmin, imod_fileout, imin)
         fit_reporter_imp.open()
 
-        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T,
+        fitting_solver = fitter.FittingSolver(conf.fitter, conf.task_type, conf.T, conf.np, conf.L,
                                               init_dir, ntriv, psi0, psif, v, akx2,
                                               task_manager_imp.F_goal,
                                               task_manager_imp.laser_field,

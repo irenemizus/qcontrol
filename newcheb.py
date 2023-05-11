@@ -477,23 +477,23 @@ def print_input(conf_rep_plot, conf_task, file_name):
         finp.write("q:\t\t\t"   f"{conf_task.fitter.q}\n")
         finp.write("epsilon:\t\t"   f"{conf_task.fitter.epsilon:.1E}\n")
 
-        finp.write("nb:\t\t\t"   f"{conf_task.fitter.nb}\n")
-        finp.write("nlevs:\t\t\t"   f"{conf_task.fitter.nlevs}\n")
+        finp.write("nb:\t\t\t"   f"{conf_task.nb}\n")
+        finp.write("nlevs:\t\t\t"   f"{conf_task.nlevs}\n")
         finp.write("wf_type:\t\t"   f"{conf_task.wf_type}\n")
 
         finp.write("impulses_number:\t"   f"{conf_task.fitter.impulses_number}\n")
         finp.write("Em:\t\t\t"   f"{conf_task.fitter.Em}\n")
         finp.write("E0:\t\t\t"   f"{conf_task.fitter.propagation.E0}\n")
         finp.write("t0:\t\t\t"   f"{conf_task.fitter.propagation.t0}\n")
-        finp.write("t0_auto:\t\t"   f"{conf_task.fitter.propagation.t0_auto}\n")
+        finp.write("t0_auto:\t\t"   f"{conf_task.t0_auto}\n")
         finp.write("sigma:\t\t\t"   f"{conf_task.fitter.propagation.sigma:.6E}\n")
-        finp.write("sigma_auto:\t\t"   f"{conf_task.fitter.propagation.sigma_auto}\n")
+        finp.write("sigma_auto:\t\t"   f"{conf_task.sigma_auto}\n")
         finp.write("nu_L:\t\t\t"   f"{conf_task.fitter.propagation.nu_L:.6E}\n")
-        finp.write("nu_L_auto:\t\t"   f"{conf_task.fitter.propagation.nu_L_auto}\n")
+        finp.write("nu_L_auto:\t\t"   f"{conf_task.nu_L_auto}\n")
         finp.write("h_lambda:\t\t"   f"{conf_task.fitter.h_lambda}\n")
         finp.write("h_lambda_mode:\t\t"   f"{conf_task.fitter.h_lambda_mode}\n")
-        finp.write("init_guess:\t\t"   f"{conf_task.fitter.init_guess}\n")
-        finp.write("init_guess_hf:\t\t"   f"{conf_task.fitter.init_guess_hf}\n")
+        finp.write("init_guess:\t\t"   f"{conf_task.init_guess}\n")
+        finp.write("init_guess_hf:\t\t"   f"{conf_task.init_guess_hf}\n")
         finp.write("F_type:\t\t\t"   f"{conf_task.fitter.F_type}\n")
         finp.write("pcos:\t\t\t"   f"{conf_task.fitter.pcos}\n")
         finp.write("hf_hide:\t\t"   f"{conf_task.fitter.hf_hide}\n")
@@ -502,19 +502,19 @@ def print_input(conf_rep_plot, conf_task, file_name):
         finp.write("w_max:\t\t\t"   f"{conf_task.fitter.w_max}\n")
 
         finp.write("hamil_type:\t\t"   f"{conf_task.hamil_type}\n")
-        finp.write("U:\t\t\t"   f"{conf_task.fitter.propagation.U}\n")
-        finp.write("W:\t\t\t"   f"{conf_task.fitter.propagation.W}\n")
-        finp.write("delta:\t\t\t"   f"{conf_task.fitter.propagation.delta}\n")
-        finp.write("lf_aug_type:\t\t"   f"{conf_task.fitter.lf_aug_type}\n")
+        finp.write("U:\t\t\t"   f"{conf_task.U}\n")
+        finp.write("W:\t\t\t"   f"{conf_task.W}\n")
+        finp.write("delta:\t\t\t"   f"{conf_task.delta}\n")
+        finp.write("lf_aug_type:\t\t"   f"{conf_task.lf_aug_type}\n")
 
         finp.write("pot_type:\t\t"   f"{conf_task.pot_type}\n")
-        finp.write("Du:\t\t\t"   f"{conf_task.fitter.propagation.Du}\n")
+        finp.write("Du:\t\t\t"   f"{conf_task.Du}\n")
 
-        finp.write("np:\t\t\t"   f"{conf_task.fitter.propagation.np}\n")
-        finp.write("L:\t\t\t"   f"{conf_task.fitter.propagation.L}\n")
+        finp.write("np:\t\t\t"   f"{conf_task.np}\n")
+        finp.write("L:\t\t\t"   f"{conf_task.L}\n")
         finp.write("nch:\t\t\t"   f"{conf_task.fitter.propagation.nch}\n")
         finp.write("nt:\t\t\t"   f"{conf_task.fitter.propagation.nt}\n")
-        finp.write("nt_auto:\t\t"   f"{conf_task.fitter.propagation.nt_auto}\n")
+        finp.write("nt_auto:\t\t"   f"{conf_task.nt_auto}\n")
         finp.write("T:\t\t\t"   f"{conf_task.T:.6E}\n")
 
 
@@ -659,7 +659,7 @@ def main(argv):
                     raise ValueError(
                         "The maximum number of graphs, 'number_plotout', to be plotted on one canvas has to be larger than 1")
 
-                if not math.log2(conf_task.fitter.propagation.np).is_integer() or not math.log2(
+                if not math.log2(conf_task.np).is_integer() or not math.log2(
                         conf_task.fitter.propagation.nch).is_integer():
                     raise ValueError(
                         "The number of collocation points, 'np', and of Chebyshev "
@@ -669,15 +669,15 @@ def main(argv):
                     raise ValueError(
                         "The number of laser pulses, 'impulses_number', has to be positive or 0")
 
-                if conf_task.fitter.nb < 1:
+                if conf_task.nb < 1:
                     raise ValueError(
                         "The number of basis vectors of the Hilbert space, 'nb', has to be positive")
 
-                if conf_task.fitter.nlevs < 2:
+                if conf_task.nlevs < 2:
                     raise ValueError(
                         "The number of levels in basis vectors of the Hilbert space, 'nlevs', has to be larger than 1")
 
-                if conf_task.fitter.nlevs < conf_task.fitter.nb:
+                if conf_task.nlevs < conf_task.nb:
                     raise ValueError(
                         "The number of levels in basis vectors of the Hilbert space, 'nlevs', must be larger or equal to "
                         "the number of basis vectors themselves, 'nb'")
@@ -704,11 +704,11 @@ def main(argv):
                     raise ValueError(
                         "Parameter 'iter_mid_1' must be less than 'iter_mid_2'")
 
-                if conf_task.fitter.propagation.L <= 0.0 or conf_task.T <= 0.0:
+                if conf_task.L <= 0.0 or conf_task.T <= 0.0:
                     raise ValueError(
                         "The value of spatial range, 'L', and of time range, 'T', of the problem have to be positive")
 
-                if conf_task.fitter.propagation.m <= 0.0 or conf_task.fitter.propagation.a <= 0.0 or conf_task.fitter.propagation.De <= 0.0:
+                if conf_task.fitter.propagation.m <= 0.0 or conf_task.a <= 0.0 or conf_task.De <= 0.0:
                     raise ValueError(
                         "The value of a reduced mass, 'm/mass', of a scaling factor, 'a', and of a dissociation energy, 'De', have to be positive")
 
@@ -718,12 +718,12 @@ def main(argv):
                         "of a scaling parameter of the laser field envelope, 'sigma',"
                         "and of a basic frequency of the laser field, 'nu_L', have to be positive")
 
-                if conf_task.run_id != "no_id" and conf_task.fitter.propagation.sigma_auto != True:
+                if conf_task.run_id != "no_id" and conf_task.sigma_auto != True:
                     raise ValueError("A batch calculation is running. 'sigma_auto' parameter must be set to 'True'!")
 
                 if conf_task.run_id != "no_id" and \
-                   conf_task.fitter.propagation.t0_auto != True and \
-                   conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+                   conf_task.t0_auto != True and \
+                   conf_task.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
                     raise ValueError("A batch calculation with init_guess = 'gauss' is running. 't0_auto' parameter must be set to 'True'!")
 
                 if conf_task.task_type == conf_task.TaskType.FILTERING or \
@@ -740,7 +740,7 @@ def main(argv):
                             "For the 'task_type' = '%s' the value of a basic frequency of the laser field, 'nu_L', has to be equal to zero"
                             % str(conf_task.task_type).split(".")[-1].lower())
 
-                    if conf_task.fitter.init_guess != conf_task.fitter.InitGuess.ZERO:
+                    if conf_task.init_guess != conf_task.fitter.InitGuess.ZERO:
                         raise ValueError(
                             "For the 'task_type' = '%s' the initial guess type for the laser field envelope, 'init_guess', has to be 'zero'"
                             % str(conf_task.task_type).split(".")[-1].lower())
@@ -760,7 +760,7 @@ def main(argv):
                     elif conf_task.task_type == conf_task.TaskType.INTUITIVE_CONTROL:
                         print("An intuitive control task begins...")
 
-                        if conf_task.fitter.init_guess == "zero":
+                        if conf_task.init_guess == "zero":
                             raise ValueError(
                                 "For the 'task_type' = 'intuitive_control' the initial guess type for the laser field envelope, "
                                 "'init_guess', mustn't be 'zero'")
@@ -776,7 +776,7 @@ def main(argv):
                     elif conf_task.task_type == conf_task.TaskType.LOCAL_CONTROL_POPULATION:
                         print("A local control with goal population task begins...")
 
-                        if conf_task.fitter.init_guess == "zero":
+                        if conf_task.init_guess == "zero":
                             raise ValueError(
                                 "For the 'task_type' = 'local_control_population' the initial guess type for the laser field envelope, "
                                 "'init_guess', mustn't be 'zero'")
@@ -792,7 +792,7 @@ def main(argv):
                     elif conf_task.task_type == conf_task.TaskType.LOCAL_CONTROL_PROJECTION:
                         print("A local control with goal projection task begins...")
 
-                        if conf_task.fitter.init_guess == "zero":
+                        if conf_task.init_guess == "zero":
                             raise ValueError(
                                 "For the 'task_type' = 'local_control_projection' the initial guess type for the laser field envelope, "
                                 "'init_guess', mustn't be 'zero'")
@@ -808,7 +808,7 @@ def main(argv):
                     elif conf_task.task_type == conf_task.TaskType.OPTIMAL_CONTROL_KROTOV:
                         print("An optimal control task with Krotov method begins...")
 
-                        if conf_task.fitter.init_guess == "zero":
+                        if conf_task.init_guess == "zero":
                             raise ValueError(
                                 "For the 'task_type' = 'optimal_control_krotov' the initial guess type for the laser field envelope, "
                                 "'init_guess', mustn't be 'zero'")
@@ -824,12 +824,12 @@ def main(argv):
                     elif conf_task.task_type == conf_task.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
                         print("An optimal control task with unitary quantum Fourier transformation begins...")
 
-                        if conf_task.fitter.init_guess == "zero":
+                        if conf_task.init_guess == "zero":
                             raise ValueError(
                                 "For the 'task_type' = 'optimal_control_unit_transform' the initial guess type for the laser field envelope, "
                                 "'init_guess', mustn't be 'zero'")
 
-                        if conf_task.fitter.propagation.np > 1:
+                        if conf_task.np > 1:
                             raise ValueError(
                                 "For the 'task_type' = 'optimal_control_unit_transform' the number of collocation points, 'np', has to be equal to 1")
 
@@ -837,7 +837,7 @@ def main(argv):
                             raise ValueError(
                                 "For the 'task_type' = 'optimal_control_unit_transform' the 'impulses_number' value has to be equal to 1")
 
-                        if conf_task.fitter.propagation.L == 1.0:
+                        if conf_task.L == 1.0:
                             pass
                         else:
                             raise ValueError(
@@ -855,27 +855,27 @@ def main(argv):
                 else:
                     assert len(conf_task.fitter.w_list) == nw
 
-                if conf_task.fitter.propagation.sigma_auto == True:
-                    if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
+                if conf_task.sigma_auto == True:
+                    if conf_task.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
                         conf_task.fitter.propagation.sigma = numpy.float64(2.0 * conf_task.T) #TODO: to add a possibility to vary groups of parameters
-                    elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
+                    elif conf_task.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
                         conf_task.fitter.propagation.sigma = numpy.float64(conf_task.T / 5.0)
-                    elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+                    elif conf_task.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
                         conf_task.fitter.propagation.sigma = numpy.float64(conf_task.T / 8.0)
                     else:
                         pass
 
-                if conf_task.fitter.propagation.t0_auto == True:
-                    if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
+                if conf_task.t0_auto == True:
+                    if conf_task.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.SQRSIN:
                         conf_task.fitter.propagation.t0 = numpy.float64(0.0) #TODO: to add a possibility to vary groups of parameters
-                    elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
+                    elif conf_task.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.MAXWELL:
                         conf_task.fitter.propagation.t0 = numpy.float64(0.0)
-                    elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
+                    elif conf_task.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
                         conf_task.fitter.propagation.t0 = numpy.float64(conf_task.T / 2.0)
                     else:
                         pass
 
-                if conf_task.fitter.propagation.nt_auto == True:
+                if conf_task.nt_auto == True:
                     conf_task.fitter.propagation.nt = math.floor(conf_task.T / 2.0E-15)
                 else:
                     pass
@@ -894,6 +894,7 @@ def main(argv):
                 fit_reporter_imp.open()
 
                 fitting_solver = fitter.FittingSolver(conf_task.fitter, conf_task.task_type, conf_task.T,
+                                                      conf_task.np, conf_task.L,
                                                       task_manager_imp.init_dir, task_manager_imp.ntriv,
                                                       task_manager_imp.psi0, task_manager_imp.psif,
                                                       task_manager_imp.v, task_manager_imp.akx2,

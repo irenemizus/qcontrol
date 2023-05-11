@@ -2,9 +2,9 @@ import numpy
 
 
 class GridConstructor:
-    def __init__(self, conf_prop):
-        self.L = conf_prop.L
-        self.np = conf_prop.np
+    def __init__(self, conf_task):
+        self.L = conf_task.L
+        self.np = conf_task.np
     def grid_setup(self):
         """ Setting of the coordinate grid; it should be symmetric,
             equidistant and centered at about minimum of the potential

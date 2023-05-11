@@ -44,23 +44,23 @@ class propagation_Tests(unittest.TestCase):
             "task_type": "trans_wo_control",
             "pot_type": "morse",
             "wf_type": "morse",
+            "hamil_type": "ntriv",
+            "init_guess": "gauss",
+            "init_guess_hf": "exp",
+            "nb": 1,
             "T": 330e-15,
+            "L": 5.0,
+            "np": 1024,
+            "a": 1.0,
+            "De": 20000.0,
+            "x0p": -0.17,
+            "a_e": 1.0,
+            "De_e": 10000.0,
+            "Du": 20000.0,
             "fitter": {
                 "impulses_number": 1,
-                "init_guess": "gauss",
-                "init_guess_hf": "exp",
-                "nb": 1,
                 "propagation": {
                     "m": 0.5,
-                    "hamil_type": "ntriv",
-                    "a": 1.0,
-                    "De": 20000.0,
-                    "x0p": -0.17,
-                    "a_e": 1.0,
-                    "De_e": 10000.0,
-                    "Du": 20000.0,
-                    "L": 5.0,
-                    "np": 1024,
                     "nch": 64,
                     "nt": 230000,
                     "E0": 71.54,
@@ -76,7 +76,7 @@ class propagation_Tests(unittest.TestCase):
         conf_prop = conf.fitter.propagation
 
         # setup of the grid
-        grid = grid_setup.GridConstructor(conf_prop)
+        grid = grid_setup.GridConstructor(conf)
         dx, x = grid.grid_setup()
 
         # setup of the time grid
@@ -85,44 +85,30 @@ class propagation_Tests(unittest.TestCase):
 
         psi0 = PsiBasis(1)
         # evaluating of initial wavefunction
-        psi0.psis[0].f[0] = task_manager._PsiFunctions.morse(x,
-                                             conf_prop.np,
-                                             conf_prop.x0,
-                                             conf_prop.p0,
-                                             conf_prop.m,
-                                             conf_prop.De,
-                                             conf_prop.a,
-                                             conf_prop.L)
-        psi0.psis[0].f[1] = task_manager._PsiFunctions.zero(conf_prop.np)
+        psi0.psis[0].f[0] = task_manager._PsiFunctions.morse(x, conf.np, conf.x0, conf.p0,
+                                             conf_prop.m, conf.De, conf.a, conf.L)
+        psi0.psis[0].f[1] = task_manager._PsiFunctions.zero(conf.np)
 
         psif = PsiBasis(1)
         # evaluating of the final goal
-        psif.psis[0].f[0] = task_manager._PsiFunctions.zero(conf_prop.np)
-        psif.psis[0].f[1] = task_manager._PsiFunctions.morse(x,
-                                              conf_prop.np,
-                                              conf_prop.x0p + conf_prop.x0,
-                                              conf_prop.p0,
-                                              conf_prop.m,
-                                              conf_prop.De_e,
-                                              conf_prop.a_e,
-                                              conf_prop.L)
+        psif.psis[0].f[0] = task_manager._PsiFunctions.zero(conf.np)
+        psif.psis[0].f[1] = task_manager._PsiFunctions.morse(x, conf.np, conf.x0p + conf.x0, conf.p0,
+                                              conf_prop.m, conf.De_e, conf.a_e, conf.L)
 
         # evaluating of potential(s)
-        v = task_manager.MorseMultipleStateTaskManager._pot(x, conf_prop.np, conf_prop.m,
-                                                            conf_prop.De, conf_prop.a,
-                                                            conf_prop.x0p, conf_prop.De_e,
-                                                            conf_prop.a_e, conf_prop.Du)
+        v = task_manager.MorseMultipleStateTaskManager._pot(x, conf.np, conf_prop.m,
+                                                            conf.De, conf.a,
+                                                            conf.x0p, conf.De_e,
+                                                            conf.a_e, conf.Du, 1, conf)
 
         # evaluating of k vector
-        akx2 = math_base.initak(conf_prop.np, dx, 2, 1)
+        akx2 = math_base.initak(conf.np, dx, 2, 1)
 
         # evaluating of kinetic energy
         akx2 *= -phys_base.hart_to_cm / (2.0 * conf_prop.m * phys_base.dalt_to_au)
 
         # Hamiltonian for the current task
-        hamil2D = hamil_2d.Hamil2DNonTrivial(v, akx2, conf_prop.np,
-                                             conf_prop.U, conf_prop.W,
-                                             conf_prop.delta, 1)
+        hamil2D = hamil_2d.Hamil2DNonTrivial(v, akx2, conf.np, conf.U, conf.W, conf.delta, 1)
 
         return conf, dx, x, psi0, psif, t_step, t_list, v, akx2, hamil2D
 
@@ -166,6 +152,8 @@ class propagation_Tests(unittest.TestCase):
 
         solver = PropagationSolver(
             T=conf.T,
+            np=conf.np,
+            L=conf.L,
             _warning_collocation_points=_warning_collocation_points,
             _warning_time_steps=_warning_time_steps,
             reporter=reporter_impl,
@@ -242,6 +230,8 @@ class propagation_Tests(unittest.TestCase):
 
         solver = PropagationSolver(
             T=conf.T,
+            np=conf.np,
+            L=conf.L,
             _warning_collocation_points=_warning_collocation_points,
             _warning_time_steps=_warning_time_steps,
             reporter=reporter_impl,

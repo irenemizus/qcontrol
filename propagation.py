@@ -111,6 +111,8 @@ class PropagationSolver:
     def __init__(
             self,
             T,
+            np,
+            L,
             _warning_collocation_points,
             _warning_time_steps,
             reporter: PropagationReporter,
@@ -127,6 +129,8 @@ class PropagationSolver:
             conf_prop):
         self.milliseconds_full = 0.0
         self.T = T
+        self.np = np
+        self.L = L
         self._warning_collocation_points = _warning_collocation_points
         self._warning_time_steps = _warning_time_steps
         self.reporter = reporter
@@ -140,27 +144,11 @@ class PropagationSolver:
         self.hf_hide = hf_hide
         self.pcos = pcos
         self.w_list = w_list
-
         self.m = conf_prop.m
-        self.L = conf_prop.L
-        self.np = conf_prop.np
         self.nch = conf_prop.nch
         self.nt = conf_prop.nt
-        self.x0 = conf_prop.x0
-        self.p0 = conf_prop.p0
-        self.a = conf_prop.a
-        self.De = conf_prop.De
-        self.x0p = conf_prop.x0p
-        self.a_e = conf_prop.a_e
-        self.De_e = conf_prop.De_e
-        self.Du = conf_prop.Du
         self.E0 = conf_prop.E0
-        self.t0 = conf_prop.t0
-        self.sigma = conf_prop.sigma
         self.nu_L = conf_prop.nu_L
-        self.U = conf_prop.U
-        self.W = conf_prop.W
-        self.delta = conf_prop.delta
 
         self.stat = None
         self.dyn = None
@@ -333,15 +321,6 @@ class PropagationSolver:
                     self.milliseconds_full / self.dyn.l))
 
     def start(self, v, akx2, dx, x, t_step, psi0, psif, dir: Direction):
-        # # evaluating of potential(s)
-        # v = self.pot(x, self.np, self.m, self.De, self.a, self.x0p, self.De_e, self.a_e, self.Du)
-        #
-        # # evaluating of k vector
-        # akx2 = math_base.initak(self.np, dx, 2, self.ntriv)
-        #
-        # # evaluating of kinetic energy
-        # akx2 *= -phys_base.hart_to_cm / (2.0 * self.m * phys_base.dalt_to_au)
-
         # initial normalization check
         cnorm0 = self._norm_eval(psi0, dx, self.np)
 
@@ -438,8 +417,6 @@ class PropagationSolver:
         cnorm = []
         if self.hf_hide:
             E_full = self.dyn.E * exp_L * exp_L
-            #hpsi = self.hamil2D(psi=self.dyn.psi_omega, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
-            #                    eL=eL, U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv, E_full=E_full, orig=False)
             self.dyn.psi_omega = phys_base.prop_cpu(psi=self.dyn.psi_omega, hamil2D=self.hamil2D, t_sc=t_sc,
                                                     nch=self.nch, np=self.np, emin=emin, emax=emax,
                                                     E=self.dyn.E, eL=eL, E_full=E_full, orig=False)
@@ -465,8 +442,6 @@ class PropagationSolver:
 
         else:
             E_full = self.dyn.E
-            #hpsi = self.hamil2D(psi=self.dyn.psi, v=self.stat.v, akx2=self.stat.akx2, np=self.np, E=self.dyn.E,
-            #                    eL=eL, U=self.U, W=self.W, delta=self.delta, ntriv=self.ntriv, E_full=E_full, orig=False)
             self.dyn.psi = phys_base.prop_cpu(psi=self.dyn.psi, hamil2D=self.hamil2D, t_sc=t_sc, nch=self.nch, np=self.np,
                                               emin=emin, emax=emax, E=self.dyn.E, eL=eL, E_full=E_full, orig=False)
 

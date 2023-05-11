@@ -126,6 +126,8 @@ class FittingSolver:
 
             self.solvers.append(PropagationSolver(
                 T=self.T,
+                np=self.np,
+                L=self.L,
                 _warning_collocation_points=self._warning_collocation_points,
                 _warning_time_steps=self._warning_time_steps,
                 reporter=propagation_reporter,
@@ -156,6 +158,8 @@ class FittingSolver:
             conf_fitter,
             task_type,
             T,
+            np,
+            L,
             init_dir,
             ntriv,
             psi_init_basis: PsiBasis,
@@ -184,6 +188,8 @@ class FittingSolver:
 
         self.task_type = task_type
         self.T = T
+        self.np = np
+        self.L = L
 
         self.conf_fitter = conf_fitter
         self.init_dir = init_dir
@@ -365,14 +371,14 @@ class FittingSolver:
                     print("psi_%d(T)" % n + " = ", solver.dyn.psi.f[n][0])
 
                     self.dyn.goal_close_vec[vect] += math_base.cprod(solver.stat.psif.f[n], solver.dyn.psi.f[n],
-                                                                     solver.stat.dx, self.conf_fitter.propagation.np)
+                                                                     solver.stat.dx, self.np)
 
                 if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
-                    chiT_part.f[0] = numpy.zeros(self.conf_fitter.propagation.np, dtype=numpy.complex128)
+                    chiT_part.f[0] = numpy.zeros(self.np, dtype=numpy.complex128)
                     chiT_part.f[1] = self.dyn.goal_close_vec[vect] * solver.stat.psif.f[1]
 
                     # renormalization
-                    cnorm = math_base.cprod(chiT_part.f[1], chiT_part.f[1], dx, self.conf_fitter.propagation.np)
+                    cnorm = math_base.cprod(chiT_part.f[1], chiT_part.f[1], dx, self.np)
                     if abs(cnorm) > 0.0:
                         chiT_part.f[1] /= math.sqrt(abs(cnorm))
 
@@ -492,7 +498,7 @@ class FittingSolver:
             for vect in range(self.basis_length):
                 for n in range(self.levels_number):
                     goal_close_init[vect] += math_base.cprod(self.psi_goal_basis.psis[vect].f[n], self.psi_init_basis.psis[vect].f[n],
-                                                           dx, self.conf_fitter.propagation.np)
+                                                           dx, self.np)
                 goal_close_scal_init += goal_close_init[vect]
 
             goal_close_abs_init = abs(goal_close_scal_init)
@@ -695,7 +701,7 @@ class FittingSolver:
 
                 chie_old_psig_new = math_base.cprod(self.dyn.chi_tlist[conf_prop.nt - prop.dyn.l].psis[0].f[1],
                                                     dyn.psi_omega.f[0],
-                                                    stat.dx, conf_prop.np)
+                                                    stat.dx, self.np)
 
                 E = -2.0 * chie_old_psig_new.imag / self.conf_fitter.h_lambda
 
@@ -727,7 +733,7 @@ class FittingSolver:
                 else:
                     raise RuntimeError("Impossible case in the HlambdaModeType class")
 
-                self.a0 = self.aF_type(psi_init, chi_init, stat.dx, self.basis_length, self.levels_number, conf_prop.np)
+                self.a0 = self.aF_type(psi_init, chi_init, stat.dx, self.basis_length, self.levels_number, self.np)
                 pass
             else:
                 chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
@@ -738,12 +744,12 @@ class FittingSolver:
                 m1 = numpy.float64(0.0)
                 for vect in range(self.basis_length):
                     for n in range(self.levels_number):
-                        sum += self.a0[vect] * math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
-                        abs_chi = math_base.cprod(chi_basis.psis[vect].f[n], chi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
+                        sum += self.a0[vect] * math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, self.np)
+                        abs_chi = math_base.cprod(chi_basis.psis[vect].f[n], chi_basis.psis[vect].f[n], stat.dx, self.np)
                         abs_psi = math_base.cprod(psi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx,
-                                                  conf_prop.np)
+                                                  self.np)
                         m1 += (abs_chi - abs_psi).real
-#                        sum1 += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
+#                        sum1 += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, self.np)
                 hf_part = self.laser_field_hf(dyn.freq_mult, dyn.t - (abs(stat.dt) / 2.0), self.conf_fitter.pcos, self.conf_fitter.w_list)
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 E_init = s * conf_prop.E0 * hf_part
@@ -785,7 +791,7 @@ class FittingSolver:
         if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_KROTOV:
             chie_new_psig_old = math_base.cprod(dyn.psi_omega.f[1],
                                                 self.dyn.psi_tlist[conf_prop.nt - prop.dyn.l].psis[0].f[0],
-                                                stat.dx, conf_prop.np)
+                                                stat.dx, self.np)
 
             E = -2.0 * chie_new_psig_old.imag / self.conf_fitter.h_lambda
 
