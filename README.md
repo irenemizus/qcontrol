@@ -35,5 +35,15 @@ conda activate newcheb
 ## Unitary transformation for a 2-state quantum system under an external magnetic field
 A testing modeling, which solves the problem from the following Wikipedia article: https://en.wikipedia.org/wiki/Rabi_cycle, subsection "In quantum computing" (the resonance case). The transition dynamics between the two states (including the dynamics of changing of Pauli matrix expectation values), as well as the time envelope of the external magnetic field is shown on the following plots:
 
+![graph1](https://raw.githubusercontent.com/irenemizus/qcontrol/master/results_to_show/fig_abs_max_pi_pulse.svg)
+![graph2](https://raw.githubusercontent.com/irenemizus/qcontrol/master/results_to_show/fig_ener_pi_pulse.svg)
+![graph3](https://raw.githubusercontent.com/irenemizus/qcontrol/master/results_to_show/fig_smoms_pi_pulse.svg)
+![graph4](https://raw.githubusercontent.com/irenemizus/qcontrol/master/results_to_show/fig_lf_en_pi_pulse.svg)
+
 ## A diatomic-like quantum system under a controlled laser field excitation using an optimal Krotov-like type of control
 A transition from the lower to the excited stable state on the 3-d iteration of controlling procedure (which results in the accuracy value of about $10^{-6}$), as well as the modifications of the external laser field envelope during it, are shown on the following plots:
+
+![graph5](https://raw.githubusercontent.com/irenemizus/qcontrol/master/results_to_show/fig_abs_max.svg)
+![graph6](https://raw.githubusercontent.com/irenemizus/qcontrol/master/results_to_show/fig_real_max.svg)
+![graph7](https://raw.githubusercontent.com/irenemizus/qcontrol/master/results_to_show/fig_ener.svg)
+![graph8](https://raw.githubusercontent.com/irenemizus/qcontrol/master/results_to_show/fig_gr_iter_E.svg)
