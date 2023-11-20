@@ -3,17 +3,18 @@
   "pot_type": "none",
   "wf_type": "const",
   "hamil_type": "BH_model",
+    "lf_aug_type": "z",
+    "init_guess": "sqrsin",
+    "init_guess_hf": "cos_set",
+    "nb": 2,
   "T": 1.73E-12,
   "T_3.999": 3.306555E-13,
   "T_3.995": 3.508755E-13,
   "fitter": {
     "epsilon": 1e-8,
     "impulses_number": 1,
-    "nb": 2,
     "iter_max": 1000,
     "h_lambda": 0.005,
-    "init_guess": "sqrsin",
-    "init_guess_hf": "cos_set",
     "w_list_3.997": [
       0.82, 0.17, 0.83, 0.92, 0.67, 0.24, 0.97
     ],
@@ -26,7 +27,6 @@
     "w_list": [
       -1.9, -0.6000000000000001, 1.4, 0.5, 0.7999999999999998, 0.20000000000000018, -0.7
     ],
-    "lf_aug_type": "z",
     "pcos": 4.0,
     "hf_hide": false,
     "Em": 5.0,
