@@ -375,7 +375,6 @@ class ReportRootConfiguration(ConfigurationBase):
 
                 self._data["gr_abs"] = "fig_abs{level}.html"
                 self._data["gr_real"] = "fig_real{level}.html"
-                self._data["gr_moms_low"] = "fig_moms_low{level}.html"
                 self._data["gr_moms"] = "fig_moms{level}.html"
 
                 self._data["gr_ener"] = f"fig_ener{suffix}.html"

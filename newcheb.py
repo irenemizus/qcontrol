@@ -1,6 +1,13 @@
-""" A Python script for solving a controlled propagation
-task in a two-potential quantum system using a Newtonian polynomial
-algorithm with a Chebyshev-based interpolation scheme.
+"""
+A software package aimed for numerical calculation of different quantum system types.
+Namely, it models molecular dynamics for small quantum systems, as well as propagation dynamics
+for general unitary transformations, and their behaviour under a controlled laser field excitation.
+The package is developed in Python, uses a Newtonian polynomial algorithm with a Chebyshev-based
+interpolation scheme, is designed to be modular and easily expendable,
+and also supports different types of quantum systems and different methods of quantum control.
+The implementation has a flexible object-oriented structure, includes a simple configuration DSL allowing
+feeding separate configurations to specific modules with changing input parameters,
+an automated plotting system for making output reports and graphs, and also an automated unit-testing mechanism.
 
 Usage: python newcheb.py [options]
 
@@ -71,12 +78,28 @@ Options:
         plot.imod_plotout
             step of plotting graphs with x-axis = number of iteration (to plot to file each <val>-th iteration).
             By default, is equal to 1
+        plot.inumber_plotout
+            maximum number of graphs with x-axis = "distance" to be plotted on a single canvas.
+            By default, is equal to 15
         plot.gr_iter
             output file name, to which the iteration dependencies of the "global" values should be plotted.
-            By default, is equal to "fig_iter.pdf"
+            By default, is equal to "fig_iter.html"
         plot.gr_iter_E
             output file name, to which the iteration dependency of the laser field energy envelope should be plotted.
-            By default, is equal to "fig_iter_E.pdf"
+            By default, is equal to "fig_iter_E.html"
+        plot.gr_iter_F
+            output file name, to which the iteration dependency of the F operator value, which reflects closeness to
+            the goal state in the unitary transformation algorithm (task_type = "optimal_control_unit_transform") as
+            in the article [J.P. Palao, R. Kosloff, Phys. Rev. A, 68, 062308 (2003)], should be plotted.
+            By default, is equal to "fig_iter_F.html"
+        plot.gr_iter_E_int
+            output file name, to which the iteration dependency of the integral value of laser field strength
+            E_int = sum(E(t) * conjugate(E(t)) * time_step) should be plotted.
+            By default, is equal to "fig_iter_E_int.html"
+        plot.gr_iter_J
+            output file name, to which the iteration dependency of the J = F - h_lambda**2 * E_int operator value
+            should be plotted.
+            By default, is equal to "fig_iter_J.html"
 
         In key "propagation":
             parameters, which has to be specified if writing of the resulting propagation tables is needed.
@@ -119,9 +142,24 @@ Options:
                 maximum number of graphs for different time points to plot on one canvas
                 for the absolute and real values of wavefunctions. Must be larger than 1.
                 By default, is equal to 15
+            plot.gr_abs
+                output file name, to which absolute values of wavefunctions should be plotted.
+                By default, is equal to "fig_abs{level}.html"
+                ({level} is replaced automatically by "0" for the ground state and by "1" for the excited one)
+            plot.gr_real
+                output file name, to which real parts of wavefunctions should be plotted.
+                By default, is equal to "fig_real{level}.html"
+                ({level} is replaced automatically by "0" for the ground state and by "1" for the excited one)
+            plot.gr_moms
+                output file name, to which the expectation values <x>, <x^2>, <p>, and <p^2> should be plotted.
+                By default, is equal to "fig_moms{level}.html"
+                ({level} is replaced automatically by "0" for the ground state and by "1" for the excited one)
             plot.gr_*
                 output file name, to which the corresponding result should be plotted.
-                By default, is equal to "fig_*.pdf"
+                By default, is equal to "fig_*.html"
+                Currently, the following names are supported:
+                * = ener, norm, overlp0, overlpf, abs_max, real_max, smoms,
+                    ener_tot, overlp0_tot, overlpf_tot, lf_en, lf_fr
 
 
     Content of the json_task file
@@ -160,17 +198,119 @@ Options:
                                            using a controlled external laser field with an iterative Krotov algorithm
                                            and the squared modulus functional Fsm
     pot_type
-        type of the potentials ("morse" or "harmonic").
+        type of the potentials ("morse", "harmonic" or "none").
         By default, the "morse" type is used
     wf_type
-        type of the wavefunctions ("morse" or "harmonic").
+        type of the wavefunctions ("morse", "harmonic" or "const").
         By default, the "morse" type is used
     hamil_type
         type of the Hamiltonian operator used ("ntriv", "two_levels" or "BH_model").
         By default, the "ntriv" type is used
+    lf_aug_type
+        a way of adding the controlling laser field to "BH_model"-type Hamiltonian.
+        For all other variants of "hamil_type" variables is a dummy variable.
+        Available options:
+        "z" - H = -2 * delta * Jx + 2 * U * Jx**2 + 2 * E(t) * Jz (by default)
+        "x" - H = -2 * delta * Jx * E(t) + 2 * U * Jz + 2 * W * Jz^2
+    init_guess
+        type of initial guessed laser field envelope used in propagation tasks.
+        Available options:
+        "zero"      - without external laser field (by default)
+        "const"     - a constant envelope
+        "gauss"     - a gaussian-like envelope
+        "sqrsin"    - a squared sinus envelope
+        "maxwell"   - a maxwell distribution-like envelope
+    init_guess_hf
+        type of the high-frequency part of the initial guessed laser field used in propagation tasks.
+        Available options:
+        "exp"       - exponential type exp(i omega_L t) (by default)
+        "cos"       - cos-type cos(omega_L t)
+        "sin"       - sin-type sin(omega_L t)
+        "cos_set"   - a sequence of cos-type terms [w_0 * cos(omega_L t) + sum(w_i * cos(omega_L t * k) + w_j * cos(omega_L t / k))]
+        "sin_set"   - a sequence of sin-type terms [w_0 * sin(omega_L t) + w_1 * sin(omega_L t * 3) + w_2 * sin(omega_L t * 5) + ...)]
+                     (should be used together with a sqrsin- or gauss-type envelope if a symmetric initial guess is needed,
+                     for example, for an Hadamard-like Hamiltonian in a unitary transformation task)
+    nb
+        number of basis vectors of the Hilbert space used in the calculation task.
+        By default, is equal to 1
+    nlevs
+        number of levels in basis vectors of the Hilbert space used in the calculation task.
+        By default, is equal to 2
     T
         time range of the problem in sec.
-        By default, is equal to 600e15 s
+        By default, is equal to 600e-15 s
+    L
+        spatial range of the problem in a_0.
+        By default, is equal to 5.0 a_0
+    np
+        number of collocation points; must be a power of 2.
+        By default, is equal to 1024
+    De
+        ground state dissociation energy value.
+        By default, is equal to 20000.0 1/cm for "morse" potential,
+                    is a dummy variable for "harmonic" and "none" potentials
+    De_e
+        excited state dissociation energy value.
+        By default, is equal to 10000.0 1/cm for "morse" potential,
+                    is a dummy variable for "harmonic" and "none" potentials,
+                    is identically equated to zero for filtering / single morse / single harmonic tasks
+    Du
+        energy shift between the minima of the upper potential and the ground one.
+        By default, is equal to 20000.0 1/cm for double potentials,
+                    is identically equated to zero for filtering / single morse / single harmonic tasks
+    x0p
+        shift of the upper potential relative to the ground one.
+        By default, is equal to -0.17 a_0 for double potentials,
+                    is identically equated to zero for filtering / single morse / single harmonic tasks
+    x0
+        coordinate initial condition.
+        By default, is equal to 0.0
+    p0
+        momentum initial condition.
+        By default, is equal to 0.0
+    a
+        ground state scaling coefficient.
+        By default, is equal to 1.0 1/a_0 -- for "morse" potential,
+                                1.0 a_0 -- for "harmonic" potential,
+                                is a dummy variable for a "none" potential
+    a_e
+        excited state scaling coefficient.
+        By default, is equal to 1.0 1/a_0 -- for "morse" potential,
+                    is equal to 1.0 a_0 -- for "harmonic" potential,
+                    is a dummy variable for a "none" potential,
+                    is identically equated to zero for filtering / single morse / single harmonic tasks
+    U, W, delta
+        parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'BH_model' only),
+        U, W and delta are in units of 1 / cm.
+        For lf_aug_type = "x" and nb <= 2: W value should be equal to U or 0.0.
+        For lf_aug_type = "x" and nb = 4: W value should be equal to 2 * U.
+        For lf_aug_type = "z": W is a dummy variable
+        By default, U, W are equal to 0.0; delta is equal to 1.0
+    t0_auto
+        parameter that controls the way of using t0 parameter.
+        If specified as "True", is calculated automatically as a function of T as follows:
+            for  init_guess = "sqrsin"  -- t0 = 0.0 s
+            for  init_guess = "maxwell" -- t0 = 0.0 s
+            for  init_guess = "gauss"   -- t0 = T / 2 s
+        Must be explicitly set to "True" if a batch calculation with init_guess = "gauss" is running!
+        By default, is "False"
+    nt_auto
+        parameter that controls the way of using nt parameter.
+        If specified as "True", is calculated automatically as a function of T:
+            nt = floor(T / 2.0)
+        By default, is "False"
+    sigma_auto
+        parameter that controls the way of using sigma parameter.
+        If specified as "True", is calculated automatically as a function of T as follows:
+            for  init_guess = "sqrsin"  -- sigma = 2 * T
+            for  init_guess = "maxwell" -- sigma = T / 5
+            for  init_guess = "gauss"   -- sigma = T / 8
+        Must be explicitly set to "True" if a batch calculation is running!
+        By default, is "False"
+    nu_L_auto
+        parameter that controls the way of using nu_L parameter.
+        If specified as "True", is calculated automatically as a function of T: nu_L = 1 / (2 * T).
+        By default, is "False"
 
     In key "fitter":
     k_E
@@ -196,7 +336,7 @@ Options:
         In this case if a value less than 2 provided, it will be replaced by 2.
         For the task_type = "filtering"  / "single_morse" / "single_harmonic" it will be replaced by 0.
         For the task_type = "trans_wo_control" or "local_control" it will be replaced by 1.
-        By default, is equal to 1
+        By default, is equal to 2
     delay
         time delay between the laser pulses in sec.
         Is a dummy variable for impulses_number less than 2.
@@ -238,24 +378,6 @@ Options:
         "const"     - constant value given in input json file (by default)
         "dynamical" - dynamically changeable parameter obtained as
                       h_lambda * nb / (nb - abs(sum(<psi_k_goal|psi_k(T)>)))
-    init_guess
-        type of initial guessed laser field envelope used in propagation tasks.
-        Available options:
-        "zero"      - without external laser field (by default)
-        "const"     - a constant envelope
-        "gauss"     - a gaussian-like envelope
-        "sqrsin"    - a squared sinus envelope
-        "maxwell"   - a maxwell distribution-like envelope
-    init_guess_hf
-        type of the high-frequency part of the initial guessed laser field used in propagation tasks.
-        Available options:
-        "exp"       - exponential type exp(i omega_L t) (by default)
-        "cos"       - cos-type cos(omega_L t)
-        "sin"       - sin-type sin(omega_L t)
-        "cos_set"   - a sequence of cos-type terms [w_0 * cos(omega_L t) + sum(w_i * cos(omega_L t * k) + w_j * cos(omega_L t / k))]
-        "sin_set"   - a sequence of sin-type terms [w_0 * sin(omega_L t) + w_1 * sin(omega_L t * 3) + w_2 * sin(omega_L t * 5) + ...)]
-                     (should be used together with a sqrsin- or gauss-type envelope if a symmetric initial guess is needed,
-                     for example, for an Hadamard-like Hamiltonian in a unitary transformation task)
     w_list
         a list of 2 * pcos - 1 amplitudes for separate harmonics of the laser field high-frequency part of type "cos_set"
         or "sin_set".
@@ -268,18 +390,6 @@ Options:
     w_max
         a maximum value of an element from w_list, which can be randomly generated.
         By default, is equal to 2.0.
-    lf_aug_type
-        a way of adding the controlling laser field to "BH_model"-type Hamiltonian.
-        For all other variants of "hamil_type" variables is a dummy variable.
-        Available options:
-        "z" - H = -2 * delta * Jx + 2 * U * Jx**2 + 2 * E(t) * Jz (by default)
-        "x" - H = -2 * delta * Jx * E(t) + 2 * U * Jz + 2 * W * Jz^2
-    nb
-        number of basis vectors of the Hilbert space used in the calculation task.
-        By default, is equal to 1
-    nlevs
-        number of levels in basis vectors of the Hilbert space used in the calculation task.
-        By default, is equal to 2
     hf_hide
         parameter that specifies if we should get rid of the high-frequency part of laser field during the propagation part.
         By default, is "True"
@@ -315,62 +425,12 @@ Options:
         m
             reduced mass value of the considered system.
             By default, is equal to 0.5 Dalton
-        a
-            ground state scaling coefficient.
-            By default, is equal to 1.0 1/a_0 -- for "morse" potential,
-                                        a_0 -- for "harmonic" potential
-        De
-            ground state dissociation energy value.
-            By default, is equal to 20000.0 1/cm for "morse" potential,
-                        is a dummy variable for "harmonic" potential
-        x0p
-            shift of the upper potential relative to the ground one.
-            By default, is equal to -0.17 a_0 for double potentials,
-                        is identically equated to zero for filtering / single morse / single harmonic tasks
-        a_e
-            excited state scaling coefficient.
-            By default, is equal to 1.0 1/a_0 -- for "morse" potential,
-                        is equal to 1.0 a_0 -- for "harmonic" potential,
-                        is identically equated to zero for filtering / single morse / single harmonic tasks
-        De_e
-            excited state dissociation energy value.
-            By default, is equal to 10000.0 1/cm for "morse" potential,
-                        is a dummy variable for "harmonic" potential,
-                        is identically equated to zero for filtering / single morse / single harmonic tasks
-        Du
-            energy shift between the minima of the upper potential and the ground one.
-            By default, is equal to 20000.0 1/cm for double potentials,
-                        is identically equated to zero for filtering / single morse / single harmonic tasks
-        U, W, delta
-            parameters of angular momentum-type Hamiltonian (applicable for 'hamil_type' = 'BH_model' only),
-            U, W and delta are in units of 1 / cm.
-            For lf_aug_type = "x" and nb <= 2: W value should be equal to U or 0.0.
-            For lf_aug_type = "x" and nb = 4: W value should be equal to 2 * U.
-            For lf_aug_type = "z": W is a dummy variable
-            By default, U, W are equal to 0.0; delta is equal to 1.0
-        x0
-            coordinate initial condition.
-            By default, is equal to 0.0
-        p0
-            momentum initial condition.
-            By default, is equal to 0.0
-        L
-            spatial range of the problem in a_0.
-            By default, is equal to 5.0 a_0
-        np
-            number of collocation points; must be a power of 2.
-            By default, is equal to 1024
         nch
             number of Chebyshev interpolation points; must be a power of 2.
             By default, is equal to 64
         nt
             number of time grid points.
             By default, is equal to 420000
-        nt_auto
-            parameter that controls the way of using nt parameter.
-            If specified as "True", is calculated automatically as a function of T:
-                nt = floor(T / 2.0)
-            By default, is "False"
         E0
             amplitude value of the laser field energy envelope in 1 / cm.
             By default, is equal to 71.54 1 / cm,
@@ -379,34 +439,14 @@ Options:
             initial time, when the laser field reaches its maximum value, in sec.
             Is a dummy variable for filtering / single morse / single harmonic tasks and a "const" type of the envelope.
             By default, is equal to 300e-15 s
-        t0_auto
-            parameter that controls the way of using t0 parameter.
-            If specified as "True", is calculated automatically as a function of T as follows:
-                for  init_guess = "sqrsin"  -- t0 = 0.0 s
-                for  init_guess = "maxwell" -- t0 = 0.0 s
-                for  init_guess = "gauss"   -- t0 = T / 2 s
-            Must be explicitly set to "True" if a batch calculation with init_guess = "gauss" is running!
-            By default, is "False"
         sigma
             scaling parameter of the laser field envelope in sec.
             Is a dummy variable for filtering / single morse / single harmonic tasks and a "const" type of the envelope.
             By default, is equal to 50e-15 s
-        sigma_auto
-            parameter that controls the way of using sigma parameter.
-            If specified as "True", is calculated automatically as a function of T as follows:
-                for  init_guess = "sqrsin"  -- sigma = 2 * T
-                for  init_guess = "maxwell" -- sigma = T / 5
-                for  init_guess = "gauss"   -- sigma = T / 8
-            Must be explicitly set to "True" if a batch calculation is running!
-            By default, is "False"
         nu_L
             basic frequency of the laser field in Hz.
             By default, is equal to 0.29297e15 Hz,
                         is identically equated to zero for filtering / single morse / single harmonic tasks
-        nu_L_auto
-            parameter that controls the way of using nu_L parameter.
-            If specified as "True", is calculated automatically as a function of T: nu_L = 1 / (2 * T).
-            By default, is "False"
 
     There is a possibility of varying any input parameter specified in the json_task file.
     The key words for that:

@@ -4,6 +4,10 @@
   "pot_type": "none",
   "wf_type": "const",
   "hamil_type": "BH_model",
+  "lf_aug_type": "z",
+  "init_guess": "sqrsin",
+  "init_guess_hf": "cos_set",
+  "nb": 2,
   "~T": 1.1E-12,
   "~~T": { "~~@SUBST:LIST": [ 2.95E-13, 3.1E-13, 3.306555E-13, 3.5E-13 ] },
   "T": { "@SUBST:LIST":
@@ -16,14 +20,16 @@
     3.0E-13, 3.1E-13, 3.2E-13, 3.3E-13, 3.4E-13,
     3.5E-13, 3.6E-13, 3.7E-13, 3.8E-13, 3.9E-13
   ] },
+  "np": 1,
+  "L": 1.0,
+  "Du": 1.0,
+  "U": 5.0,
+  "delta": 25.0,
   "fitter": {
     "epsilon": 1e-8,
     "impulses_number": 1,
-    "nb": 2,
     "iter_max": 2000,
     "h_lambda": 0.005,
-    "init_guess": "sqrsin",
-    "init_guess_hf": "cos_set",
     "~w_list": {
       "~@SUBST:LIST": [
         [ 0.88, 0.34, 0.92, 0.27, 0.39, 0.82, 0.68 ],
@@ -32,16 +38,10 @@
         [ 0.88, 0.34, 0.92, 0.27, 0.00, 0.00, 0.00 ]
       ]
     },
-    "lf_aug_type": "z",
     "pcos": 4.0,
     "hf_hide": false,
     "Em": 5.0,
     "propagation": {
-      "U": 5.0,
-      "delta": 25.0,
-      "Du": 1.0,
-      "np": 1,
-      "L": 1.0,
       "nch": 8,
       "t0": 0.0,
       "E0": 40.0,
