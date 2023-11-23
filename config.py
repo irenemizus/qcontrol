@@ -6,6 +6,7 @@ from typing import Dict
 import numpy
 
 
+
 class ConfigurationBase:
     _data: Dict[str, typing.Any]
 
@@ -14,6 +15,11 @@ class ConfigurationBase:
         self._key_prefix = key_prefix
         self._data = {
         }
+
+    def _float64ify_data(self):
+        for k in self._data.keys():
+            if isinstance(self._data[k], float):
+                self._data[k] = numpy.float64(self._data[k])
 
     def is_empty(self):
         return self._empty
@@ -90,6 +96,8 @@ class TaskRootConfiguration(ConfigurationBase):
         # 2240 fs -- for filtering on the ground PEC (99.16% quality)
         # 0.1 pi (half period units) -- for a model harmonic oscillator
 
+        self._float64ify_data()
+
     class TaskType(Enum):
         SINGLE_POT = 0
         FILTERING = 1
@@ -156,7 +164,7 @@ class TaskRootConfiguration(ConfigurationBase):
                 # 1.0 -- for a model harmonic oscillator
                 self._data["U"] = 0.0 # 1 / cm
                 self._data["W"] = 0.0  # 1 / cm
-                self._data["delta"] = 0.0 # 1 / cm
+                self._data["delta"] = 1.0 # 1 / cm
                 self._data["a"] = 1.0   # 1/a_0 -- for morse oscillator, a_0 -- for harmonic oscillator
                 self._data["De"] = 20000.0  # 1/cm
                 self._data["x0p"] = -0.17   # a_0
@@ -193,11 +201,14 @@ class TaskRootConfiguration(ConfigurationBase):
                 # 0.599586e15 = 20000 1/cm
                 self._data["nu_L_auto"] = False
 
+                self._float64ify_data()
+
         class InitGuess(Enum):
             ZERO = 0
-            GAUSS = 1
-            SQRSIN = 2
-            MAXWELL = 3
+            CONST = 1
+            GAUSS = 2
+            SQRSIN = 3
+            MAXWELL = 4
 
             @staticmethod
             def from_int(i):
@@ -288,6 +299,8 @@ class TaskRootConfiguration(ConfigurationBase):
             self._data["pcos"] = 1.0
             self._data["hf_hide"] = True
             self._data["Em"] = 1.5
+
+            self._float64ify_data()
 
 
 class ReportRootConfiguration(ConfigurationBase):

@@ -114,6 +114,15 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, or
                 H.itemset((vi - 1, vi), P)
                 H.itemset((vi, vi - 1), R)
         elif ntriv == -2:
+            # H.itemset((0, 0), -2.0 * l * U + 2.0 * l * l * W)
+            # for vi in range(1, nlvls):
+            #     Q = -2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
+            #     P = -delta * E_full * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+            #     R = -delta * E_full.conjugate() * math.sqrt(l * (l + 1) - (l - vi + 1) * (l - vi)) # delta ~ 1 / cm
+            #     H.itemset((vi, vi), Q)
+            #     H.itemset((vi - 1, vi), P)
+            #     H.itemset((vi, vi - 1), R)
+
             H.itemset((0, 0), 2.0 * l * U + 2.0 * l * l * W)
             for vi in range(1, nlvls):
                 Q = 2.0 * (l - vi) * U + 2.0 * (l - vi) * (l - vi) * W # U, W ~ 1 / cm
@@ -122,6 +131,7 @@ def hamil2D_cpu(psi: Psi, v, akx2, np, E, eL, U, W, delta, ntriv, E_full=0.0, or
                 H.itemset((vi, vi), Q)
                 H.itemset((vi - 1, vi), P)
                 H.itemset((vi, vi - 1), R)
+
         else:
             raise RuntimeError("Impossible case in the LfAugType class")
 

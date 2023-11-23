@@ -15,7 +15,11 @@ from phys_base import dalt_to_au, hart_to_cm
 class _LaserFields:
     @staticmethod
     def zero(E0, t, t0, sigma):
-        return 0.0
+        return numpy.float64(0.0)
+
+    @staticmethod
+    def const(E0, t, t0, sigma):
+        return E0
 
     @staticmethod
     def laser_field_gauss(E0, t, t0, sigma):
@@ -75,7 +79,7 @@ class _LaserFieldsHighFrequencyPart:
             OUTPUT
             E_omega      complex value of a high-frequency part for current external laser field  """
 
-        E_omega = cmath.exp(1j * 2.0 * math.pi * nu * freq_mult * t)
+        E_omega = numpy.complex128(cmath.exp(1j * 2.0 * math.pi * nu * freq_mult * t))
 
         return E_omega
 
@@ -91,7 +95,7 @@ class _LaserFieldsHighFrequencyPart:
             OUTPUT
             E_omega      complex value of a high-frequency part for current external laser field  """
 
-        E_omega = math.cos(2.0 * math.pi * pcos * nu * freq_mult * t)
+        E_omega = numpy.float64(math.cos(2.0 * math.pi * pcos * nu * freq_mult * t))
 
         return E_omega
 
@@ -107,7 +111,7 @@ class _LaserFieldsHighFrequencyPart:
             OUTPUT
             E_omega      complex value of a high-frequency part for current external laser field  """
 
-        E_omega = math.sin(2.0 * math.pi * pcos * nu * freq_mult * t)
+        E_omega = numpy.float64(math.sin(2.0 * math.pi * pcos * nu * freq_mult * t))
 
         return E_omega
 
@@ -130,7 +134,7 @@ class _LaserFieldsHighFrequencyPart:
             E_omega += w_list[i] * math.cos(2.0 * math.pi * nu * freq_mult * t * p)
             E_omega += w_list[i + 1] * math.cos(2.0 * math.pi * nu * freq_mult * t / p)
 
-        return E_omega
+        return numpy.float64(E_omega)
 
     @staticmethod
     def sin_set(nu, freq_mult, t, pcos, w_list):
@@ -149,7 +153,7 @@ class _LaserFieldsHighFrequencyPart:
             E_omega += w_list[p] * math.sin(2.0 * math.pi * nu * freq_mult * t * (2 * p + 1))
             #E_omega += w_list[p] * math.sin(2.0 * math.pi * nu * freq_mult * t * (p + 1))   #Tmp!
 
-        return E_omega
+        return numpy.float64(E_omega)
 
 
 class _F_type:
@@ -356,6 +360,9 @@ class TaskManager:
         if conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.ZERO:
             print("Calculation without laser field")
             self.lf_init_guess = _LaserFields.zero
+        elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.CONST:
+            print("Constant type of initial guess for the laser field envelope is used")
+            self.lf_init_guess = _LaserFields.const
         elif conf_task.fitter.init_guess == TaskRootConfiguration.FitterConfiguration.InitGuess.GAUSS:
             print("Gaussian type of initial guess for the laser field envelope is used")
             self.lf_init_guess = _LaserFields.laser_field_gauss
@@ -446,7 +453,7 @@ class TaskManager:
         self.init_dir = PropagationSolver.Direction.FORWARD
 
         if self.conf_task.fitter.propagation.nu_L_auto:
-            self.nu = 1.0 / 2.0 / self.conf_task.T
+            self.nu = numpy.float64(1.0 / 2.0 / self.conf_task.T)
         else:
             self.nu = self.conf_task.fitter.propagation.nu_L
 
@@ -494,7 +501,7 @@ class HarmonicSingleStateTaskManager(TaskManager):
 
         # Lower harmonic potential
         v_l = numpy.array([k_s * xi * xi / 2.0 for xi in x])
-        v.append((0.0, v_l))
+        v.append((numpy.float64(0.0), v_l))
         return v
 
     def pot(self, x, np, m, De, a, x0p, De_e, a_e, Du):
@@ -517,8 +524,8 @@ class HarmonicSingleStateTaskManager(TaskManager):
         v = HarmonicSingleStateTaskManager._pot_level1(x, m, a)
 
         # Upper harmonic potential
-        v_u = numpy.array([0.0] * np)
-        v.append((0.0, v_u))
+        v_u = numpy.array([0.0] * np).astype(numpy.float64)
+        v.append((numpy.float64(0.0), v_u))
 
         return v
 
@@ -597,7 +604,7 @@ class MorseSingleStateTaskManager(TaskManager):
         v = []
         # Lower morse potential
         v_l = numpy.array([De * (1.0 - math.exp(-a * xi)) * (1.0 - math.exp(-a * xi)) for xi in x])
-        v.append((0.0, v_l))
+        v.append((numpy.float64(0.0), v_l))
 
         return v
 
@@ -621,8 +628,8 @@ class MorseSingleStateTaskManager(TaskManager):
         v = MorseSingleStateTaskManager._pot_level1(x, m, De, a)
 
         # Upper morse potential
-        v_u = numpy.array([0.0] * np)
-        v.append((0.0, v_u))
+        v_u = numpy.array([0.0] * np).astype(numpy.float64)
+        v.append((numpy.float64(0.0), v_u))
 
         return v
 
@@ -686,7 +693,6 @@ class MorseMultipleStateTaskManager(MorseSingleStateTaskManager):
 class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
     def __init__(self, conf_task: TaskRootConfiguration):
         super().__init__(conf_task)
-        self.init_dir = PropagationSolver.Direction.BACKWARD
 
     @staticmethod
     def _quant_fourier_transform(nb):
@@ -737,6 +743,9 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             phi = self._matrix_PsiBasis_mult(F, psi, nb, np)
         elif nb == 1 and nlevs == 2:
             phi = PsiBasis(nb)
+            # phi.psis[0].f[0] = _PsiFunctions.zero(np)
+            # phi.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
+
             phi.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
             phi.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
         else:
@@ -824,15 +833,14 @@ def create(conf_task: TaskRootConfiguration):
     else:
         if conf_task.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             task_manager_imp = MultipleStateUnitTransformTaskManager(conf_task)
+            task_manager_imp.init_dir = PropagationSolver.Direction.BACKWARD
             if conf_task.pot_type == TaskRootConfiguration.PotentialType.NONE:
                 print("No potentials is used")
+                if conf_task.fitter.hf_hide:
+                    raise RuntimeError("'hf_hide' parameter for 'none' potential type should be set to 'false'!")
             else:
                 raise RuntimeError("Impossible PotentialType for the unitary transformation task")
         else:
-            if conf_task.hamil_type != TaskRootConfiguration.HamilType.NTRIV:
-                raise RuntimeError(
-                    "For 'task_type' = 'trans_wo_control', 'intuitive_control', 'local_control_population', "
-                        "'local_control_projection', and 'optimal_control_krotov' the Hamiltonian type 'hamil_type' = 'ntriv' should be specified!")
             if conf_task.fitter.nb != 1:
                 raise RuntimeError(
                         "Number of basis vectors 'nb' for 'task_type' = 'trans_wo_control', 'intuitive_control', 'local_control_population', "
@@ -847,6 +855,11 @@ def create(conf_task: TaskRootConfiguration):
             elif conf_task.pot_type == TaskRootConfiguration.PotentialType.HARMONIC:
                 print("Harmonic potentials are used")
                 task_manager_imp = HarmonicMultipleStateTaskManager(conf_task)
+            elif conf_task.pot_type == TaskRootConfiguration.PotentialType.NONE:
+                print("No potentials are used")
+                if conf_task.fitter.hf_hide:
+                    raise RuntimeError("'hf_hide' parameter for 'none' potential type should be set to 'false'!")
+                task_manager_imp = MultipleStateUnitTransformTaskManager(conf_task)
             else:
                 raise RuntimeError("Impossible PotentialType")
 

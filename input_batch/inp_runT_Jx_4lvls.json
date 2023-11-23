@@ -1,7 +1,11 @@
 {
   "run_id": { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3", "ut/run4", "ut/run5", "ut/run6", "ut/run7", "ut/run8", "ut/run9", "ut/run10" ] },
+  "task_type": "optimal_control_unit_transform",
+  "pot_type": "none",
+  "wf_type": "const",
+  "hamil_type": "BH_model",
+  "T": 5.0E-14,
   "fitter": {
-    "task_type": "optimal_control_unit_transform",
     "epsilon": 1e-2,
     "impulses_number": 1,
     "nb": 4,
@@ -18,9 +22,6 @@
     "pcos": 2.0,
     "hf_hide": false,
     "propagation": {
-      "pot_type": "none",
-      "wf_type": "const",
-      "hamil_type": "BH_model",
       "U": 30.0,
       "W": 60.0,
       "delta": 15.0,
@@ -31,7 +32,6 @@
       "t0": 0.0,
       "E0": 40.0,
       "nt": 3500,
-      "T": 5.0E-14,
       "sigma_auto": true,
       "nu_L_auto": true
     },

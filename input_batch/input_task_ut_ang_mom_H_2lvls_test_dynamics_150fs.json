@@ -1,6 +1,10 @@
 {
+  "task_type": "optimal_control_unit_transform",
+  "pot_type": "none",
+  "wf_type": "const",
+  "hamil_type": "BH_model",
+  "T": 1.5E-13,
   "fitter": {
-    "task_type": "optimal_control_unit_transform",
     "epsilon": 1e-8,
     "impulses_number": 1,
     "nb": 2,
@@ -16,9 +20,6 @@
     "hf_hide": false,
     "Em": 5.0,
     "propagation": {
-      "pot_type": "none",
-      "wf_type": "const",
-      "hamil_type": "BH_model",
       "U": 5.0,
       "delta": 25.0,
       "Du": 1.0,
@@ -28,7 +29,6 @@
       "t0": 0.0,
       "E0": 40.0,
       "nt": 3500,
-      "T": 1.5E-13,
       "sigma": 3.0E-13,
       "nu_L": 0.299793E14
     },

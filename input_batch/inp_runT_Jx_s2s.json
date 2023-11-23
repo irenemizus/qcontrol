@@ -1,10 +1,10 @@
 {
+  "run_id": { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3", "ut/run4", "ut/run5", "ut/run6", "ut/run7", "ut/run8", "ut/run9", "ut/run10" ] },
   "task_type": "optimal_control_unit_transform",
   "pot_type": "none",
   "wf_type": "const",
   "hamil_type": "BH_model",
   "T": 1500E-15,
-  "run_id": { "@SUBST:LIST": [ "ut/run1", "ut/run2", "ut/run3", "ut/run4", "ut/run5", "ut/run6", "ut/run7", "ut/run8", "ut/run9", "ut/run10" ] },
   "fitter": {
     "epsilon": 1e-6,
     "impulses_number": 1,

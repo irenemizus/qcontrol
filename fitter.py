@@ -19,21 +19,22 @@ class FittingSolver:
         psi_cur: PsiBasis
         goal_close_vec: NDArray[numpy.complex128]
 
-        def __init__(self, basis_length, levels_number, E_vel=0.0, freq_mult_vel=0.0, iter_step=0, dir=PropagationSolver.Direction.FORWARD):
+        def __init__(self, basis_length, levels_number, E_vel=numpy.float64(0.0), freq_mult_vel=numpy.float64(0.0),
+                     iter_step=0, dir=PropagationSolver.Direction.FORWARD):
             self.E_vel = E_vel
             self.freq_mult_vel = freq_mult_vel
             self.iter_step = iter_step
             self.dir = dir
 
-            self.E_patched = 0.0
-            self.freq_mult_patched = 1.0
-            self.dAdt_happy = 0.0
+            self.E_patched = numpy.float64(0.0)
+            self.freq_mult_patched = numpy.float64(1.0)
+            self.dAdt_happy = numpy.float64(0.0)
             self.Fsm = numpy.complex128(0)
-            self.E_int = 0.0
-            self.J = 0.0
-            self.h_lambda = 0.0
-            self.F_sm_mid_1 = 0.0
-            self.F_sm_mid_2 = 0.0
+            self.E_int = numpy.float64(0.0)
+            self.J = numpy.float64(0.0)
+            self.h_lambda = numpy.float64(0.0)
+            self.F_sm_mid_1 = numpy.float64(0.0)
+            self.F_sm_mid_2 = numpy.float64(0.0)
 
             self.chi_tlist = []
             self.psi_tlist = []
@@ -41,8 +42,8 @@ class FittingSolver:
             self.chi_cur = PsiBasis(basis_length, levels_number)
             self.psi_cur = PsiBasis(basis_length, levels_number)
 
-            self.goal_close_abs = 0.0
-            self.goal_close_scal = 0.0
+            self.goal_close_abs = numpy.float64(0.0)
+            self.goal_close_scal = numpy.float64(0.0)
             self.goal_close_vec = numpy.zeros(basis_length, numpy.complex128)
             self.E_tlist = []
 
@@ -218,7 +219,7 @@ class FittingSolver:
             self.dyn.psi_cur = self.dyn.psi_tlist[0]
             init_psi_basis = self.psi_init_basis
             fin_psi_basis = self.psi_goal_basis
-            t_init = 0.0
+            t_init = numpy.float64(0.0)
         else:
             ind_dir = "b"
             laser_field = self.LaserFieldEnvelopeBackward
@@ -285,7 +286,7 @@ class FittingSolver:
                 if not solver.step(t_init):
                     finished.add(vect)
 
-                if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
+                if not self.conf_fitter.hf_hide:
                     psi_copy = copy.deepcopy(solver.dyn.psi)
                 else:
                     psi_copy = copy.deepcopy(solver.dyn.psi_omega)
@@ -322,7 +323,7 @@ class FittingSolver:
         if direct == PropagationSolver.Direction.FORWARD:
             self.dyn.E_tlist = E_tlist_new
 
-            self.dyn.E_int = 0.0
+            self.dyn.E_int = numpy.float64(0.0)
             for el in range(len(self.dyn.E_tlist) - 1):
                 E_cur = self.dyn.E_tlist[el + 1]
                 self.dyn.E_int += E_cur * E_cur.conjugate() * (t_step * 1e15)
@@ -401,9 +402,9 @@ class FittingSolver:
         elif self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             h_lambda = self.dyn.h_lambda
         else:
-            h_lambda = 0.0
+            h_lambda = numpy.float64(0.0)
 
-        self.dyn.J = self.dyn.Fsm.real - h_lambda * h_lambda * self.dyn.E_int
+        self.dyn.J = self.dyn.Fsm.real - h_lambda * h_lambda * self.dyn.E_int.real
 
         self.__finalize_propagation()
         return chiT
@@ -429,7 +430,7 @@ class FittingSolver:
         assert (dx > 0.0)
 
         chiT = PsiBasis(self.basis_length, self.levels_number)
-        self.dyn.goal_close_scal = 0.0
+        self.dyn.goal_close_scal = numpy.float64(0.0)
 
         direct = self.init_dir
         for run in range(2):
@@ -476,12 +477,12 @@ class FittingSolver:
             direct = PropagationSolver.Direction(-direct.value)
 
     def time_propagation(self, dx, x, t_step, t_list):
-        self.dyn = FittingSolver.FitterDynamicState(self.basis_length, self.levels_number, E_vel=0.0, freq_mult_vel=0.0,
-                                                    iter_step=0, dir=self.init_dir)
+        self.dyn = FittingSolver.FitterDynamicState(self.basis_length, self.levels_number, E_vel=numpy.float64(0.0),
+                                                    freq_mult_vel=numpy.float64(0.0), iter_step=0, dir=self.init_dir)
         if self.task_type == TaskRootConfiguration.TaskType.OPTIMAL_CONTROL_UNIT_TRANSFORM:
             E_tlist_init = []
             goal_close_init = numpy.zeros(self.basis_length, dtype=numpy.complex128)
-            goal_close_scal_init = 0.0
+            goal_close_scal_init = numpy.float64(0.0)
             for vect in range(self.basis_length):
                 for n in range(self.levels_number):
                     goal_close_init[vect] += math_base.cprod(self.psi_goal_basis.psis[vect].f[n], self.psi_init_basis.psis[vect].f[n],
@@ -497,12 +498,12 @@ class FittingSolver:
 
             Fsm_init = self.F_type(goal_close_init, self.basis_length)
             for t in t_list:
-                hf_part = self.laser_field_hf(1.0, t, self.conf_fitter.pcos, self.conf_fitter.w_list)
+                hf_part = self.laser_field_hf(numpy.float64(1.0), t, self.conf_fitter.pcos, self.conf_fitter.w_list)
                 E = self.laser_field(self.conf_fitter.propagation.E0, t, self.conf_fitter.propagation.t0,
                                      self.conf_fitter.propagation.sigma) * hf_part
                 E_tlist_init.append(E.real)
 
-            E_int_init = 0.0
+            E_int_init = numpy.float64(0.0)
             for el in range(len(E_tlist_init) - 1):
                 E_cur_init = E_tlist_init[el + 1]
                 E_int_init += E_cur_init * E_cur_init.conjugate() * (t_step * 1e15)
@@ -514,7 +515,7 @@ class FittingSolver:
                 else:
                     h_lambda_init = self.conf_fitter.h_lambda
             else:
-                h_lambda_init = 0.0
+                h_lambda_init = numpy.float64(0.0)
 
             J_init = Fsm_init.real - h_lambda_init * h_lambda_init * E_int_init
 
@@ -557,7 +558,7 @@ class FittingSolver:
         else:
             self.__single_iteration_simple(dx, x, t_step, t_list)
 
-    def propagation_dynamic_state_factory(self, l, t, psi: Psi, psi_omega: Psi, E, freq_mult, dir):
+    def propagation_dynamic_state_factory(self, l, t, psi: Psi, psi_omega: Psi, E, freq_mult: numpy.float64, dir):
         psi_omega_copy = copy.deepcopy(psi_omega)
         psi_copy = copy.deepcopy(psi)
         return PropagationSolver.DynamicState(l, t, psi_copy, psi_omega_copy, E, freq_mult, dir)
@@ -566,7 +567,7 @@ class FittingSolver:
         # algorithm without control
         if self.task_type != TaskRootConfiguration.TaskType.LOCAL_CONTROL_POPULATION and \
            self.task_type != TaskRootConfiguration.TaskType.LOCAL_CONTROL_PROJECTION:
-            dAdt = 0.0
+            dAdt = numpy.float64(0.0)
         # local control algorithm with goal population
         elif self.task_type == TaskRootConfiguration.TaskType.LOCAL_CONTROL_POPULATION:
             coef = 2.0 * phys_base.cm_to_erg / phys_base.Red_Planck_h
@@ -605,7 +606,7 @@ class FittingSolver:
                     self.dyn.freq_mult_patched = Sdvge.imag / (self.conf_fitter.epsilon * freq_cm)
 
                 if self.dyn.freq_mult_patched < 0.0:
-                    self.dyn.freq_mult_patched = 0.0
+                    self.dyn.freq_mult_patched = numpy.float64(0.0)
 
                 self.dyn.res = PropagationSolver.StepReaction.CORRECT
 
@@ -636,7 +637,13 @@ class FittingSolver:
     # calculating envelope of the laser field energy at the given time value
     def LaserFieldEnvelope(self, prop: PropagationSolver, stat: PropagationSolver.StaticState, dyn: PropagationSolver.DynamicState):
         assert self.dyn.dir == PropagationSolver.Direction.FORWARD
-        self.dyn.E_patched = self.laser_field(self.conf_fitter.propagation.E0, dyn.t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma)
+        if self.conf_fitter.hf_hide:
+            self.dyn.E_patched = self.laser_field(self.conf_fitter.propagation.E0, dyn.t, self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma)
+        else:
+            env = self.laser_field(self.conf_fitter.propagation.E0, dyn.t,
+                                                  self.conf_fitter.propagation.t0, self.conf_fitter.propagation.sigma)
+            hf_part = self.laser_field_hf(dyn.freq_mult, dyn.t, self.conf_fitter.pcos, self.conf_fitter.w_list)
+            self.dyn.E_patched = env * hf_part
 
         # transition without control
         if self.task_type == TaskRootConfiguration.TaskType.TRANS_WO_CONTROL:
@@ -694,6 +701,8 @@ class FittingSolver:
                 E = self.dyn.E_patched
                 chi_init = self.dyn.chi_tlist[-1]
                 psi_init = self.psi_init_basis
+
+                #numpy.angle(chi_init)
                 print("Current goal_close_abs:\t\t"   f"{self.dyn.goal_close_abs}\n")
 
                 if self.ntriv == -1:
@@ -713,25 +722,36 @@ class FittingSolver:
                     raise RuntimeError("Impossible case in the HlambdaModeType class")
 
                 self.a0 = self.aF_type(psi_init, chi_init, stat.dx, self.basis_length, self.levels_number, conf_prop.np)
+                pass
             else:
                 chi_basis = self.dyn.chi_tlist[-prop.dyn.l]
                 psi_basis = self.dyn.psi_cur
-                sum = 0.0
+                sum = numpy.float64(0.0)
 #                sum1 = 0.0
 
+                m1 = numpy.float64(0.0)
                 for vect in range(self.basis_length):
                     for n in range(self.levels_number):
                         sum += self.a0[vect] * math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
+                        abs_chi = math_base.cprod(chi_basis.psis[vect].f[n], chi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
+                        abs_psi = math_base.cprod(psi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx,
+                                                  conf_prop.np)
+                        m1 += (abs_chi - abs_psi).real
 #                        sum1 += math_base.cprod(chi_basis.psis[vect].f[n], psi_basis.psis[vect].f[n], stat.dx, conf_prop.np)
                 hf_part = self.laser_field_hf(dyn.freq_mult, dyn.t - (abs(stat.dt) / 2.0), self.conf_fitter.pcos, self.conf_fitter.w_list)
                 s = self.laser_field(conf_prop.E0, dyn.t - (abs(stat.dt) / 2.0), conf_prop.t0, conf_prop.sigma) / conf_prop.E0
                 E_init = s * conf_prop.E0 * hf_part
 
-#                if prop.dyn.l <= 5:
-#                    print("sum:\t\t"   f"{sum}\n")
+                if prop.dyn.l <= 5:
+                    print("sum:\t\t"   f"{sum}\n")
 #                    print("sum1 * a0[0]:\t\t"   f"{sum1 * self.a0[0]}\n")
 
-                delta_E = - s * sum.imag / self.dyn.h_lambda
+                delta_E = -s * sum.imag / self.dyn.h_lambda
+
+                d = pow(self.basis_length - self.dyn.goal_close_abs, 0.25)
+                m1 = numpy.float64(m1 / abs(m1)) if abs(m1) != 0.0 else numpy.float64(0.0)
+                #delta_E = -s * (sum.imag * d + m1 * d*d) / self.dyn.h_lambda
+
 #                delta_E = - s * (self.a0[0] * sum1).imag / self.dyn.h_lambda
 
 #                print(f"===== Got {delta_E}")
@@ -801,4 +821,4 @@ class FittingSolver:
         else:
             freq_mult = self.dyn.freq_mult_patched
 
-        return freq_mult
+        return numpy.float64(freq_mult)
