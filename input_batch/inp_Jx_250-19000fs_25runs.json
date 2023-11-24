@@ -4,6 +4,10 @@
   "pot_type": "none",
   "wf_type": "const",
   "hamil_type": "BH_model",
+  "lf_aug_type": "x",
+  "init_guess": "sqrsin",
+  "init_guess_hf": "sin_set",
+  "nb": 2,
   "T": { "@SUBST:LIST":
   [
      2.5E-13, 11.8E-12, 13.4E-12, 14.0E-12, 
@@ -11,34 +15,30 @@
     17.6E-12, 17.8E-12, 18.0E-12, 18.2E-12,
     18.4E-12, 18.6E-12, 18.8E-12, 19.0E-12
   ] },
+  "np": 1,
+  "L": 1.0,
+  "Du": 1.0,
+  "U": 30.0,
+  "W": 30.0,
+  "delta": 15.0,
+  "nt_auto": true,
+  "sigma_auto": true,
+  "nu_L_auto": true,
   "fitter": {
     "epsilon": 1e-3,
     "impulses_number": 1,
-    "nb": 2,
     "iter_max": 5000,
     "iter_mid_1": 250,
     "iter_mid_2": 300,
     "q": 0.75,
     "h_lambda": 0.00005,
     "h_lambda_mode":"dynamical",
-    "init_guess": "sqrsin",
-    "init_guess_hf": "sin_set",
-    "lf_aug_type": "x",
     "pcos": 2.0,
     "hf_hide": false,
     "propagation": {
-      "U": 30.0,
-      "W": 30.0,
-      "delta": 15.0,
-      "Du": 1.0,
-      "np": 1,
-      "L": 1.0,
       "nch": 8,
       "t0": 0.0,
-      "E0": 40.0,
-      "nt_auto": true,
-      "sigma_auto": true,
-      "nu_L_auto": true
+      "E0": 40.0
     },
     "mod_log": 500
   }
