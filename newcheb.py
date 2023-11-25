@@ -459,6 +459,21 @@ Examples:
     python newcheb.py --json_task "input_task.json" --json_rep "input_report.json"
         perform a propagation task using the parameter values specified in the json files
         "input_task.json" and "input_report.json" or the default ones if something wasn't provided in the file
+
+For batch runs:
+    - Update script "generate_jsons.sh" by changing the paths for --json_rep and --json_task options and run it:
+      ./generate_jsons.sh
+      It generates a set of json input files and puts it into a directory "./batch_jsons"
+    - Inside the directory ./input_batch run one of the scripts "launch_run*.sh". The output and error files will be
+      put into a directory "../batch_jsons_out", the calculation results will be put into the directory specified in the
+      json_rep file, in option fitter.out_path
+    - Update a script "launch_pp*.sh" by providing the correct input/output folder paths and run it to get the
+      postprocessing statistics for the obtained results; the output and error files will be put into a directory
+      "../batch_jsons_out"
+    - Scripts "runs_reordering*.sh" can be used to rename the folders with calculation results if more than
+      a single batch run was made; usage:
+      ./runs_reordering*.sh N, where N is the number of runs made during the previous batch run. Then the folders with
+      all the results can be placed into a single output folder
 """
 
 __author__ = "Irene Mizus (irenem@hit.ac.il)"
