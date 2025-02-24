@@ -177,12 +177,12 @@ Options:
         "intuitive_control"              - calculation of transitions from the ground state
                                            to the excited state and back to the ground one
                                            under the influence of a sequence of equal laser pulses
-                                           with gaussian envelopes and a constant chirps
+                                           with gaussian envelopes and constant chirps
         "local_control_population"       - calculation of transition from the ground state
                                            to the excited one under the influence of external
                                            laser field with controlled envelope form
                                            by the local control algorithm, when the goal operator is A = / 0  0 \
-                                                                                                   \ 0  1 /
+                                                                                                         \ 0  1 /
         "local_control_projection"       - calculation of transition from the ground state
                                            to the excited one under the influence of external
                                            laser field with controlled chirp
@@ -193,10 +193,9 @@ Options:
                                            when the propagation on a current time step
                                            is partially under the old field and partially - under the new field,
                                            which is calculated "on the fly"
-        "optimal_control_unit_transform" - calculation of transition from the pure ground and excited states
-                                           under the influence of a Hadamard H1 unitary transformation
-                                           using a controlled external laser field with an iterative Krotov algorithm
-                                           and the squared modulus functional Fsm
+        "optimal_control_unit_transform" - calculation of a unitary transformation of a system with either Hadamard H1
+                                           Hamiltonian or a Bose-Hubbard one using a controlled external laser field
+                                           with an iterative Krotov algorithm and the squared modulus functional Fsm
     pot_type
         type of the potentials ("morse", "harmonic" or "none").
         By default, the "morse" type is used
@@ -204,7 +203,8 @@ Options:
         type of the wavefunctions ("morse", "harmonic" or "const").
         By default, the "morse" type is used
     hamil_type
-        type of the Hamiltonian operator used ("ntriv", "two_levels" or "BH_model").
+        type of the Hamiltonian operator used ("ntriv", "two_levels" (Hadamard H1 Hamiltonian) or
+        "BH_model" (Bose-Hubbard Hamiltonian)).
         By default, the "ntriv" type is used
     lf_aug_type
         a way of adding the controlling laser field to "BH_model"-type Hamiltonian.
