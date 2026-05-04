@@ -210,7 +210,7 @@ Options:
         a way of adding the controlling laser field to "BH_model"-type Hamiltonian.
         For all other variants of "hamil_type" variables is a dummy variable.
         Available options:
-        "z" - H = -2 * delta * Jx + 2 * U * Jx**2 + 2 * E(t) * Jz (by default)
+        "z" - H = -2 * delta * Jx + 2 * U * Jz**2 + 2 * E(t) * Jz (by default)
         "x" - H = -2 * delta * Jx * E(t) + 2 * U * Jz + 2 * W * Jz^2
     init_guess
         type of initial guessed laser field envelope used in propagation tasks.
