@@ -193,8 +193,8 @@ Options:
                                            when the propagation on a current time step
                                            is partially under the old field and partially - under the new field,
                                            which is calculated "on the fly"
-        "optimal_control_unit_transform" - calculation of a unitary transformation of a system with either Hadamard H1
-                                           Hamiltonian or a Bose-Hubbard one using a controlled external laser field
+        "optimal_control_unit_transform" - calculation of a unitary transformation of a system with an Hadamard
+                                           goal operator and a 2-level Hamiltonian / Bose-Hubbard one using a controlled external laser field
                                            with an iterative Krotov algorithm and the squared modulus functional Fsm
     pot_type
         type of the potentials ("morse", "harmonic" or "none").
@@ -203,14 +203,14 @@ Options:
         type of the wavefunctions ("morse", "harmonic" or "const").
         By default, the "morse" type is used
     hamil_type
-        type of the Hamiltonian operator used ("ntriv", "two_levels" (Hadamard H1 Hamiltonian) or
+        type of the Hamiltonian operator used ("ntriv", "two_levels" or
         "BH_model" (Bose-Hubbard Hamiltonian)).
         By default, the "ntriv" type is used
     lf_aug_type
         a way of adding the controlling laser field to "BH_model"-type Hamiltonian.
         For all other variants of "hamil_type" variables is a dummy variable.
         Available options:
-        "z" - H = -2 * delta * Jx + 2 * U * Jx**2 + 2 * E(t) * Jz (by default)
+        "z" - H = -2 * delta * Jx + 2 * U * Jz**2 + 2 * E(t) * Jz (by default)
         "x" - H = -2 * delta * Jx * E(t) + 2 * U * Jz + 2 * W * Jz^2
     init_guess
         type of initial guessed laser field envelope used in propagation tasks.
@@ -348,21 +348,21 @@ Options:
         By default, is equal to -1
     iter_mid_1
         iteration number for the "optimal_control_..." task_type, which is used to predict if the calculation converges
-        or not. If a current value of the operator F at the corresponding iteration is less that its value at
-        the iteration iter_mis_2 or is larger that the value nb * nb * q,
+        or not. If a current value of the operator F_sm at the corresponding iteration is less than its value at
+        the iteration iter_mis_2 or is larger than the value -nb * nb * q,
         the calculation is considered as divergent, and the calculation stops.
         Is a dummy variable for all other task types.
         By default, is equal to 0
     iter_mid_2
         iteration number for the "optimal_control_..." task_type, which is used to predict if the calculation converges
-        or not. If a current value of the operator F at the corresponding iteration is larger that the value nb * nb * q,
+        or not. If a current value of the operator F_sm at the corresponding iteration is larger than the value -nb * nb * q,
         the calculation is considered as divergent, and the calculation stops.
         Is a dummy variable for all other task types.
         By default, is equal to 1
     q
         a coefficient for the "optimal_control_..." task_type, which is used to predict if the calculation converges
-        or not. If a current value of the operator F at two prespecified iterations iter_mid_1 and iter_mid_1
-        is larger that the value nb * nb * q,
+        or not. If a current value of the operator F_sm at two prespecified iterations iter_mid_1 and iter_mid_1
+        is larger than the value -nb * nb * q,
         the calculation is considered as divergent, and the calculation stops.
         Is a dummy variable for all other task types.
         By default, is equal to 0.0 (the check is switched off)

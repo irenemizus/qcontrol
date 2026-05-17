@@ -680,7 +680,7 @@ class FittingSolver:
             if prop.dyn.E <= 0:
                 raise RuntimeError("E has to be positive")
 
-            # solving dynamic equation for E
+            # solving dynamic equation for E envelope
             # linear difference to the "desired" value
             first = prop.dyn.E - self.dyn.E_patched
             # decay term
