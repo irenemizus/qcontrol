@@ -211,7 +211,7 @@ Options:
         For all other variants of "hamil_type" variables is a dummy variable.
         Available options:
         "z" - H = -2 * delta * Jx + 2 * U * Jz**2 + 2 * E(t) * Jz (by default)
-        "x" - H = -2 * delta * Jx * E(t) + 2 * U * Jz + 2 * W * Jz^2
+        "x" - H = -2 * delta * Jx * E(t) + 2 * U * Jz + 2 * W * Jz**2
     init_guess
         type of initial guessed laser field envelope used in propagation tasks.
         Available options:
@@ -348,21 +348,21 @@ Options:
         By default, is equal to -1
     iter_mid_1
         iteration number for the "optimal_control_..." task_type, which is used to predict if the calculation converges
-        or not. If a current value of the operator F_sm at the corresponding iteration is less than its value at
-        the iteration iter_mis_2 or is larger than the value -nb * nb * q,
+        or not. If a current value of the operator F at the corresponding iteration is less that its value at
+        the iteration iter_mis_2 or is larger that the value nb * nb * q,
         the calculation is considered as divergent, and the calculation stops.
         Is a dummy variable for all other task types.
         By default, is equal to 0
     iter_mid_2
         iteration number for the "optimal_control_..." task_type, which is used to predict if the calculation converges
-        or not. If a current value of the operator F_sm at the corresponding iteration is larger than the value -nb * nb * q,
+        or not. If a current value of the operator F at the corresponding iteration is larger that the value nb * nb * q,
         the calculation is considered as divergent, and the calculation stops.
         Is a dummy variable for all other task types.
         By default, is equal to 1
     q
         a coefficient for the "optimal_control_..." task_type, which is used to predict if the calculation converges
-        or not. If a current value of the operator F_sm at two prespecified iterations iter_mid_1 and iter_mid_1
-        is larger than the value -nb * nb * q,
+        or not. If a current value of the operator F at two prespecified iterations iter_mid_1 and iter_mid_1
+        is larger that the value nb * nb * q,
         the calculation is considered as divergent, and the calculation stops.
         Is a dummy variable for all other task types.
         By default, is equal to 0.0 (the check is switched off)
