@@ -153,7 +153,7 @@ class _LaserFieldsHighFrequencyPart:
 
         E_omega = w_list[0] * math.sin(2.0 * math.pi * nu * freq_mult * t)
         for p in range(1, math.floor(pcos) + 1):
-            E_omega += w_list[p] * math.sin(2.0 * math.pi * nu * freq_mult * t * (2 * p - 1))
+            E_omega += w_list[p] * math.sin(2.0 * math.pi * nu * freq_mult * t * (2 * p + 1))
             #E_omega += w_list[p] * math.sin(2.0 * math.pi * nu * freq_mult * t * (p + 1))   #Tmp!
 
         return numpy.float64(E_omega)

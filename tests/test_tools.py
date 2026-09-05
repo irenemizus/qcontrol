@@ -22,37 +22,25 @@ class TableComparer:
         return isinstance(el, np.float64) or isinstance(el, float)
 
     def compare_floats(self, el1, el2, eps):
-        # Trivially comparing two floats
-        if abs(el2) < self.delta and abs(el1) < self.delta:
-            pass  # Both are smalls. Treated as equals
-        elif abs(el2) < self.delta < abs(el1):
-            return False  # el2 is small, el1 is not. Not equal
-        elif abs(el1 - el2) / abs(el2) > abs(eps):
-            return False  # The relative difference is larger than eps. Not equal
+         # Comparing two floats: equal if the difference is within eps relatively
+        # (with respect to the larger of the two magnitudes) or within the
+        # absolute floor delta (the numerical noise level of the calculation)
+        if abs(el1 - el2) > max(abs(eps) * max(abs(el1), abs(el2)), self.delta):
+            return False  # The difference is larger than the tolerance. Not equal
 
         return True
 
     def compare_complex(self, el1, el2, eps):
+        # Comparing two complexes component-wise with the same
+        # relative-or-absolute rule as compare_floats
         r1 = el1.real
         r2 = el2.real
         i1 = el1.imag
         i2 = el2.imag
 
-        if abs(i1) < self.delta and abs(i2) < self.delta:
-            return self.compare_floats(r1, r2, eps.real)
-        elif abs(r1) < self.delta and abs(r2) < self.delta:
-            return self.compare_floats(i1, i2, eps.imag)
-        elif abs(r1) > self.delta > abs(r2):
-            return False
-        elif abs(r2) > self.delta > abs(r1):
-            return False
-        elif abs(i1) > self.delta > abs(i2):
-            return False
-        elif abs(i2) > self.delta > abs(i1):
-            return False
-        elif not self.compare_floats(r1, r2, eps.real) or \
-                not self.compare_floats(i1, i2, eps.imag):
-            return False
+        if abs(r1 - r2) > max(eps.real * max(abs(r1), abs(r2)), self.delta) or \
+                abs(i1 - i2) > max(eps.imag * max(abs(i1), abs(i2)), self.delta):
+            return False  # A component differs more than the tolerance. Not equal
 
         return True
 
