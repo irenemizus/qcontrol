@@ -435,6 +435,10 @@ class TaskManager:
                 raise RuntimeError("Number of basis vectors 'nb' for 'hamil_type' = 'two_levels' has to be equal to 2!")
             if conf_task.fitter.hf_hide:
                 raise RuntimeError("'hf_hide' parameter for 'hamil_type' = 'two_levels' should be set to 'false'!")
+        elif conf_task.hamil_type == TaskRootConfiguration.HamilType.QUBIT:
+            print("Qubit type of the Hamiltonian is used")
+            self.ntriv = -2
+            self.hamil_impl = hamil_2d.Hamil2DQubit
         else:
             raise RuntimeError("Impossible case in the HamilType class")
 
@@ -802,8 +806,12 @@ class MultipleStateUnitTransformTaskManager(MorseMultipleStateTaskManager):
             phi = self._matrix_PsiBasis_mult(F, psi, nb, np)
         elif nb == 1 and nlevs == 2:
             phi = PsiBasis(nb)
-            phi.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
-            phi.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
+            if self.conf_task.hamil_type == TaskRootConfiguration.HamilType.QUBIT:
+                phi.psis[0].f[0] = _PsiFunctions.zero(np)
+                phi.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L)
+            else:
+                phi.psis[0].f[0] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
+                phi.psis[0].f[1] = self.psi_init_impl(x, np, x0, p0, m, De, a, L) / math.sqrt(2.0)
         else:
             raise RuntimeError("Impossible Task Type")
 

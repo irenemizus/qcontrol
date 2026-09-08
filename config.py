@@ -184,6 +184,7 @@ class TaskRootConfiguration(ConfigurationBase):
         NTRIV = 0
         TWO_LEVELS = 1
         BH_MODEL = 2
+        QUBIT = 3
 
         @staticmethod
         def from_int(i):

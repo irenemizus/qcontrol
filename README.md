@@ -73,7 +73,7 @@ in the activated environment and check that it prints `blas_opt_info: libraries 
 # Examples of the modeling results
 
 ## Unitary transformation for a 2-state quantum system under an external magnetic field
-A testing modeling, which solves the problem from the following Wikipedia article: https://en.wikipedia.org/wiki/Rabi_cycle, subsection "In quantum computing" (the resonance case). The transition dynamics between the two states (including the dynamics of changing of Pauli matrix expectation values), as well as the time envelope of the external magnetic field is shown on the following plots:
+A testing modeling, which solves the problem from the following Wikipedia article: https://en.wikipedia.org/wiki/Rabi_cycle, subsection "In quantum computing" (the resonance case). Can be run using the configuration file `input_files/input_task_qubit.json`. The transition dynamics between the two states (including the dynamics of changing of Pauli matrix expectation values), as well as the time envelope of the external magnetic field is shown on the following plots:
 
 ![graph1](https://raw.githubusercontent.com/irenemizus/qcontrol/master/results_to_show/fig_abs_max_pi_pulse.svg)
 ![graph2](https://raw.githubusercontent.com/irenemizus/qcontrol/master/results_to_show/fig_ener_pi_pulse.svg)
